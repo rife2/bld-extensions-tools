@@ -32,18 +32,18 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DisplayName("ClassPathUtils Tests")
+@DisplayName("ClasspathUtils Tests")
 @SuppressWarnings( "PMD.AvoidDuplicateLiterals")
-class ClassPathUtilsTest {
+class ClasspathUtilsTest {
     private static final String PATH_SEP = File.pathSeparator;
 
     @Nested
-    @DisplayName("buildClassPath() method")
-    class BuildClassPathTests {
+    @DisplayName("buildClasspath() method")
+    class BuildClasspathTests {
         @Test
         @DisplayName("should return empty string when no paths provided")
         void emptyWhenNoPathsProvided() {
-            var result = ClassPathUtils.buildClassPath();
+            var result = ClasspathUtils.buildClasspath();
             assertEquals("", result);
         }
 
@@ -52,21 +52,21 @@ class ClassPathUtilsTest {
         @ValueSource(strings = {"   ", "\t", "\n"})
         @DisplayName("should ignore blank and null paths")
         void ignoreBlankAndNullPaths(String blankPath) {
-            var result = ClassPathUtils.buildClassPath(blankPath);
+            var result = ClasspathUtils.buildClasspath(blankPath);
             assertEquals("", result);
         }
 
         @Test
         @DisplayName("should build classpath with single valid path")
         void singleValidPath() {
-            var result = ClassPathUtils.buildClassPath("/path/to/jar.jar");
+            var result = ClasspathUtils.buildClasspath("/path/to/jar.jar");
             assertEquals("/path/to/jar.jar", result);
         }
 
         @Test
         @DisplayName("should build classpath with multiple valid paths")
         void multipleValidPaths() {
-            var result = ClassPathUtils.buildClassPath(
+            var result = ClasspathUtils.buildClasspath(
                     "/path/to/jar1.jar",
                     "/path/to/jar2.jar",
                     "/path/to/jar3.jar"
@@ -82,7 +82,7 @@ class ClassPathUtilsTest {
         @Test
         @DisplayName("should filter out blank paths from mixed input")
         void filterBlankPathsFromMixed() {
-            var result = ClassPathUtils.buildClassPath(
+            var result = ClasspathUtils.buildClasspath(
                     "/path/to/jar1.jar",
                     "",
                     null,
@@ -102,7 +102,7 @@ class ClassPathUtilsTest {
         @MethodSource("providePathCombinations")
         @DisplayName("should handle various path combinations")
         void handleVariousPathCombinations(String[] paths, String expected) {
-            var result = ClassPathUtils.buildClassPath(paths);
+            var result = ClasspathUtils.buildClasspath(paths);
             assertEquals(expected, result);
         }
 
@@ -139,7 +139,7 @@ class ClassPathUtilsTest {
         @DisplayName("should return empty string for empty list")
         void emptyStringForEmptyList() {
             var emptyList = new ArrayList<File>();
-            var result = ClassPathUtils.joinClasspathJar(emptyList);
+            var result = ClasspathUtils.joinClasspathJar(emptyList);
             assertEquals("", result);
         }
 
@@ -148,7 +148,7 @@ class ClassPathUtilsTest {
         void joinSingleJarFile() {
             var file = new File("/path/to/library.jar");
             var jars = List.of(file);
-            var result = ClassPathUtils.joinClasspathJar(jars);
+            var result = ClasspathUtils.joinClasspathJar(jars);
             assertEquals(file.getAbsolutePath(), result);
         }
 
@@ -160,7 +160,7 @@ class ClassPathUtilsTest {
             var file3 = new File("/path/to/library3.jar");
             var jars = List.of(file1, file2, file3);
 
-            var result = ClassPathUtils.joinClasspathJar(jars);
+            var result = ClasspathUtils.joinClasspathJar(jars);
 
             var expected = String.join(PATH_SEP,
                     file1.getAbsolutePath(),
@@ -174,7 +174,7 @@ class ClassPathUtilsTest {
         @MethodSource("provideJarFileLists")
         @DisplayName("should handle various jar file lists")
         void handleVariousJarFileLists(List<File> jars, int expectedParts) {
-            var result = ClassPathUtils.joinClasspathJar(jars);
+            var result = ClasspathUtils.joinClasspathJar(jars);
 
             if (expectedParts == 0) {
                 assertEquals("", result);
@@ -204,7 +204,7 @@ class ClassPathUtilsTest {
             var absoluteFile = new File("/absolute/path/lib.jar");
             var jars = List.of(relativeFile, absoluteFile);
 
-            var result = ClassPathUtils.joinClasspathJar(jars);
+            var result = ClasspathUtils.joinClasspathJar(jars);
 
             assertTrue(result.contains(relativeFile.getAbsolutePath()));
             assertTrue(result.contains(absoluteFile.getAbsolutePath()));
@@ -222,9 +222,9 @@ class ClassPathUtilsTest {
                     new File("/lib/dependency1.jar"),
                     new File("/lib/dependency2.jar")
             );
-            var jarClasspath = ClassPathUtils.joinClasspathJar(jarFiles);
+            var jarClasspath = ClasspathUtils.joinClasspathJar(jarFiles);
 
-            var fullClasspath = ClassPathUtils.buildClassPath(
+            var fullClasspath = ClasspathUtils.buildClasspath(
                     "/classes",
                     jarClasspath,
                     "/resources"

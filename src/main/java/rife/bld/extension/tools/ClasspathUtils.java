@@ -23,8 +23,8 @@ import java.util.stream.Collectors;
 /**
  * Classpath Utilities and Tools.
  */
-public final class ClassPathUtils {
-    private ClassPathUtils() {
+public final class ClasspathUtils {
+    private ClasspathUtils() {
         // no-op
     }
 
@@ -39,7 +39,7 @@ public final class ClassPathUtils {
      * string is returned
      * @since 1.0
      */
-    public static String buildClassPath(String... path) {
+    public static String buildClasspath(String... path) {
         var joiner = new java.util.StringJoiner(File.pathSeparator);
         for (var p : path) {
             if (TextUtils.isNotBlank(p)) {

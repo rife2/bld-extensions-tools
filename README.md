@@ -29,8 +29,8 @@ The following static methods are provided:
 
 | Method                                                                                                                                                                          | Description                                             |
 |:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------|
-| [`buildClassPath(String... path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClassPathUtils.html#buildClassPath(java.lang.String...))               | Constructs a classpath string.                          |
-| [`joinClasspathJar(Collection<String> jars)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClassPathUtils.html#joinClasspathJar(java.util.Collection)) | Joins a list of JAR file paths into a single classpath. |
+| [`buildClass0ath(String... path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathUtils.html#buildClasspath(java.lang.String...))               | Constructs a classpath string.                          |
+| [`joinClasspathJar(Collection<String> jars)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathUtils.html#joinClasspathJar(java.util.Collection)) | Joins a list of JAR file paths into a single classpath. |
 
 ## Collection Utilities
 
@@ -47,17 +47,17 @@ The following static methods are provided:
 
 The following static methods are provided:
 
-| Method                                                                                                                                        | Description             |
-|:----------------------------------------------------------------------------------------------------------------------------------------------|:------------------------|
-| [`exists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#exists(java.io.File))             | Check if a file exists. |
-| [`exists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#exists(java.nio.file.Path))       | Check if a path exists. |
-| [`exists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#exits(java.lang.String))        | Check if a file exists. |
-| [`mkdirs(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#mkdirs(java.io.File))             | Make directories.       |
-| [`mkdirs(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#makedirs(java.nio.file.Path))     | Makde directories.      |
-| [`mkdirs(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#mkdirs(java.lang.String))       | Make directories.       |
-| [`notExists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#notExists(java.io.File))       | Check if a file exists. |
-| [`notExists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#notExists(java.nio.file.Path)) | Check if a path exists. |
-| [`notExists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#notExits(java.lang.String))  | Check if a file exists. |
+| Method                                                                                                                                            | Description             |
+|:--------------------------------------------------------------------------------------------------------------------------------------------------|:------------------------|
+| [`exists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#exists(java.io.File))                 | Check if a file exists. |
+| [`exists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#exists(java.nio.file.Path))           | Check if a path exists. |
+| [`exists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#exits(java.lang.String))            | Check if a file exists. |
+| [`mkdirs(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#mkdirs(java.io.File))                 | Make directories.       |
+| [`mkdirs(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#mkdirs(java.nio.file.Path))           | Makde directories.      |
+| [`mkdirs(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#mkdirs(java.lang.String))           | Make directories.       |
+| [`notExists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#notExists(java.io.File))           | Check if a file exists. |
+| [`notExists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#notExists(java.nio.file.Path))     | Check if a path exists. |
+| [`notExists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#notExits(java.lang.String))      | Check if a file exists. |
 
 *NOTE:* All methods properly handle `null` values
 
