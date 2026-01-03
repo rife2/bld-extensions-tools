@@ -27,7 +27,7 @@ for more information.
 
 The following static methods are provided:
 
-| Utilites                                                                                                                                                                        | Description                                             |
+| Method                                                                                                                                                                          | Description                                             |
 |:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------|
 | [`buildClassPath(String... path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClassPathUtils.html#buildClassPath(java.lang.String...))               | Constructs a classpath string.                          |
 | [`joinClasspathJar(Collection<String> jars)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClassPathUtils.html#joinClasspathJar(java.util.Collection)) | Joins a list of JAR file paths into a single classpath. |
@@ -36,7 +36,7 @@ The following static methods are provided:
 
 The following static methods are provided:
 
-| Utilites                                                                                                                                                              | Description                          |
+| Method                                                                                                                                                              | Description                          |
 |:----------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------------|
 | [`isEmpty(Collection<?> collection)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionUtils.html#isEmpty(java.util.Collection))       | Checks if a collection is empty.     |
 | [`isNotEmpty(Collection<?> collection)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionUtils.html#isNotEmpty(java.util.Collection)) | Checks if a collection is not empty. |
@@ -49,7 +49,7 @@ The following static methods are provided:
 
 The following static methods are provided:
 
-| Utilites                                                                                                            | Description                                                                                                      |
+| Method                                                                                                            | Description                                                                                                      |
 |:--------------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------|
 | [`isAix()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isAix())         | Determines if the current operating system is AIX.                                                               |
 | [`isCygwin()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isCygwin())    | Determines if the current operating system is Cygwin.                                                            |
@@ -66,11 +66,15 @@ The following static methods are provided:
 
 The following static methods are provided:
 
-| Utilites                                                                                                                                      | Description                      |
-|:----------------------------------------------------------------------------------------------------------------------------------------------|:---------------------------------|
-| [`isBlank(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isBlank(java.lang.String))       | Checks if a string is blank.     |
-| [`isEmpty(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isEmpty(java.lang.String))       | Checks if a string is empty.     |
-| [`isNotBlank(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotBlank(java.lang.String)) | Checks if a string is not blank. |
-| [`isNotEmpty(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotEmpty(java.lang.String)) | Checks if a string is not empty. |
+| Method                                                                                                                                                      | Description                      |
+|:------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------------------|
+| [`isBlank(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isBlank(java.lang.String))                     | Checks if a string is blank.     |
+| [`isEmpty(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isEmpty(java.lang.String))                     | Checks if a string is empty.     |
+| [`isBlank(String... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isBlank(java.lang.String...))           | Checks if strings are blank.     |
+| [`isEmpty(String... strings str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isEmpty(java.lang.String...))       | Checks if strings are empty.     |
+| [`isNotBlank(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotBlank(java.lang.String))               | Checks if a string is not blank. |
+| [`isNotEmpty(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotEmpty(java.lang.String))               | Checks if a string is not empty. |
+| [`isNotBlank(String... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotBlank(java.lang.String...))     | Checks if strings are not blank. |
+| [`isNotEmpty(String... strings str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotEmpty(java.lang.String...)) | Checks if strings are not empty. |
 
 *NOTE:* All methods properly handle `null` strings.
