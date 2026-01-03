@@ -45,6 +45,32 @@ public final class TextUtils {
     }
 
     /**
+     * Checks if an object is {@code null}, empty, or contains only whitespace characters.
+     * <p>
+     * If the object is not {@code null}, it will be converted to its string representation
+     * for the check.
+     *
+     * @param obj The object to check
+     * @return {@code true} if the object is {@code null}, its string representation is empty,
+     * or its string representation is whitespace-only; {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean isBlank(Object obj) {
+        return obj == null || isBlank(obj.toString());
+    }
+
+    /**
+     * Checks if an object is {@code null} or its string representation is empty.
+     *
+     * @param obj The object to check
+     * @return {@code true} if the object is {@code null} or its string representation is empty; {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean isEmpty(Object obj) {
+        return obj == null || isEmpty(obj.toString());
+    }
+
+    /**
      * Checks if a string is {@code null} or empty.
      *
      * @param str The string to check
@@ -53,6 +79,23 @@ public final class TextUtils {
      */
     public static boolean isEmpty(String str) {
         return str == null || str.isEmpty();
+    }
+
+
+    /**
+     * Checks if an object is not {@code null}, not empty, and not whitespace-only.
+     * <p>
+     * If the object is not {@code null}, it will be converted to its string representation
+     * for the check.
+     *
+     * @param obj The object to check
+     * @return {@code true} if the object is not {@code null}, its string representation
+     * is not empty, and its string representation is not whitespace-only;
+     * {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean isNotBlank(Object obj) {
+        return !isBlank(obj);
     }
 
     /**
@@ -76,5 +119,17 @@ public final class TextUtils {
      */
     public static boolean isNotEmpty(String str) {
         return !isEmpty(str);
+    }
+
+    /**
+     * Checks if an object is not {@code null} and its string representation is not empty.
+     *
+     * @param obj The object to check
+     * @return {@code true} if the object is not {@code null} and its string representation is not empty;
+     * {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean isNotEmpty(Object obj) {
+        return !isEmpty(obj);
     }
 }
