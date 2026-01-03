@@ -23,6 +23,15 @@ scope(test).include(
 Please check the [documentation](https://rife2.github.io/bld-extensions-tools)
 for more information.
 
+## Classpath Utilities
+
+The following static methods are provided:
+
+| Utilites                                                                                                                                                                     | Description                                             |
+|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------|
+| [`buildClassPath(String... path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClassPathUtils.html#buildClassPath(java.lang.String...))            | Constructs a classpath string.                          |
+| [`joinClasspathJar(Collection<File> jars)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClassPathUtils.html#joinClasspathJar(java.util.Collection) | Joins a list of JAR file paths into a single classpath. |
+
 ## System Utilities
 
 The following static methods are provided:
@@ -30,10 +39,25 @@ The following static methods are provided:
 | Utilites                                                                                                            | Description                                                                                                      |
 |:--------------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------|
 | [`isAix()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isAix())         | Determines if the current operating system is AIX.                                                               |
+| ['isCygwin()'](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isCygwin())   | Determines if the current operating system is Cygwin.                                                            |
 | [`isFreeBsd()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isFreeBsd()) | Determines if the current operating system is FreeBSD.                                                           |
 | [`isLinux()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isLinux())     | Determines if the current operating system is Linux.                                                             |
 | [`isMacOS()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isMacOS())     | Determines if the current operating system is macOS.                                                             |
+| ['isMingw()'](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isMingw())     | Determines if the current operating system is MinGW.                                                             |
 | [`isOpenVms()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isOpenVms()) | Determines if the current operating system is OpenVMS.                                                           |
 | [`isOtherOS()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isOtherOS()) | Determines if the current operating system is other than AIX, FreeBSD, Linux, macOS, OpenVMS, Solaris or Windows |
 | [`isSolaris()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isSolaris()) | Determines if the current operating system is Solaris.                                                           |
 | [`isWindows()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isWindows()) | Determines if the current operating system is Windows.                                                           |
+
+## Text Utilities 
+
+The following static methods are provided:
+
+| Utilites                                                                                                                                      | Description                      |
+|:----------------------------------------------------------------------------------------------------------------------------------------------|:---------------------------------|
+| [`isBlank(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isBlank(java.lang.String))       | Checks if a string is blank.     |
+| [`isEmpty(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isEmpty(java.lang.String))       | Checks if a string is empty.     |
+| [`isNotBlank(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotBlank(java.lang.String)) | Checks if a string is not blank. |
+| [`isNotEmpty(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotEmpty(java.lang.String)) | Checks if a string is not empty. |
+
+*NOTE:* All methods property handle `null` strings.
