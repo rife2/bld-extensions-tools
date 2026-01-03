@@ -7,7 +7,7 @@
 
 # Tools for [bld Extensions](https://github.com/rife2/bld/wiki/Extensions)
 
-This project provides a collection of tools by various
+This project provides a collection of tools used by various
 [bld extensions](https://github.com/rife2/bld/wiki/Extensions).
 
 To use, include the following in your `bld` build file:
@@ -31,6 +31,19 @@ The following static methods are provided:
 |:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------|
 | [`buildClassPath(String... path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClassPathUtils.html#buildClassPath(java.lang.String...))               | Constructs a classpath string.                          |
 | [`joinClasspathJar(Collection<String> jars)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClassPathUtils.html#joinClasspathJar(java.util.Collection)) | Joins a list of JAR file paths into a single classpath. |
+
+## Collection Utilities
+
+The following static methods are provided:
+
+| Utilites                                                                                                                                                              | Description                          |
+|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------------|
+| [`isEmpty(Collection<?> collection)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionUtils.html#isEmpty(java.util.Collection))       | Checks if a collection is empty.     |
+| [`isNotEmpty(Collection<?> collection)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionUtils.html#isNotEmpty(java.util.Collection)) | Checks if a collection is not empty. |
+
+*NOTE:* All methods properly handle `null` collections.
+
+
 
 ## System Utilities
 
@@ -60,4 +73,4 @@ The following static methods are provided:
 | [`isNotBlank(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotBlank(java.lang.String)) | Checks if a string is not blank. |
 | [`isNotEmpty(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotEmpty(java.lang.String)) | Checks if a string is not empty. |
 
-*NOTE:* All methods property handle `null` strings.
+*NOTE:* All methods properly handle `null` strings.
