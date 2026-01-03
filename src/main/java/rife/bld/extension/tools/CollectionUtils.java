@@ -45,7 +45,7 @@ public final class CollectionUtils {
      * @since 1.0
      */
     public static boolean isEmpty(Collection<?>... collections) {
-        if (collections == null || collections.length == 0) {
+        if (collections == null) {
             return true;
         }
         for (Collection<?> collection : collections) {
@@ -75,7 +75,7 @@ public final class CollectionUtils {
      * @since 1.0
      */
     public static boolean isNotEmpty(Collection<?>... collections) {
-        if (collections == null || collections.length == 0) {
+        if (collections == null) {
             return false;
         }
         for (Collection<?> collection : collections) {
