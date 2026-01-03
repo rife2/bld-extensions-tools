@@ -27,13 +27,13 @@ for more information.
 
 The following static methods are provided:
 
-| Utilites          | Description                                                                                                      |
-|:------------------|:-----------------------------------------------------------------------------------------------------------------|
-| [`isAix()`]()     | Determines if the current operating system is AIX.                                                               |
-| [`isFreeBsd()`]() | Determines if the current operating system is FreeBSD.                                                           |
-| [`isLinux()`]()   | Determines if the current operating system is Linux.                                                             |
-| [`isMacOS()`]()   | Determines if the current operating system is macOS.                                                             |
-| [`isOpenVms()`]() | Determines if the current operating system is OpenVMS.                                                           |
-| [`isOtherOS()`]() | Determines if the current operating system is other than AIX, FreeBSD, Linux, macOS, OpenVMS, Solaris or Windows |
-| [`isSolaris()`]() | Determines if the current operating system is Solaris.                                                           |
-| [`isWindows()`]() | Determines if the current operating system is Windows.                                                           |
+| Utilites                                                                                                            | Description                                                                                                      |
+|:--------------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------|
+| [`isAix()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isAix())         | Determines if the current operating system is AIX.                                                               |
+| [`isFreeBsd()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isFreeBsd()) | Determines if the current operating system is FreeBSD.                                                           |
+| [`isLinux()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isLinux())     | Determines if the current operating system is Linux.                                                             |
+| [`isMacOS()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isMacOS())     | Determines if the current operating system is macOS.                                                             |
+| [`isOpenVms()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isOpenVms()) | Determines if the current operating system is OpenVMS.                                                           |
+| [`isOtherOS()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isOtherOS()) | Determines if the current operating system is other than AIX, FreeBSD, Linux, macOS, OpenVMS, Solaris or Windows |
+| [`isSolaris()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isSolaris()) | Determines if the current operating system is Solaris.                                                           |
+| [`isWindows()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isWindows()) | Determines if the current operating system is Windows.                                                           |
