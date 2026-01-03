@@ -113,6 +113,7 @@ public class ToolsBuild extends Project {
         new SpotBugsOperation()
                 .fromProject(this)
                 .home("/opt/spotbugs")
+                .exclude("config/excludeFilter.xml")
                 .execute();
     }
 }

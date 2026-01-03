@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <Match>
+        <Class name="rife.bld.extension.tools.ClassPathUtils"/>
+        <Method name="joinClasspathJar"/>
+        <Bug pattern="OCP_OVERLY_CONCRETE_COLLECTION_PARAMETER"/>
+    </Match>
+</FindBugsFilter>
