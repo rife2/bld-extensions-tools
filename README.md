@@ -43,7 +43,20 @@ The following static methods are provided:
 
 *NOTE:* All methods properly handle `null` collections.
 
+## Files Utilities
 
+The following static methods are provided:
+
+| Method                                                                                                                                       | Description             |
+|:---------------------------------------------------------------------------------------------------------------------------------------------|:------------------------|
+| [`exists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#exists(java.io.File))            | Check if a file exists. |
+| [`exists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#exist(java.nio.file.Path))       | Check if a path exists. |
+| [`exists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#exits(java.lang.String))       | Check if a file exists. |
+| [`notExists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#notExists(java.io.File))      | Check if a file exists. |
+| [`notExists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#notExist(java.nio.file.Path)) | Check if a path exists. |
+| [`notExists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#notExits(java.lang.String)) | Check if a file exists. |
+
+*NOTE:* All methods properly handle `null` values
 
 ## System Utilities
 

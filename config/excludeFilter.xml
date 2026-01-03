@@ -5,4 +5,9 @@
         <Method name="joinClasspathJar"/>
         <Bug pattern="OCP_OVERLY_CONCRETE_COLLECTION_PARAMETER"/>
     </Match>
+    <Match>
+        <Class name="rife.bld.extension.tools.FilesUtils"/>
+        <Method name="notExists" param="java.lang.String"/>
+        <Bug pattern="PATH_TRAVERSAL_IN"/>
+    </Match>
 </FindBugsFilter>
