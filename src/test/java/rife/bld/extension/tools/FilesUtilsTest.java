@@ -21,14 +21,16 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SuppressWarnings({"PMD.AvoidDuplicateLiterals", "ConstantValue"})
 class FilesUtilsTest {
@@ -124,6 +126,201 @@ class FilesUtilsTest {
         void shouldReturnTrueWhenStringPathExists() {
             var result = FilesUtils.exists(existingPath.toString());
             assertTrue(result);
+        }
+    }
+
+    @Nested
+    @DisplayName("Make Directory Tests")
+    class MakeDirectoryTests {
+        @TempDir
+        Path tempDir;
+
+        @Test
+        @DisplayName("mkdirs(File) with existing directory returns true")
+        void mkdirsFileWithExistingDirectoryReturnsTrue() {
+            var existing = tempDir.toFile();
+            assertTrue(FilesUtils.mkdirs(existing));
+        }
+
+        @Test
+        @DisplayName("mkdirs(File) with existing file returns false")
+        void mkdirsFileWithExistingFileReturnsFalse() throws IOException {
+            var file = new File(tempDir.toFile(), "existing-file.txt");
+            assertTrue(file.createNewFile());
+
+            assertFalse(FilesUtils.mkdirs(file));
+        }
+
+        @Test
+        @DisplayName("mkdirs(File) with non-existing directory creates and returns true")
+        void mkdirsFileWithNonExistingDirectoryCreatesAndReturnsTrue() {
+            var newDir = new File(tempDir.toFile(), "new/nested/directory");
+            assertFalse(newDir.exists());
+
+            assertTrue(FilesUtils.mkdirs(newDir));
+            assertTrue(newDir.exists());
+            assertTrue(newDir.isDirectory());
+        }
+
+        @ParameterizedTest
+        @NullSource
+        @DisplayName("mkdirs(File) with null returns false")
+        void mkdirsFileWithNullReturnsFalse(File file) {
+            assertFalse(FilesUtils.mkdirs(file));
+        }
+
+        @Test
+        @DisplayName("mkdirs(Path) with existing directory returns true")
+        void mkdirsPathWithExistingDirectoryReturnsTrue() {
+            assertTrue(FilesUtils.mkdirs(tempDir));
+        }
+
+        @Test
+        @DisplayName("mkdirs(Path) with existing file returns false")
+        void mkdirsPathWithExistingFileReturnsFalse() throws IOException {
+            var file = tempDir.resolve("existing-file.txt");
+            Files.createFile(file);
+
+            assertFalse(FilesUtils.mkdirs(file));
+        }
+
+        @Test
+        @DisplayName("mkdirs(Path) with non-existing directory creates and returns true")
+        void mkdirsPathWithNonExistingDirectoryCreatesAndReturnsTrue() {
+            var newDir = tempDir.resolve("new/nested/directory");
+            assertFalse(Files.exists(newDir));
+
+            assertTrue(FilesUtils.mkdirs(newDir));
+            assertTrue(Files.exists(newDir));
+            assertTrue(Files.isDirectory(newDir));
+        }
+
+        @ParameterizedTest
+        @NullSource
+        @DisplayName("mkdirs(Path) with null returns false")
+        void mkdirsPathWithNullReturnsFalse(Path path) {
+            assertFalse(FilesUtils.mkdirs(path));
+        }
+
+        @Test
+        @DisplayName("mkdirs File and Path versions have consistent behavior")
+        void mkdirsFileAndPathVersionsAreConsistent() {
+            var path = tempDir.resolve("consistent/test/dir");
+            var file = path.toFile();
+
+            var pathResult = FilesUtils.mkdirs(path);
+            var fileResult = FilesUtils.mkdirs(file);
+
+            assertEquals(pathResult, fileResult);
+            assertTrue(Files.exists(path));
+            assertTrue(file.exists());
+        }
+
+        @Nested
+        @DisplayName("mkdirs(String) Tests")
+        class MkdirsStringTest {
+            @Nested
+            @DisplayName("When using absolute paths")
+            class AbsolutePaths {
+                @Test
+                @DisplayName("Should handle absolute path")
+                void shouldHandleAbsolutePath(@TempDir Path tempDir) {
+                    var absolute = tempDir.resolve("absolute/path/test").toAbsolutePath().toString();
+
+                    assertTrue(FilesUtils.mkdirs(absolute));
+                    var absolutePath = Path.of(absolute);
+                    assertTrue(Files.exists(absolutePath));
+                    assertTrue(Files.isDirectory(absolutePath));
+                }
+            }
+
+            @Nested
+            @DisplayName("When file exists at path")
+            class FileExistsAtPath {
+                @Test
+                @DisplayName("Should return false when file exists at target path")
+                void shouldReturnFalseWhenFileExists(@TempDir Path tempDir) throws IOException {
+                    var filePath = tempDir.resolve("existingfile");
+                    Files.createFile(filePath);
+
+                    assertFalse(FilesUtils.mkdirs(filePath.toString()));
+                }
+            }
+
+            @Nested
+            @DisplayName("When creating nested directories")
+            class NestedDirectories {
+                @Test
+                @DisplayName("Should create deeply nested directories")
+                void shouldCreateDeeplyNestedDirectories(@TempDir Path tempDir) {
+                    var deepPath = tempDir.resolve("a/b/c/d/e/f/g").toString();
+
+                    assertTrue(FilesUtils.mkdirs(deepPath));
+                    assertTrue(Files.exists(Path.of(deepPath)));
+                }
+
+                @Test
+                @DisplayName("Should create all parent directories")
+                void shouldCreateParentDirectories(@TempDir Path tempDir) {
+                    var grandchild = tempDir.resolve("parent/child/grandchild").toString();
+
+                    assertTrue(FilesUtils.mkdirs(grandchild));
+                    var grandchildPath = Path.of(grandchild);
+                    assertTrue(Files.exists(grandchildPath));
+                    assertTrue(Files.isDirectory(grandchildPath));
+                }
+            }
+
+            @Nested
+            @DisplayName("When path is null or blank")
+            class NullOrBlankPath {
+                @ParameterizedTest
+                @NullAndEmptySource
+                @ValueSource(strings = {" ", "  ", "\t", "\n", " \t\n "})
+                @DisplayName("Should return false")
+                void shouldReturnFalse(String path) {
+                    assertFalse(FilesUtils.mkdirs(path));
+                }
+            }
+
+            @Nested
+            @DisplayName("When creating single directory")
+            class SingleDirectory {
+                @Test
+                @DisplayName("Should create directory and return true")
+                void shouldCreateDirectory(@TempDir Path tempDir) {
+                    var newDir = tempDir.resolve("newdir").toString();
+
+                    assertTrue(FilesUtils.mkdirs(newDir));
+                    var newDirPath = Path.of(newDir);
+                    assertTrue(Files.exists(newDirPath));
+                    assertTrue(Files.isDirectory(newDirPath));
+                }
+
+                @Test
+                @DisplayName("Should return true when directory already exists")
+                void shouldReturnTrueWhenExists(@TempDir Path tempDir) throws IOException {
+                    var existingDir = tempDir.resolve("existing");
+                    Files.createDirectory(existingDir);
+
+                    assertTrue(FilesUtils.mkdirs(existingDir.toString()));
+                    assertTrue(Files.exists(existingDir));
+                }
+            }
+
+            @Nested
+            @DisplayName("When path contains special characters")
+            class SpecialCharacters {
+                @ParameterizedTest
+                @ValueSource(strings = {"dir-with-dash", "dirWith_underscore", "dir.with.dots"})
+                @DisplayName("Should handle special characters in directory names")
+                void shouldHandleSpecialCharacters(String dirName, @TempDir Path tempDir) {
+                    var dirPath = tempDir.resolve(dirName).toString();
+
+                    assertTrue(FilesUtils.mkdirs(dirPath));
+                    assertTrue(Files.exists(Path.of(dirPath)));
+                }
+            }
         }
     }
 

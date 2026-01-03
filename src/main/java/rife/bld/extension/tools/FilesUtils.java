@@ -17,6 +17,7 @@
 package rife.bld.extension.tools;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -65,6 +66,74 @@ public final class FilesUtils {
     }
 
     /**
+     * Creates the directory named by the specified {@code File}, including any
+     * necessary but nonexistent parent directories.
+     *
+     * @param file The {@code File} object representing the directory to be created.
+     *             If {@code null}, this method returns {@code false}
+     * @return {@code true} if the directory was created successfully, or if it
+     * already exists; {@code false} if the directory could not be created
+     * or if the provided {@code file} is {@code null}
+     */
+    public static boolean mkdirs(File file) {
+        if (file == null) {
+            return false;
+        }
+        if (file.exists() && !file.isDirectory()) {
+            return false;
+        }
+        return file.exists() || file.mkdirs();
+    }
+
+    /**
+     * Creates the directory specified by the given {@code Path}, including any
+     * nonexistent parent directories as necessary.
+     *
+     * @param path The {@code Path} object representing the directory to be created.
+     *             If {@code null}, this method will return {@code false}
+     * @return {@code true} if the directory was created successfully or already
+     * exists; {@code false} if the directory could not be created, or if
+     * the provided {@code path} is {@code null}
+     */
+    public static boolean mkdirs(Path path) {
+        if (path == null) {
+            return false;
+        }
+        try {
+            Files.createDirectories(path);
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Creates the directory specified by the given path string, including any
+     * nonexistent parent directories as necessary.
+     *
+     * @param path The path string representing the directory to be created.
+     *             If {@code null} or blank, this method will return {@code false}
+     * @return {@code true} if the directory was created successfully or already
+     * exists; {@code false} if the directory could not be created, or if
+     * the provided {@code path} is {@code null} or blank
+     */
+    public static boolean mkdirs(String path) {
+        return TextUtils.isNotBlank(path) && mkdirs(Path.of(path));
+    }
+
+    /**
+     * Checks whether a file or directory does not exist at the specified path.
+     *
+     * @param path The file system path to check for non-existence.
+     * @return {@code true} if the path is {@code null} or no file or directory
+     * exists at the specified path; {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean notExists(String path) {
+        return TextUtils.isBlank(path) || !new File(path).exists();
+    }
+
+    /**
      * Checks if the specified file does not exist.
      *
      * @param file The file to check for non-existence
@@ -86,17 +155,5 @@ public final class FilesUtils {
      */
     public static boolean notExists(Path path) {
         return path == null || !Files.exists(path);
-    }
-
-    /**
-     * Checks whether a file or directory does not exist at the specified path.
-     *
-     * @param path The file system path to check for non-existence.
-     * @return {@code true} if the path is {@code null} or no file or directory
-     * exists at the specified path; {@code false} otherwise
-     * @since 1.0
-     */
-    public static boolean notExists(String path) {
-        return TextUtils.isBlank(path) || !new File(path).exists();
     }
 }
