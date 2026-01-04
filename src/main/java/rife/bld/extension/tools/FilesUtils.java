@@ -64,7 +64,7 @@ public final class FilesUtils {
     public static boolean canExecute(String path) {
         return TextUtils.isNotBlank(path) && canExecute(Path.of(path));
     }
-    
+
     /**
      * Checks if the specified file exists.
      *
@@ -99,6 +99,43 @@ public final class FilesUtils {
      */
     public static boolean exists(String path) {
         return TextUtils.isNotBlank(path) && Files.exists(Path.of(path));
+    }
+
+    /**
+     * Determines if the specified {@code File} is a directory.
+     *
+     * @param file The {@code File} object to be checked. If {@code null}, this method
+     *             will return {@code false}
+     * @return {@code true} if the file exists and is a directory; {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean isDirectory(File file) {
+        return file != null && file.isDirectory();
+    }
+
+    /**
+     * Determines if the specified {@code Path} represents an existing directory.
+     *
+     * @param path The {@code Path} object to be checked. If {@code null}, this method
+     *             returns {@code false}
+     * @return {@code true} if the path exists and is a directory; {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean isDirectory(Path path) {
+        return path != null && Files.isDirectory(path);
+    }
+
+    /**
+     * Determines if the specified path string represents an existing directory.
+     *
+     * @param path The path string to be checked. If {@code null} or empty, this method
+     *             will return {@code false}
+     * @return {@code true} if the specified path exists and is a directory;
+     * {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean isDirectory(String path) {
+        return TextUtils.isNotBlank(path) && Files.isDirectory(Path.of(path));
     }
 
     /**
