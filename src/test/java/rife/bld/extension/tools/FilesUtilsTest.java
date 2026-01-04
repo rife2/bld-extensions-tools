@@ -29,111 +29,425 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SuppressWarnings({"PMD.AvoidDuplicateLiterals", "ConstantValue"})
 class FilesUtilsTest {
     @Nested
-    @DisplayName("exists(File) tests")
-    class ExistsFileTests {
-        @TempDir
-        Path tempDir;
+    @DisplayName("canExecute(...) Tests")
+    class CanExecuteTests {
+        @Nested
+        @DisplayName("canExecute(File)")
+        class CanExecuteFileTest {
+            @Test
+            @DisplayName("should return false for directory")
+            void shouldReturnFalseForDirectory(@TempDir Path tempDir) {
+                var dir = tempDir.toFile();
+                assertFalse(FilesUtils.canExecute(dir));
+            }
 
-        @TempDir
-        Path tempFile;
+            @Test
+            @DisplayName("should return false for non-executable file")
+            void shouldReturnFalseForNonExecutableFile(@TempDir Path tempDir) throws IOException {
+                var file = tempDir.resolve("test.txt").toFile();
+                assertTrue(file.createNewFile());
+                assertTrue(file.setExecutable(false));
+                assertFalse(FilesUtils.canExecute(file));
+            }
 
-        @Test
-        @DisplayName("should return false when file does not exist")
-        void shouldReturnFalseWhenFileDoesNotExist() {
-            var nonExistentFile = new File(tempDir.toFile(), "nonexistent.txt");
-            var result = FilesUtils.exists(nonExistentFile);
-            assertFalse(result);
+            @Test
+            @DisplayName("should return false for non-existent file")
+            void shouldReturnFalseForNonExistentFile() {
+                var file = new File("non-existent-file-12345.txt");
+                assertFalse(FilesUtils.canExecute(file));
+            }
+
+            @ParameterizedTest
+            @NullSource
+            @DisplayName("should return false for null file")
+            void shouldReturnFalseForNullFile(File file) {
+                assertFalse(FilesUtils.canExecute(file));
+            }
+
+            @Test
+            @DisplayName("should return true for executable file")
+            void shouldReturnTrueForExecutableFile(@TempDir Path tempDir) throws IOException {
+                var file = tempDir.resolve("test.sh").toFile();
+                assertTrue(file.createNewFile());
+                assertTrue(file.setExecutable(true));
+                assertTrue(FilesUtils.canExecute(file));
+            }
+
+            @Test
+            @DisplayName("should return true for executable file with POSIX permissions")
+            void shouldReturnTrueForExecutableFileWithPosixPermissions(@TempDir Path tempDir) throws IOException {
+                var filePath = tempDir.resolve("script.sh");
+                Files.createFile(filePath);
+
+                try {
+                    var permissions = Set.of(
+                            PosixFilePermission.OWNER_READ,
+                            PosixFilePermission.OWNER_WRITE,
+                            PosixFilePermission.OWNER_EXECUTE
+                    );
+                    Files.setPosixFilePermissions(filePath, permissions);
+                    assertTrue(FilesUtils.canExecute(filePath.toFile()));
+                } catch (UnsupportedOperationException e) {
+                    // POSIX not supported on this file system (e.g., Windows)
+                    var file = filePath.toFile();
+                    assertTrue(file.setExecutable(true));
+                    assertTrue(FilesUtils.canExecute(file));
+                }
+            }
         }
 
-        @Test
-        @DisplayName("should return false when file is null")
-        void shouldReturnFalseWhenFileIsNull() {
-            var result = FilesUtils.exists((File) null);
-            assertFalse(result);
+        @Nested
+        @DisplayName("canExecute(Path)")
+        class CanExecutePathTest {
+            @Test
+            @DisplayName("should handle symbolic links to executable files")
+            void shouldHandleSymbolicLinksToExecutableFiles(@TempDir Path tempDir) throws IOException {
+                var targetFile = tempDir.resolve("target.sh");
+                Files.createFile(targetFile);
+
+                try {
+                    var permissions = Set.of(
+                            PosixFilePermission.OWNER_READ,
+                            PosixFilePermission.OWNER_WRITE,
+                            PosixFilePermission.OWNER_EXECUTE
+                    );
+                    Files.setPosixFilePermissions(targetFile, permissions);
+
+                    var symlink = tempDir.resolve("link.sh");
+                    Files.createSymbolicLink(symlink, targetFile);
+
+                    assertTrue(FilesUtils.canExecute(symlink));
+                } catch (UnsupportedOperationException e) {
+                    // Symbolic links or POSIX not supported on this file system
+                    var ignored = targetFile.toFile().setExecutable(true);
+                }
+            }
+
+            @Test
+            @DisplayName("should return false for directory")
+            void shouldReturnFalseForDirectory(@TempDir Path tempDir) {
+                assertFalse(FilesUtils.canExecute(tempDir));
+            }
+
+            @Test
+            @DisplayName("should return false for non-executable file")
+            void shouldReturnFalseForNonExecutableFile(@TempDir Path tempDir) throws IOException {
+                var path = tempDir.resolve("test.txt");
+                Files.createFile(path);
+
+                try {
+                    var permissions = Set.of(
+                            PosixFilePermission.OWNER_READ,
+                            PosixFilePermission.OWNER_WRITE
+                    );
+                    Files.setPosixFilePermissions(path, permissions);
+                } catch (UnsupportedOperationException e) {
+                    // POSIX not supported, use File API
+                    var ignored = path.toFile().setExecutable(false);
+                }
+
+                assertFalse(FilesUtils.canExecute(path));
+            }
+
+            @Test
+            @DisplayName("should return false for non-existent path")
+            void shouldReturnFalseForNonExistentPath() {
+                var path = Path.of("non-existent-file-12345.txt");
+                assertFalse(FilesUtils.canExecute(path));
+            }
+
+            @ParameterizedTest
+            @NullSource
+            @DisplayName("should return false for null path")
+            void shouldReturnFalseForNullPath(Path path) {
+                assertFalse(FilesUtils.canExecute(path));
+            }
+
+            @Test
+            @DisplayName("should return true for executable file")
+            void shouldReturnTrueForExecutableFile(@TempDir Path tempDir) throws IOException {
+                var path = tempDir.resolve("test.sh");
+                Files.createFile(path);
+
+                try {
+                    var permissions = Set.of(
+                            PosixFilePermission.OWNER_READ,
+                            PosixFilePermission.OWNER_WRITE,
+                            PosixFilePermission.OWNER_EXECUTE
+                    );
+                    Files.setPosixFilePermissions(path, permissions);
+                } catch (UnsupportedOperationException e) {
+                    // POSIX not supported, use File API
+                    var ignored = path.toFile().setExecutable(true);
+                }
+
+                assertTrue(FilesUtils.canExecute(path));
+            }
+
+            @Test
+            @DisplayName("should return true for system executable")
+            void shouldReturnTrueForSystemExecutable() {
+                // Test with a system executable that should exist on most systems
+                String executable = System.getProperty("os.name").toLowerCase().contains("win")
+                        ? "C:\\Windows\\System32\\cmd.exe"
+                        : "/bin/sh";
+
+                var path = Path.of(executable);
+                if (Files.exists(path)) {
+                    assertTrue(FilesUtils.canExecute(path));
+                }
+            }
         }
 
-        @Test
-        @DisplayName("should return true when file exists")
-        void shouldReturnTrueWhenFileExists() {
-            var existingFile = tempFile.toFile();
-            var result = FilesUtils.exists(existingFile);
-            assertTrue(result);
+        @Nested
+        @DisplayName("canExecute(String)")
+        class CanExecuteStringTest {
+            @Test
+            @DisplayName("should return false for blank string")
+            void shouldReturnFalseForBlankString() {
+                assertFalse(FilesUtils.canExecute(""));
+                assertFalse(FilesUtils.canExecute("   "));
+            }
+
+            @Test
+            @DisplayName("should return false for directory")
+            void shouldReturnFalseForDirectory(@TempDir Path tempDir) {
+                assertFalse(FilesUtils.canExecute(tempDir.toString()));
+            }
+
+            @Test
+            @DisplayName("should return false for non-executable file")
+            void shouldReturnFalseForNonExecutableFile(@TempDir Path tempDir) throws IOException {
+                var path = tempDir.resolve("test.txt");
+                Files.createFile(path);
+
+                try {
+                    var permissions = Set.of(
+                            PosixFilePermission.OWNER_READ,
+                            PosixFilePermission.OWNER_WRITE
+                    );
+                    Files.setPosixFilePermissions(path, permissions);
+                } catch (UnsupportedOperationException e) {
+                    // POSIX not supported, use File API
+                    var ignored = path.toFile().setExecutable(false);
+                }
+
+                assertFalse(FilesUtils.canExecute(path.toString()));
+            }
+
+            @Test
+            @DisplayName("should return false for non-existent path")
+            void shouldReturnFalseForNonExistentPath() {
+                assertFalse(FilesUtils.canExecute("non-existent-file-12345.txt"));
+            }
+
+            @ParameterizedTest
+            @NullSource
+            @DisplayName("should return false for null string")
+            void shouldReturnFalseForNullString(String path) {
+                assertFalse(FilesUtils.canExecute(path));
+            }
+
+            @Test
+            @DisplayName("should return true for executable file")
+            void shouldReturnTrueForExecutableFile(@TempDir Path tempDir) throws IOException {
+                var path = tempDir.resolve("test.sh");
+                Files.createFile(path);
+
+                try {
+                    var permissions = Set.of(
+                            PosixFilePermission.OWNER_READ,
+                            PosixFilePermission.OWNER_WRITE,
+                            PosixFilePermission.OWNER_EXECUTE
+                    );
+                    Files.setPosixFilePermissions(path, permissions);
+                } catch (UnsupportedOperationException e) {
+                    // POSIX not supported, use File API
+                    var ignored = path.toFile().setExecutable(true);
+                }
+
+                assertTrue(FilesUtils.canExecute(path.toString()));
+            }
+
+            @Test
+            @DisplayName("should return true for system executable")
+            void shouldReturnTrueForSystemExecutable() {
+                // Test with a system executable that should exist on most systems
+                String executable = System.getProperty("os.name").toLowerCase().contains("win")
+                        ? "C:\\Windows\\System32\\cmd.exe"
+                        : "/bin/sh";
+
+                if (Files.exists(Path.of(executable))) {
+                    assertTrue(FilesUtils.canExecute(executable));
+                }
+            }
         }
     }
 
     @Nested
-    @DisplayName("exists(Path) tests")
-    class ExistsPathTests {
-        @TempDir
-        Path existingPath;
-        @TempDir
-        Path tempDir;
+    @DisplayName("exists(...) Tests")
+    class ExistsTests {
 
-        @Test
-        @DisplayName("should return false when path does not exist")
-        void shouldReturnFalseWhenPathDoesNotExist() {
-            var nonExistentPath = tempDir.resolve("nonexistent.txt");
-            var result = FilesUtils.exists(nonExistentPath);
-            assertFalse(result);
+        @Nested
+        @DisplayName("exists edge cases")
+        class ExistsEdgeCaseTests {
+            @ParameterizedTest
+            @NullSource
+            @DisplayName("exists(File) should handle null input")
+            void existsFileShouldHandleNull(File file) {
+                var result = FilesUtils.exists(file);
+                assertFalse(result);
+            }
+
+            @ParameterizedTest
+            @NullSource
+            @DisplayName("exists(Path) should handle null input")
+            void existsPathShouldHandleNull(Path path) {
+                var result = FilesUtils.exists(path);
+                assertFalse(result);
+            }
+
+            @ParameterizedTest
+            @ValueSource(strings = {"", " ", "   "})
+            @DisplayName("exists(String) should handle empty and whitespace strings")
+            void existsStringShouldHandleEmptyStrings(String path) {
+                var result = FilesUtils.exists(path);
+                assertFalse(result);
+            }
+
+            @ParameterizedTest
+            @NullSource
+            @DisplayName("exists(String) should handle null input")
+            void existsStringShouldHandleNull(String path) {
+                var result = FilesUtils.exists(path);
+                assertFalse(result);
+            }
         }
 
-        @Test
-        @DisplayName("should return false when path is null")
-        void shouldReturnFalseWhenPathIsNull() {
-            var result = FilesUtils.exists((Path) null);
-            assertFalse(result);
+        @Nested
+        @DisplayName("exists(File) tests")
+        class ExistsFileTests {
+            @TempDir
+            Path tempDir;
+
+            @TempDir
+            Path tempFile;
+
+            @Test
+            @DisplayName("should return false when file does not exist")
+            void shouldReturnFalseWhenFileDoesNotExist() {
+                var nonExistentFile = new File(tempDir.toFile(), "nonexistent.txt");
+                var result = FilesUtils.exists(nonExistentFile);
+                assertFalse(result);
+            }
+
+            @Test
+            @DisplayName("should return false when file is null")
+            void shouldReturnFalseWhenFileIsNull() {
+                var result = FilesUtils.exists((File) null);
+                assertFalse(result);
+            }
+
+            @Test
+            @DisplayName("should return true when file exists")
+            void shouldReturnTrueWhenFileExists() {
+                var existingFile = tempFile.toFile();
+                var result = FilesUtils.exists(existingFile);
+                assertTrue(result);
+            }
         }
 
-        @Test
-        @DisplayName("should return true when path exists")
-        void shouldReturnTrueWhenPathExists() {
-            var result = FilesUtils.exists(existingPath);
-            assertTrue(result);
+        @Nested
+        @DisplayName("exists(Path) tests")
+        class ExistsPathTests {
+            @TempDir
+            Path existingPath;
+            @TempDir
+            Path tempDir;
+
+            @Test
+            @DisplayName("should return false when path does not exist")
+            void shouldReturnFalseWhenPathDoesNotExist() {
+                var nonExistentPath = tempDir.resolve("nonexistent.txt");
+                var result = FilesUtils.exists(nonExistentPath);
+                assertFalse(result);
+            }
+
+            @Test
+            @DisplayName("should return false when path is null")
+            void shouldReturnFalseWhenPathIsNull() {
+                var result = FilesUtils.exists((Path) null);
+                assertFalse(result);
+            }
+
+            @Test
+            @DisplayName("should return true when path exists")
+            void shouldReturnTrueWhenPathExists() {
+                var result = FilesUtils.exists(existingPath);
+                assertTrue(result);
+            }
         }
-    }
 
-    @Nested
-    @DisplayName("exists(String) tests")
-    class ExistsStringTests {
-        @TempDir
-        Path existingPath;
-        @TempDir
-        Path tempDir;
+        @Nested
+        @DisplayName("exists(String) tests")
+        class ExistsStringTests {
+            @TempDir
+            Path existingPath;
+            @TempDir
+            Path tempDir;
 
-        @Test
-        @DisplayName("should return false when string path does not exist")
-        void shouldReturnFalseWhenStringPathDoesNotExist() {
-            var nonExistentPath = tempDir.resolve("nonexistent.txt").toString();
-            var result = FilesUtils.exists(nonExistentPath);
-            assertFalse(result);
-        }
+            @Test
+            @DisplayName("should return false when string path does not exist")
+            void shouldReturnFalseWhenStringPathDoesNotExist() {
+                var nonExistentPath = tempDir.resolve("nonexistent.txt").toString();
+                var result = FilesUtils.exists(nonExistentPath);
+                assertFalse(result);
+            }
 
-        @Test
-        @DisplayName("should return false when string path is null")
-        void shouldReturnFalseWhenStringPathIsNull() {
-            var result = FilesUtils.exists((String) null);
-            assertFalse(result);
-        }
+            @Test
+            @DisplayName("should return false when string path is null")
+            void shouldReturnFalseWhenStringPathIsNull() {
+                var result = FilesUtils.exists((String) null);
+                assertFalse(result);
+            }
 
-        @Test
-        @DisplayName("should return true when string path exists")
-        void shouldReturnTrueWhenStringPathExists() {
-            var result = FilesUtils.exists(existingPath.toString());
-            assertTrue(result);
+            @Test
+            @DisplayName("should return true when string path exists")
+            void shouldReturnTrueWhenStringPathExists() {
+                var result = FilesUtils.exists(existingPath.toString());
+                assertTrue(result);
+            }
         }
     }
 
     @Nested
     @DisplayName("Make Directory Tests")
     class MakeDirectoryTests {
+
         @TempDir
         Path tempDir;
+
+        @Test
+        @DisplayName("mkdirs File and Path versions have consistent behavior")
+        void mkdirsFileAndPathVersionsAreConsistent() {
+            var path = tempDir.resolve("consistent/test/dir");
+            var file = path.toFile();
+
+            var pathResult = FilesUtils.mkdirs(path);
+            var fileResult = FilesUtils.mkdirs(file);
+
+            assertEquals(pathResult, fileResult);
+            assertTrue(Files.exists(path));
+            assertTrue(file.exists());
+        }
 
         @Test
         @DisplayName("mkdirs(File) with existing directory returns true")
@@ -202,20 +516,6 @@ class FilesUtilsTest {
             assertFalse(FilesUtils.mkdirs(path));
         }
 
-        @Test
-        @DisplayName("mkdirs File and Path versions have consistent behavior")
-        void mkdirsFileAndPathVersionsAreConsistent() {
-            var path = tempDir.resolve("consistent/test/dir");
-            var file = path.toFile();
-
-            var pathResult = FilesUtils.mkdirs(path);
-            var fileResult = FilesUtils.mkdirs(file);
-
-            assertEquals(pathResult, fileResult);
-            assertTrue(Files.exists(path));
-            assertTrue(file.exists());
-        }
-
         @Nested
         @DisplayName("mkdirs(String) Tests")
         class MkdirsStringTest {
@@ -232,6 +532,7 @@ class FilesUtilsTest {
                     assertTrue(Files.exists(absolutePath));
                     assertTrue(Files.isDirectory(absolutePath));
                 }
+
             }
 
             @Nested
@@ -245,11 +546,13 @@ class FilesUtilsTest {
 
                     assertFalse(FilesUtils.mkdirs(filePath.toString()));
                 }
+
             }
 
             @Nested
             @DisplayName("When creating nested directories")
             class NestedDirectories {
+
                 @Test
                 @DisplayName("Should create deeply nested directories")
                 void shouldCreateDeeplyNestedDirectories(@TempDir Path tempDir) {
@@ -269,6 +572,7 @@ class FilesUtilsTest {
                     assertTrue(Files.exists(grandchildPath));
                     assertTrue(Files.isDirectory(grandchildPath));
                 }
+
             }
 
             @Nested
@@ -281,11 +585,13 @@ class FilesUtilsTest {
                 void shouldReturnFalse(String path) {
                     assertFalse(FilesUtils.mkdirs(path));
                 }
+
             }
 
             @Nested
             @DisplayName("When creating single directory")
             class SingleDirectory {
+
                 @Test
                 @DisplayName("Should create directory and return true")
                 void shouldCreateDirectory(@TempDir Path tempDir) {
@@ -306,6 +612,7 @@ class FilesUtilsTest {
                     assertTrue(FilesUtils.mkdirs(existingDir.toString()));
                     assertTrue(Files.exists(existingDir));
                 }
+
             }
 
             @Nested
@@ -322,168 +629,147 @@ class FilesUtilsTest {
                 }
             }
         }
+
     }
 
     @Nested
-    @DisplayName("Parameterized tests for edge cases")
-    class ParameterizedEdgeCaseTests {
-        @ParameterizedTest
-        @NullSource
-        @DisplayName("exists(File) should handle null input")
-        void existsFileShouldHandleNull(File file) {
-            var result = FilesUtils.exists(file);
-            assertFalse(result);
+    @DisplayName("notExists(...) Tests")
+    class NotExistsTests {
+        @Nested
+        @DisplayName("notExists edge cases")
+        class NotExistsEdgeCaseTests {
+            @ParameterizedTest
+            @NullSource
+            @DisplayName("notExists(File) should handle null input")
+            void notExistsFileShouldHandleNull(File file) {
+                var result = FilesUtils.notExists(file);
+                assertTrue(result);
+            }
+
+            @ParameterizedTest
+            @NullSource
+            @DisplayName("notExists(Path) should handle null input")
+            void notExistsPathShouldHandleNull(Path path) {
+                var result = FilesUtils.notExists(path);
+                assertTrue(result);
+            }
+
+            @ParameterizedTest
+            @ValueSource(strings = {"", " ", "   "})
+            @DisplayName("notExists(String) should handle empty and whitespace strings")
+            void notExistsStringShouldHandleEmptyStrings(String path) {
+                var result = FilesUtils.notExists(path);
+                assertTrue(result);
+            }
+
+            @ParameterizedTest
+            @NullSource
+            @DisplayName("notExists(String) should handle null input")
+            void notExistsStringShouldHandleNull(String path) {
+                var result = FilesUtils.notExists(path);
+                assertTrue(result);
+            }
         }
 
-        @ParameterizedTest
-        @NullSource
-        @DisplayName("exists(Path) should handle null input")
-        void existsPathShouldHandleNull(Path path) {
-            var result = FilesUtils.exists(path);
-            assertFalse(result);
+        @Nested
+        @DisplayName("notExists(File) tests")
+        class NotExistsFileTests {
+
+            @TempDir
+            Path tempDir;
+
+            @TempDir
+            Path tempFile;
+
+            @Test
+            @DisplayName("should return false when file exists")
+            void shouldReturnFalseWhenFileExists() {
+                var existingFile = tempFile.toFile();
+                var result = FilesUtils.notExists(existingFile);
+                assertFalse(result);
+            }
+
+            @Test
+            @DisplayName("should return true when file does not exist")
+            void shouldReturnTrueWhenFileDoesNotExist() {
+                var nonExistentFile = new File(tempDir.toFile(), "nonexistent.txt");
+                var result = FilesUtils.notExists(nonExistentFile);
+                assertTrue(result);
+            }
+
+            @Test
+            @DisplayName("should return true when file is null")
+            void shouldReturnTrueWhenFileIsNull() {
+                var result = FilesUtils.notExists((File) null);
+                assertTrue(result);
+            }
+
         }
 
-        @ParameterizedTest
-        @ValueSource(strings = {"", " ", "   "})
-        @DisplayName("exists(String) should handle empty and whitespace strings")
-        void existsStringShouldHandleEmptyStrings(String path) {
-            var result = FilesUtils.exists(path);
-            assertFalse(result);
+        @Nested
+        @DisplayName("notExists(Path) tests")
+        class NotExistsPathTests {
+            @TempDir
+            Path existingPath;
+
+            @TempDir
+            Path tempDir;
+
+            @Test
+            @DisplayName("should return false when path exists")
+            void shouldReturnFalseWhenPathExists() {
+                var result = FilesUtils.notExists(existingPath);
+                assertFalse(result);
+            }
+
+            @Test
+            @DisplayName("should return true when path does not exist")
+            void shouldReturnTrueWhenPathDoesNotExist() {
+                var nonExistentPath = tempDir.resolve("nonexistent.txt");
+                var result = FilesUtils.notExists(nonExistentPath);
+                assertTrue(result);
+            }
+
+            @Test
+            @DisplayName("should return true when path is null")
+            void shouldReturnTrueWhenPathIsNull() {
+                var result = FilesUtils.notExists((Path) null);
+                assertTrue(result);
+            }
+
         }
 
-        @ParameterizedTest
-        @NullSource
-        @DisplayName("exists(String) should handle null input")
-        void existsStringShouldHandleNull(String path) {
-            var result = FilesUtils.exists(path);
-            assertFalse(result);
+        @Nested
+        @DisplayName("notExists(String) tests")
+        class NotExistsStringTests {
+            @TempDir
+            Path existingPath;
+
+            @TempDir
+            Path tempDir;
+
+            @Test
+            @DisplayName("should return false when string path exists")
+            void shouldReturnFalseWhenStringPathExists() {
+                var result = FilesUtils.notExists(existingPath.toString());
+                assertFalse(result);
+            }
+
+            @Test
+            @DisplayName("should return true when string path does not exist")
+            void shouldReturnTrueWhenStringPathDoesNotExist() {
+                var nonExistentPath = tempDir.resolve("nonexistent.txt").toString();
+                var result = FilesUtils.notExists(nonExistentPath);
+                assertTrue(result);
+            }
+
+            @Test
+            @DisplayName("should return true when string path is null")
+            void shouldReturnTrueWhenStringPathIsNull() {
+                var result = FilesUtils.notExists((String) null);
+                assertTrue(result);
+            }
         }
 
-        @ParameterizedTest
-        @NullSource
-        @DisplayName("notExists(File) should handle null input")
-        void notExistsFileShouldHandleNull(File file) {
-            var result = FilesUtils.notExists(file);
-            assertTrue(result);
-        }
-
-        @ParameterizedTest
-        @NullSource
-        @DisplayName("notExists(Path) should handle null input")
-        void notExistsPathShouldHandleNull(Path path) {
-            var result = FilesUtils.notExists(path);
-            assertTrue(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {"", " ", "   "})
-        @DisplayName("notExists(String) should handle empty and whitespace strings")
-        void notExistsStringShouldHandleEmptyStrings(String path) {
-            var result = FilesUtils.notExists(path);
-            assertTrue(result);
-        }
-
-        @ParameterizedTest
-        @NullSource
-        @DisplayName("notExists(String) should handle null input")
-        void notExistsStringShouldHandleNull(String path) {
-            var result = FilesUtils.notExists(path);
-            assertTrue(result);
-        }
-    }
-
-    @Nested
-    @DisplayName("notExists(File) tests")
-    class notExistsFileTests {
-        @TempDir
-        Path tempDir;
-
-        @TempDir
-        Path tempFile;
-
-        @Test
-        @DisplayName("should return false when file exists")
-        void shouldReturnFalseWhenFileExists() {
-            var existingFile = tempFile.toFile();
-            var result = FilesUtils.notExists(existingFile);
-            assertFalse(result);
-        }
-
-        @Test
-        @DisplayName("should return true when file does not exist")
-        void shouldReturnTrueWhenFileDoesNotExist() {
-            var nonExistentFile = new File(tempDir.toFile(), "nonexistent.txt");
-            var result = FilesUtils.notExists(nonExistentFile);
-            assertTrue(result);
-        }
-
-        @Test
-        @DisplayName("should return true when file is null")
-        void shouldReturnTrueWhenFileIsNull() {
-            var result = FilesUtils.notExists((File) null);
-            assertTrue(result);
-        }
-    }
-
-    @Nested
-    @DisplayName("notExists(Path) tests")
-    class notExistsPathTests {
-        @TempDir
-        Path existingPath;
-        @TempDir
-        Path tempDir;
-
-        @Test
-        @DisplayName("should return false when path exists")
-        void shouldReturnFalseWhenPathExists() {
-            var result = FilesUtils.notExists(existingPath);
-            assertFalse(result);
-        }
-
-        @Test
-        @DisplayName("should return true when path does not exist")
-        void shouldReturnTrueWhenPathDoesNotExist() {
-            var nonExistentPath = tempDir.resolve("nonexistent.txt");
-            var result = FilesUtils.notExists(nonExistentPath);
-            assertTrue(result);
-        }
-
-        @Test
-        @DisplayName("should return true when path is null")
-        void shouldReturnTrueWhenPathIsNull() {
-            var result = FilesUtils.notExists((Path) null);
-            assertTrue(result);
-        }
-    }
-
-    @Nested
-    @DisplayName("notExists(String) tests")
-    class notExistsStringTests {
-        @TempDir
-        Path existingPath;
-        @TempDir
-        Path tempDir;
-
-        @Test
-        @DisplayName("should return false when string path exists")
-        void shouldReturnFalseWhenStringPathExists() {
-            var result = FilesUtils.notExists(existingPath.toString());
-            assertFalse(result);
-        }
-
-        @Test
-        @DisplayName("should return true when string path does not exist")
-        void shouldReturnTrueWhenStringPathDoesNotExist() {
-            var nonExistentPath = tempDir.resolve("nonexistent.txt").toString();
-            var result = FilesUtils.notExists(nonExistentPath);
-            assertTrue(result);
-        }
-
-        @Test
-        @DisplayName("should return true when string path is null")
-        void shouldReturnTrueWhenStringPathIsNull() {
-            var result = FilesUtils.notExists((String) null);
-            assertTrue(result);
-        }
     }
 }

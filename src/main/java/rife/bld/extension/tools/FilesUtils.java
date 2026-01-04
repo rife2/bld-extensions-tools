@@ -30,6 +30,42 @@ public final class FilesUtils {
     }
 
     /**
+     * Determines if the specified file exists, is a file, and is executable.
+     *
+     * @param file The file to be checked
+     * @return {@code true} if the file exists, is a file, and can be executed;
+     * {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean canExecute(File file) {
+        return file != null && file.isFile() && file.canExecute();
+    }
+
+    /**
+     * Determines if the specified path exists, is a regular file, and is executable.
+     *
+     * @param path The path to be checked
+     * @return {@code true} if the path exists, is a regular file, and can be executed;
+     * {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean canExecute(Path path) {
+        return path != null && Files.isRegularFile(path) && Files.isExecutable(path);
+    }
+
+    /**
+     * Determines if the file at the specified path string exists, is a regular file, and is executable.
+     *
+     * @param path The path string to be checked
+     * @return {@code true} if the path exists, is a regular file, and can be executed;
+     * {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean canExecute(String path) {
+        return TextUtils.isNotBlank(path) && canExecute(Path.of(path));
+    }
+    
+    /**
      * Checks if the specified file exists.
      *
      * @param file The file to check for existence
