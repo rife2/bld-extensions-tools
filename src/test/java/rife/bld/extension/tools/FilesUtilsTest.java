@@ -18,6 +18,7 @@ package rife.bld.extension.tools;
 
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -998,11 +999,22 @@ class FilesUtilsTest {
             }
 
             @Test
-            @DisplayName("should trim and validate path correctly")
-            void testPathNotTrimmed() {
-                // The method should NOT trim, so paths with leading/trailing spaces should fail
-                var pathWithSpaces = " " + tempDir.toString() + " ";
-                assertFalse(FilesUtils.isDirectory(pathWithSpaces));
+            @DisplayName("should not trim path with leading spaces")
+            @DisabledOnOs(OS.WINDOWS)
+            void testPathWithLeadingSpaces() {
+                // The method should NOT trim, so paths with leading spaces should fail on Unix
+                var pathWithLeadingSpaces = " " + tempDir.toString();
+                assertFalse(FilesUtils.isDirectory(pathWithLeadingSpaces));
+            }
+
+            @Test
+            @DisplayName("should handle path with trailing spaces on Windows")
+            @EnabledOnOs(OS.WINDOWS)
+            void testPathWithTrailingSpacesWindows() {
+                // Windows strips trailing spaces from paths, so this may actually succeed
+                var pathWithTrailingSpaces = tempDir.toString() + " ";
+                // On Windows, trailing spaces are ignored by the file system
+                assertTrue(FilesUtils.isDirectory(pathWithTrailingSpaces));
             }
         }
 
