@@ -781,7 +781,7 @@ class FilesUtilsTest {
     @Nested
     @DisplayName("IsDirectory Tests")
     @SuppressWarnings("PMD.UseUtilityClass")
-    class IsDirectoryTests {
+    class IsDirectoryTest {
         private static Path tempDir;
         private static Path tempFile;
         private static Path nonExistentPath;
@@ -999,22 +999,33 @@ class FilesUtilsTest {
             }
 
             @Test
-            @DisplayName("should not trim path with leading spaces")
-            @DisabledOnOs(OS.WINDOWS)
+            @DisplayName("should return false for path with leading spaces")
             void testPathWithLeadingSpaces() {
-                // The method should NOT trim, so paths with leading spaces should fail on Unix
+                // The method should NOT trim, so paths with leading spaces should fail
                 var pathWithLeadingSpaces = " " + tempDir.toString();
                 assertFalse(FilesUtils.isDirectory(pathWithLeadingSpaces));
             }
 
             @Test
-            @DisplayName("should handle path with trailing spaces on Windows")
-            @EnabledOnOs(OS.WINDOWS)
-            void testPathWithTrailingSpacesWindows() {
-                // Windows strips trailing spaces from paths, so this may actually succeed
+            @DisplayName("should return false for path with trailing spaces")
+            void testPathWithTrailingSpaces() {
+                // InvalidPathException is caught and returns false
                 var pathWithTrailingSpaces = tempDir.toString() + " ";
-                // On Windows, trailing spaces are ignored by the file system
-                assertTrue(FilesUtils.isDirectory(pathWithTrailingSpaces));
+                assertFalse(FilesUtils.isDirectory(pathWithTrailingSpaces));
+            }
+
+            @ParameterizedTest
+            @DisplayName("should return false for paths with invalid characters")
+            @ValueSource(strings = {
+                    "path/with\u0000null",
+                    "path<with>invalid",
+                    "path|with|pipes",
+                    "path\"with\"quotes"
+            })
+            @EnabledOnOs(OS.WINDOWS)
+            void testInvalidCharactersWindows(String invalidPath) {
+                // Windows-specific invalid characters should return false
+                assertFalse(FilesUtils.isDirectory(invalidPath));
             }
         }
 

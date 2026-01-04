@@ -131,11 +131,18 @@ public final class FilesUtils {
      * @param path The path string to be checked. If {@code null} or empty, this method
      *             will return {@code false}
      * @return {@code true} if the specified path exists and is a directory;
-     * {@code false} otherwise
+     * {@code false} otherwise (including when the path string is invalid)
      * @since 1.0
      */
     public static boolean isDirectory(String path) {
-        return TextUtils.isNotBlank(path) && Files.isDirectory(Path.of(path));
+        if (TextUtils.isBlank(path)) {
+            return false;
+        }
+        try {
+            return Files.isDirectory(Path.of(path));
+        } catch (java.nio.file.InvalidPathException e) {
+            return false;
+        }
     }
 
     /**
