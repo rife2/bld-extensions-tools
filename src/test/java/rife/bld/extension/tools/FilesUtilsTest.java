@@ -19,6 +19,8 @@ package rife.bld.extension.tools;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -51,6 +53,7 @@ class FilesUtilsTest {
 
             @Test
             @DisplayName("should return false for non-executable file")
+            @DisabledOnOs(OS.WINDOWS)
             void shouldReturnFalseForNonExecutableFile(@TempDir Path tempDir) throws IOException {
                 var file = tempDir.resolve("test.txt").toFile();
                 assertTrue(file.createNewFile());
@@ -139,6 +142,7 @@ class FilesUtilsTest {
 
             @Test
             @DisplayName("should return false for non-executable file")
+            @DisabledOnOs(OS.WINDOWS)
             void shouldReturnFalseForNonExecutableFile(@TempDir Path tempDir) throws IOException {
                 var path = tempDir.resolve("test.txt");
                 Files.createFile(path);
@@ -225,6 +229,7 @@ class FilesUtilsTest {
 
             @Test
             @DisplayName("should return false for non-executable file")
+            @DisabledOnOs(OS.WINDOWS)
             void shouldReturnFalseForNonExecutableFile(@TempDir Path tempDir) throws IOException {
                 var path = tempDir.resolve("test.txt");
                 Files.createFile(path);

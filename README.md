@@ -55,7 +55,7 @@ The following static methods are provided:
 |:------------------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------|
 | [`canExecute(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#canExecute(java.io.File))       | Check if a file is executable. |
 | [`canExecute(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#canExecute(java.nio.file.Path)) | Check if a file is exectuable. |
-| [`canExecute(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#canExecute(java.io.File))     | Check if a file is exectuable. |
+| [`canExecute(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#canExecute(java.lang.String)) | Check if a file is exectuable. |
 | [`exists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#exists(java.io.File))               | Check if a file exists.        |
 | [`exists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#exists(java.nio.file.Path))         | Check if a path exists.        |
 | [`exists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#exits(java.lang.String))          | Check if a file exists.        |
