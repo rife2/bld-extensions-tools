@@ -23,6 +23,7 @@ import java.util.function.Function;
  * System Utilities and Tools.
  */
 public final class SystemUtils {
+
     private static final String OS_NAME = getOSName(); // cached
 
     private SystemUtils() {
@@ -318,7 +319,7 @@ public final class SystemUtils {
 
     /**
      * Normalizes the given operating system name by converting it to lowercase
-     * using the English locale. If the input is null, an empty string is returned.
+     * using the English locale. If the input is {@code null}, an empty string is returned.
      *
      * @param osName The name of the operating system to normalize
      * @return A normalized, lowercase version of the operating system name, or an

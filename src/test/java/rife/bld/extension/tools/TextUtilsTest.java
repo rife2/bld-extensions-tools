@@ -25,13 +25,14 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DisplayName("TextUtils Tests")
+@DisplayName("Text Utils Tests")
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class TextUtilsTest {
 
     @Nested
     @DisplayName("isBlank(Object) Tests")
     class IsBlankObjectTests {
+
         @ParameterizedTest
         @ValueSource(ints = {0, 1, 42, -1})
         @DisplayName("should return false for non-null non-blank objects")
@@ -68,6 +69,7 @@ class TextUtilsTest {
     @Nested
     @DisplayName("isBlank() Tests")
     class IsBlankTests {
+
         @ParameterizedTest
         @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
         @DisplayName("should return false for non-blank strings")
@@ -89,6 +91,7 @@ class TextUtilsTest {
     @Nested
     @DisplayName("isBlank(String...) Tests")
     class IsBlankVarargsTests {
+
         @ParameterizedTest
         @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
         @DisplayName("should return false when all strings are not blank")
@@ -126,6 +129,7 @@ class TextUtilsTest {
     @Nested
     @DisplayName("isEmpty(Object) Tests")
     class IsEmptyObjectTests {
+
         @ParameterizedTest
         @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return false for non-empty string objects")
@@ -162,6 +166,7 @@ class TextUtilsTest {
     @Nested
     @DisplayName("isEmpty() Tests")
     class IsEmptyTests {
+
         @ParameterizedTest
         @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return false for non-empty strings")
@@ -183,6 +188,7 @@ class TextUtilsTest {
     @Nested
     @DisplayName("isEmpty(String...) Tests")
     class IsEmptyVarargsTests {
+
         @ParameterizedTest
         @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return false when all strings are not empty")
@@ -220,6 +226,7 @@ class TextUtilsTest {
     @Nested
     @DisplayName("isNotBlank(Object) Tests")
     class IsNotBlankObjectTests {
+
         @ParameterizedTest
         @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return false for empty or whitespace-only string objects")
@@ -256,6 +263,7 @@ class TextUtilsTest {
     @Nested
     @DisplayName("isNotBlank() Tests")
     class IsNotBlankTests {
+
         @ParameterizedTest
         @NullSource
         @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
@@ -277,6 +285,7 @@ class TextUtilsTest {
     @Nested
     @DisplayName("isNotBlank(String...) Tests")
     class IsNotBlankVarargsTests {
+
         @ParameterizedTest
         @NullSource
         @DisplayName("should return false for null array")
@@ -314,6 +323,7 @@ class TextUtilsTest {
     @Nested
     @DisplayName("isNotEmpty(Object) Tests")
     class IsNotEmptyObjectTests {
+
         @ParameterizedTest
         @ValueSource(strings = {""})
         @DisplayName("should return false for empty string object")
@@ -350,6 +360,7 @@ class TextUtilsTest {
     @Nested
     @DisplayName("isNotEmpty() Tests")
     class IsNotEmptyTests {
+
         @ParameterizedTest
         @NullSource
         @ValueSource(strings = {""})
@@ -371,6 +382,7 @@ class TextUtilsTest {
     @Nested
     @DisplayName("isNotEmpty(String...) Tests")
     class IsNotEmptyVarargsTests {
+
         @ParameterizedTest
         @NullSource
         @DisplayName("should return false for null array")

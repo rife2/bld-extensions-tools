@@ -25,6 +25,7 @@ import java.nio.file.Path;
  * Files and Paths Utilities and Tools.
  */
 public final class FilesUtils {
+
     private FilesUtils() {
         // no-op
     }

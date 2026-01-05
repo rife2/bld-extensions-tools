@@ -37,14 +37,18 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@DisplayName("Files Utils Tests")
 @SuppressWarnings({"PMD.AvoidDuplicateLiterals", "ConstantValue", "PMD.TestClassWithoutTestCases"})
 class FilesUtilsTest {
+
     @Nested
     @DisplayName("canExecute(...) Tests")
     class CanExecuteTests {
+
         @Nested
         @DisplayName("canExecute(File)")
         class CanExecuteFileTest {
+
             @Test
             @DisplayName("should return false for directory")
             void shouldReturnFalseForDirectory(@TempDir Path tempDir) {
@@ -111,6 +115,7 @@ class FilesUtilsTest {
         @Nested
         @DisplayName("canExecute(Path)")
         class CanExecutePathTest {
+
             @Test
             @DisplayName("should handle symbolic links to executable files")
             void shouldHandleSymbolicLinksToExecutableFiles(@TempDir Path tempDir) throws IOException {
@@ -215,6 +220,7 @@ class FilesUtilsTest {
         @Nested
         @DisplayName("canExecute(String)")
         class CanExecuteStringTest {
+
             @Test
             @DisplayName("should return false for blank string")
             void shouldReturnFalseForBlankString() {
@@ -305,6 +311,7 @@ class FilesUtilsTest {
         @Nested
         @DisplayName("exists edge cases")
         class ExistsEdgeCaseTests {
+
             @ParameterizedTest
             @NullSource
             @DisplayName("exists(File) should handle null input")
@@ -341,6 +348,7 @@ class FilesUtilsTest {
         @Nested
         @DisplayName("exists(File) tests")
         class ExistsFileTests {
+
             @TempDir
             Path tempDir;
 
@@ -374,6 +382,7 @@ class FilesUtilsTest {
         @Nested
         @DisplayName("exists(Path) tests")
         class ExistsPathTests {
+
             @TempDir
             Path existingPath;
             @TempDir
@@ -405,6 +414,7 @@ class FilesUtilsTest {
         @Nested
         @DisplayName("exists(String) tests")
         class ExistsStringTests {
+
             @TempDir
             Path existingPath;
             @TempDir
@@ -430,6 +440,321 @@ class FilesUtilsTest {
             void shouldReturnTrueWhenStringPathExists() {
                 var result = FilesUtils.exists(existingPath.toString());
                 assertTrue(result);
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("IsDirectory Tests")
+    @SuppressWarnings("PMD.UseUtilityClass")
+    class IsDirectoryTest {
+
+        private static Path nonExistentPath;
+        private static Path tempDir;
+        private static Path tempFile;
+
+        @BeforeAll
+        static void setUpAll() throws IOException {
+            var baseDir = Files.createTempDirectory("filesutils-test");
+            tempDir = Files.createDirectory(baseDir.resolve("test-directory"));
+            tempFile = Files.createFile(baseDir.resolve("test-file.txt"));
+            nonExistentPath = baseDir.resolve("non-existent");
+        }
+
+        @AfterAll
+        static void tearDownAll() throws IOException {
+            if (tempFile != null && Files.exists(tempFile)) {
+                Files.delete(tempFile);
+            }
+            if (tempDir != null && Files.exists(tempDir)) {
+                Files.delete(tempDir);
+            }
+            if (tempDir != null && tempDir.getParent() != null) {
+                Files.delete(tempDir.getParent());
+            }
+        }
+
+        @Nested
+        @DisplayName("Cross-type consistency tests")
+        class ConsistencyTests {
+
+            @Test
+            @DisplayName("File, Path, and String should return same result for directory")
+            void testDirectoryConsistency() {
+                var file = tempDir.toFile();
+                var path = tempDir;
+                var string = tempDir.toString();
+
+                boolean fileResult = FilesUtils.isDirectory(file);
+                boolean pathResult = FilesUtils.isDirectory(path);
+                boolean stringResult = FilesUtils.isDirectory(string);
+
+                assertTrue(fileResult);
+                assertTrue(pathResult);
+                assertTrue(stringResult);
+                assertEquals(fileResult, pathResult);
+                assertEquals(pathResult, stringResult);
+            }
+
+            @Test
+            @DisplayName("File, Path, and String should return same result for regular file")
+            void testFileConsistency() {
+                var file = tempFile.toFile();
+                var path = tempFile;
+                var string = tempFile.toString();
+
+                boolean fileResult = FilesUtils.isDirectory(file);
+                boolean pathResult = FilesUtils.isDirectory(path);
+                boolean stringResult = FilesUtils.isDirectory(string);
+
+                assertFalse(fileResult);
+                assertFalse(pathResult);
+                assertFalse(stringResult);
+                assertEquals(fileResult, pathResult);
+                assertEquals(pathResult, stringResult);
+            }
+
+            @Test
+            @DisplayName("File, Path, and String should return same result for non-existent")
+            void testNonExistentConsistency() {
+                var file = nonExistentPath.toFile();
+                var path = nonExistentPath;
+                var string = nonExistentPath.toString();
+
+                boolean fileResult = FilesUtils.isDirectory(file);
+                boolean pathResult = FilesUtils.isDirectory(path);
+                boolean stringResult = FilesUtils.isDirectory(string);
+
+                assertFalse(fileResult);
+                assertFalse(pathResult);
+                assertFalse(stringResult);
+                assertEquals(fileResult, pathResult);
+                assertEquals(pathResult, stringResult);
+            }
+        }
+
+        @Nested
+        @DisplayName("isDirectory(File) tests")
+        class FileTests {
+
+            @Test
+            @DisplayName("should return true for existing directory")
+            void testExistingDirectory() {
+                var dir = tempDir.toFile();
+                assertTrue(FilesUtils.isDirectory(dir));
+            }
+
+            @Test
+            @DisplayName("should return true for nested directory")
+            void testNestedDirectory() throws IOException {
+                var nested = Files.createDirectory(tempDir.resolve("nested"));
+                try {
+                    assertTrue(FilesUtils.isDirectory(nested.toFile()));
+                } finally {
+                    Files.delete(nested);
+                }
+            }
+
+            @Test
+            @DisplayName("should return false for non-existent file")
+            void testNonExistentFile() {
+                var file = nonExistentPath.toFile();
+                assertFalse(FilesUtils.isDirectory(file));
+            }
+
+            @Test
+            @DisplayName("should return false when file is null")
+            void testNullFile() {
+                assertFalse(FilesUtils.isDirectory((File) null));
+            }
+
+            @Test
+            @DisplayName("should return false for regular file")
+            void testRegularFile() {
+                var file = tempFile.toFile();
+                assertFalse(FilesUtils.isDirectory(file));
+            }
+
+            @ParameterizedTest
+            @DisplayName("should handle system directories")
+            @ValueSource(strings = {".", ".."})
+            void testSystemDirectories(String path) {
+                var file = new File(path);
+                assertTrue(FilesUtils.isDirectory(file));
+            }
+        }
+
+        @Nested
+        @DisplayName("isDirectory(Path) tests")
+        class PathTests {
+
+            @Test
+            @DisplayName("should return true for existing directory")
+            void testExistingDirectory() {
+                assertTrue(FilesUtils.isDirectory(tempDir));
+            }
+
+            @Test
+            @DisplayName("should return true for nested directory")
+            void testNestedDirectory() throws IOException {
+                var nested = Files.createDirectory(tempDir.resolve("nested-path"));
+                try {
+                    assertTrue(FilesUtils.isDirectory(nested));
+                } finally {
+                    Files.delete(nested);
+                }
+            }
+
+            @Test
+            @DisplayName("should return false for non-existent path")
+            void testNonExistentPath() {
+                assertFalse(FilesUtils.isDirectory(nonExistentPath));
+            }
+
+            @Test
+            @DisplayName("should return false when path is null")
+            void testNullPath() {
+                assertFalse(FilesUtils.isDirectory((Path) null));
+            }
+
+            @Test
+            @DisplayName("should return false for regular file")
+            void testRegularFile() {
+                assertFalse(FilesUtils.isDirectory(tempFile));
+            }
+
+            @Test
+            @DisplayName("should handle symbolic link to directory")
+            @DisabledOnOs(OS.WINDOWS)
+            void testSymbolicLinkToDirectory() throws IOException {
+                var link = tempDir.getParent().resolve("link-to-dir");
+                try {
+                    Files.createSymbolicLink(link, tempDir);
+                    assertTrue(FilesUtils.isDirectory(link));
+                } finally {
+                    if (Files.exists(link)) {
+                        Files.delete(link);
+                    }
+                }
+            }
+
+            @ParameterizedTest
+            @DisplayName("should handle system paths")
+            @ValueSource(strings = {".", ".."})
+            void testSystemPaths(String pathStr) {
+                var path = Path.of(pathStr);
+                assertTrue(FilesUtils.isDirectory(path));
+            }
+        }
+
+        @Nested
+        @DisplayName("isDirectory(String) tests")
+        class StringTests {
+
+            static Stream<String> provideInvalidPaths() {
+                return Stream.of(
+                        "/non/existent/path",
+                        "invalid-directory-name-12345",
+                        tempFile.toString() + "/subpath"
+                );
+            }
+
+            @ParameterizedTest
+            @DisplayName("should return false for blank strings")
+            @NullAndEmptySource
+            @ValueSource(strings = {"  ", "\t", "\n", "   \t\n  "})
+            void testBlankStrings(String path) {
+                assertFalse(FilesUtils.isDirectory(path));
+            }
+
+            @Test
+            @DisplayName("should return true for existing directory")
+            void testExistingDirectory() {
+                assertTrue(FilesUtils.isDirectory(tempDir.toString()));
+            }
+
+            @ParameterizedTest
+            @DisplayName("should return false for paths with invalid characters")
+            @ValueSource(strings = {
+                    "path/with\u0000null",
+                    "path<with>invalid",
+                    "path|with|pipes",
+                    "path\"with\"quotes"
+            })
+            @EnabledOnOs(OS.WINDOWS)
+            void testInvalidCharactersWindows(String invalidPath) {
+                // Windows-specific invalid characters should return false
+                assertFalse(FilesUtils.isDirectory(invalidPath));
+            }
+
+            @ParameterizedTest
+            @DisplayName("should return false for invalid path strings")
+            @MethodSource("provideInvalidPaths")
+            void testInvalidPaths(String path) {
+                assertFalse(FilesUtils.isDirectory(path));
+            }
+
+            @Test
+            @DisplayName("should return true for nested directory")
+            void testNestedDirectory() throws IOException {
+                var nested = Files.createDirectory(tempDir.resolve("nested-string"));
+                try {
+                    assertTrue(FilesUtils.isDirectory(nested.toString()));
+                } finally {
+                    Files.delete(nested);
+                }
+            }
+
+            @Test
+            @DisplayName("should return false for non-existent path")
+            void testNonExistentPath() {
+                assertFalse(FilesUtils.isDirectory(nonExistentPath.toString()));
+            }
+
+            @Test
+            @DisplayName("should return false when string is null")
+            void testNullString() {
+                assertFalse(FilesUtils.isDirectory((String) null));
+            }
+
+            @Test
+            @DisplayName("should return false for path with leading spaces")
+            void testPathWithLeadingSpaces() {
+                // The method should NOT trim, so paths with leading spaces should fail
+                var pathWithLeadingSpaces = " " + tempDir.toString();
+                assertFalse(FilesUtils.isDirectory(pathWithLeadingSpaces));
+            }
+
+            @Test
+            @DisplayName("should handle path with special characters")
+            void testPathWithSpecialCharacters() throws IOException {
+                var specialDir = Files.createDirectory(tempDir.resolve("test-dir_123"));
+                try {
+                    assertTrue(FilesUtils.isDirectory(specialDir.toString()));
+                } finally {
+                    Files.delete(specialDir);
+                }
+            }
+
+            @Test
+            @DisplayName("should return false for path with trailing spaces")
+            void testPathWithTrailingSpaces() {
+                // InvalidPathException is caught and returns false
+                var pathWithTrailingSpaces = tempDir.toString() + " ";
+                assertFalse(FilesUtils.isDirectory(pathWithTrailingSpaces));
+            }
+
+            @Test
+            @DisplayName("should return false for regular file")
+            void testRegularFile() {
+                assertFalse(FilesUtils.isDirectory(tempFile.toString()));
+            }
+
+            @ParameterizedTest
+            @DisplayName("should handle system path strings")
+            @ValueSource(strings = {".", ".."})
+            void testSystemPathStrings(String path) {
+                assertTrue(FilesUtils.isDirectory(path));
             }
         }
     }
@@ -525,9 +850,11 @@ class FilesUtilsTest {
         @Nested
         @DisplayName("mkdirs(String) Tests")
         class MkdirsStringTest {
+
             @Nested
             @DisplayName("When using absolute paths")
             class AbsolutePaths {
+
                 @Test
                 @DisplayName("Should handle absolute path")
                 void shouldHandleAbsolutePath(@TempDir Path tempDir) {
@@ -544,6 +871,7 @@ class FilesUtilsTest {
             @Nested
             @DisplayName("When file exists at path")
             class FileExistsAtPath {
+
                 @Test
                 @DisplayName("Should return false when file exists at target path")
                 void shouldReturnFalseWhenFileExists(@TempDir Path tempDir) throws IOException {
@@ -584,6 +912,7 @@ class FilesUtilsTest {
             @Nested
             @DisplayName("When path is null or blank")
             class NullOrBlankPath {
+
                 @ParameterizedTest
                 @NullAndEmptySource
                 @ValueSource(strings = {" ", "  ", "\t", "\n", " \t\n "})
@@ -624,6 +953,7 @@ class FilesUtilsTest {
             @Nested
             @DisplayName("When path contains special characters")
             class SpecialCharacters {
+
                 @ParameterizedTest
                 @ValueSource(strings = {"dir-with-dash", "dirWith_underscore", "dir.with.dots"})
                 @DisplayName("Should handle special characters in directory names")
@@ -641,9 +971,11 @@ class FilesUtilsTest {
     @Nested
     @DisplayName("notExists(...) Tests")
     class NotExistsTests {
+
         @Nested
         @DisplayName("notExists edge cases")
         class NotExistsEdgeCaseTests {
+
             @ParameterizedTest
             @NullSource
             @DisplayName("notExists(File) should handle null input")
@@ -715,6 +1047,7 @@ class FilesUtilsTest {
         @Nested
         @DisplayName("notExists(Path) tests")
         class NotExistsPathTests {
+
             @TempDir
             Path existingPath;
 
@@ -748,6 +1081,7 @@ class FilesUtilsTest {
         @Nested
         @DisplayName("notExists(String) tests")
         class NotExistsStringTests {
+
             @TempDir
             Path existingPath;
 
@@ -774,316 +1108,6 @@ class FilesUtilsTest {
             void shouldReturnTrueWhenStringPathIsNull() {
                 var result = FilesUtils.notExists((String) null);
                 assertTrue(result);
-            }
-        }
-    }
-
-    @Nested
-    @DisplayName("IsDirectory Tests")
-    @SuppressWarnings("PMD.UseUtilityClass")
-    class IsDirectoryTest {
-        private static Path tempDir;
-        private static Path tempFile;
-        private static Path nonExistentPath;
-
-        @BeforeAll
-        static void setUpAll() throws IOException {
-            var baseDir = Files.createTempDirectory("filesutils-test");
-            tempDir = Files.createDirectory(baseDir.resolve("test-directory"));
-            tempFile = Files.createFile(baseDir.resolve("test-file.txt"));
-            nonExistentPath = baseDir.resolve("non-existent");
-        }
-
-        @AfterAll
-        static void tearDownAll() throws IOException {
-            if (tempFile != null && Files.exists(tempFile)) {
-                Files.delete(tempFile);
-            }
-            if (tempDir != null && Files.exists(tempDir)) {
-                Files.delete(tempDir);
-            }
-            if (tempDir != null && tempDir.getParent() != null) {
-                Files.delete(tempDir.getParent());
-            }
-        }
-
-        @Nested
-        @DisplayName("isDirectory(File) tests")
-        class FileTests {
-            @Test
-            @DisplayName("should return false when file is null")
-            void testNullFile() {
-                assertFalse(FilesUtils.isDirectory((File) null));
-            }
-
-            @Test
-            @DisplayName("should return true for existing directory")
-            void testExistingDirectory() {
-                var dir = tempDir.toFile();
-                assertTrue(FilesUtils.isDirectory(dir));
-            }
-
-            @Test
-            @DisplayName("should return false for regular file")
-            void testRegularFile() {
-                var file = tempFile.toFile();
-                assertFalse(FilesUtils.isDirectory(file));
-            }
-
-            @Test
-            @DisplayName("should return false for non-existent file")
-            void testNonExistentFile() {
-                var file = nonExistentPath.toFile();
-                assertFalse(FilesUtils.isDirectory(file));
-            }
-
-            @ParameterizedTest
-            @DisplayName("should handle system directories")
-            @ValueSource(strings = {".", ".."})
-            void testSystemDirectories(String path) {
-                var file = new File(path);
-                assertTrue(FilesUtils.isDirectory(file));
-            }
-
-            @Test
-            @DisplayName("should return true for nested directory")
-            void testNestedDirectory() throws IOException {
-                var nested = Files.createDirectory(tempDir.resolve("nested"));
-                try {
-                    assertTrue(FilesUtils.isDirectory(nested.toFile()));
-                } finally {
-                    Files.delete(nested);
-                }
-            }
-        }
-
-        @Nested
-        @DisplayName("isDirectory(Path) tests")
-        class PathTests {
-            @Test
-            @DisplayName("should return false when path is null")
-            void testNullPath() {
-                assertFalse(FilesUtils.isDirectory((Path) null));
-            }
-
-            @Test
-            @DisplayName("should return true for existing directory")
-            void testExistingDirectory() {
-                assertTrue(FilesUtils.isDirectory(tempDir));
-            }
-
-            @Test
-            @DisplayName("should return false for regular file")
-            void testRegularFile() {
-                assertFalse(FilesUtils.isDirectory(tempFile));
-            }
-
-            @Test
-            @DisplayName("should return false for non-existent path")
-            void testNonExistentPath() {
-                assertFalse(FilesUtils.isDirectory(nonExistentPath));
-            }
-
-            @ParameterizedTest
-            @DisplayName("should handle system paths")
-            @ValueSource(strings = {".", ".."})
-            void testSystemPaths(String pathStr) {
-                var path = Path.of(pathStr);
-                assertTrue(FilesUtils.isDirectory(path));
-            }
-
-            @Test
-            @DisplayName("should return true for nested directory")
-            void testNestedDirectory() throws IOException {
-                var nested = Files.createDirectory(tempDir.resolve("nested-path"));
-                try {
-                    assertTrue(FilesUtils.isDirectory(nested));
-                } finally {
-                    Files.delete(nested);
-                }
-            }
-
-            @Test
-            @DisplayName("should handle symbolic link to directory")
-            @DisabledOnOs(OS.WINDOWS)
-            void testSymbolicLinkToDirectory() throws IOException {
-                var link = tempDir.getParent().resolve("link-to-dir");
-                try {
-                    Files.createSymbolicLink(link, tempDir);
-                    assertTrue(FilesUtils.isDirectory(link));
-                } finally {
-                    if (Files.exists(link)) {
-                        Files.delete(link);
-                    }
-                }
-            }
-        }
-
-        @Nested
-        @DisplayName("isDirectory(String) tests")
-        class StringTests {
-            @Test
-            @DisplayName("should return false when string is null")
-            void testNullString() {
-                assertFalse(FilesUtils.isDirectory((String) null));
-            }
-
-            @ParameterizedTest
-            @DisplayName("should return false for blank strings")
-            @NullAndEmptySource
-            @ValueSource(strings = {"  ", "\t", "\n", "   \t\n  "})
-            void testBlankStrings(String path) {
-                assertFalse(FilesUtils.isDirectory(path));
-            }
-
-            @Test
-            @DisplayName("should return true for existing directory")
-            void testExistingDirectory() {
-                assertTrue(FilesUtils.isDirectory(tempDir.toString()));
-            }
-
-            @Test
-            @DisplayName("should return false for regular file")
-            void testRegularFile() {
-                assertFalse(FilesUtils.isDirectory(tempFile.toString()));
-            }
-
-            @Test
-            @DisplayName("should return false for non-existent path")
-            void testNonExistentPath() {
-                assertFalse(FilesUtils.isDirectory(nonExistentPath.toString()));
-            }
-
-            @ParameterizedTest
-            @DisplayName("should handle system path strings")
-            @ValueSource(strings = {".", ".."})
-            void testSystemPathStrings(String path) {
-                assertTrue(FilesUtils.isDirectory(path));
-            }
-
-            @Test
-            @DisplayName("should return true for nested directory")
-            void testNestedDirectory() throws IOException {
-                var nested = Files.createDirectory(tempDir.resolve("nested-string"));
-                try {
-                    assertTrue(FilesUtils.isDirectory(nested.toString()));
-                } finally {
-                    Files.delete(nested);
-                }
-            }
-
-            @ParameterizedTest
-            @DisplayName("should return false for invalid path strings")
-            @MethodSource("provideInvalidPaths")
-            void testInvalidPaths(String path) {
-                assertFalse(FilesUtils.isDirectory(path));
-            }
-
-            static Stream<String> provideInvalidPaths() {
-                return Stream.of(
-                        "/non/existent/path",
-                        "invalid-directory-name-12345",
-                        tempFile.toString() + "/subpath"
-                );
-            }
-
-            @Test
-            @DisplayName("should handle path with special characters")
-            void testPathWithSpecialCharacters() throws IOException {
-                var specialDir = Files.createDirectory(tempDir.resolve("test-dir_123"));
-                try {
-                    assertTrue(FilesUtils.isDirectory(specialDir.toString()));
-                } finally {
-                    Files.delete(specialDir);
-                }
-            }
-
-            @Test
-            @DisplayName("should return false for path with leading spaces")
-            void testPathWithLeadingSpaces() {
-                // The method should NOT trim, so paths with leading spaces should fail
-                var pathWithLeadingSpaces = " " + tempDir.toString();
-                assertFalse(FilesUtils.isDirectory(pathWithLeadingSpaces));
-            }
-
-            @Test
-            @DisplayName("should return false for path with trailing spaces")
-            void testPathWithTrailingSpaces() {
-                // InvalidPathException is caught and returns false
-                var pathWithTrailingSpaces = tempDir.toString() + " ";
-                assertFalse(FilesUtils.isDirectory(pathWithTrailingSpaces));
-            }
-
-            @ParameterizedTest
-            @DisplayName("should return false for paths with invalid characters")
-            @ValueSource(strings = {
-                    "path/with\u0000null",
-                    "path<with>invalid",
-                    "path|with|pipes",
-                    "path\"with\"quotes"
-            })
-            @EnabledOnOs(OS.WINDOWS)
-            void testInvalidCharactersWindows(String invalidPath) {
-                // Windows-specific invalid characters should return false
-                assertFalse(FilesUtils.isDirectory(invalidPath));
-            }
-        }
-
-        @Nested
-        @DisplayName("Cross-type consistency tests")
-        class ConsistencyTests {
-            @Test
-            @DisplayName("File, Path, and String should return same result for directory")
-            void testDirectoryConsistency() {
-                var file = tempDir.toFile();
-                var path = tempDir;
-                var string = tempDir.toString();
-
-                boolean fileResult = FilesUtils.isDirectory(file);
-                boolean pathResult = FilesUtils.isDirectory(path);
-                boolean stringResult = FilesUtils.isDirectory(string);
-
-                assertTrue(fileResult);
-                assertTrue(pathResult);
-                assertTrue(stringResult);
-                assertEquals(fileResult, pathResult);
-                assertEquals(pathResult, stringResult);
-            }
-
-            @Test
-            @DisplayName("File, Path, and String should return same result for regular file")
-            void testFileConsistency() {
-                var file = tempFile.toFile();
-                var path = tempFile;
-                var string = tempFile.toString();
-
-                boolean fileResult = FilesUtils.isDirectory(file);
-                boolean pathResult = FilesUtils.isDirectory(path);
-                boolean stringResult = FilesUtils.isDirectory(string);
-
-                assertFalse(fileResult);
-                assertFalse(pathResult);
-                assertFalse(stringResult);
-                assertEquals(fileResult, pathResult);
-                assertEquals(pathResult, stringResult);
-            }
-
-            @Test
-            @DisplayName("File, Path, and String should return same result for non-existent")
-            void testNonExistentConsistency() {
-                var file = nonExistentPath.toFile();
-                var path = nonExistentPath;
-                var string = nonExistentPath.toString();
-
-                boolean fileResult = FilesUtils.isDirectory(file);
-                boolean pathResult = FilesUtils.isDirectory(path);
-                boolean stringResult = FilesUtils.isDirectory(string);
-
-                assertFalse(fileResult);
-                assertFalse(pathResult);
-                assertFalse(stringResult);
-                assertEquals(fileResult, pathResult);
-                assertEquals(pathResult, stringResult);
             }
         }
     }

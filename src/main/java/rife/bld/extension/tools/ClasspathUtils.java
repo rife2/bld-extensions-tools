@@ -18,12 +18,15 @@ package rife.bld.extension.tools;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Classpath Utilities and Tools.
  */
 public final class ClasspathUtils {
+
     private ClasspathUtils() {
         // no-op
     }
@@ -62,6 +65,29 @@ public final class ClasspathUtils {
      */
     public static String joinClasspathJar(Collection<File> jars) {
         return jars.stream()
+                .map(File::getAbsolutePath)
+                .collect(Collectors.joining(File.pathSeparator));
+    }
+
+    /**
+     * Joins multiple collections of JAR file paths into a single classpath string using the system's
+     * path separator.
+     * <p>
+     * Each JAR file's absolute path from all provided collections is included in the resulting
+     * classpath string. Null collections are safely ignored.
+     *
+     * @param jars Variable number of {@link Collection}s of {@link File} objects representing the JAR
+     *             files to include in the classpath. Null collections are skipped. If all collections
+     *             are empty or null, an empty string is returned
+     * @return A classpath string where the absolute paths of all provided JAR files are joined
+     * by the system's path separator. If no valid JAR files are provided, an empty string is returned
+     * @since 1.0
+     */
+    @SafeVarargs
+    public static String joinClasspathJar(Collection<File>... jars) {
+        return Stream.of(jars)
+                .filter(Objects::nonNull)
+                .flatMap(Collection::stream)
                 .map(File::getAbsolutePath)
                 .collect(Collectors.joining(File.pathSeparator));
     }

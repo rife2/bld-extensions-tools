@@ -19,15 +19,16 @@ package rife.bld.extension.tools;
 import java.util.Collection;
 
 /**
- * Utility class for checking null values in objects and collections.
+ * Objects Utilities and Tools.
  */
 public final class ObjectsUtils {
+
     private ObjectsUtils() {
         // no-op
     }
 
     /**
-     * Checks if any of the provided objects is null.
+     * Checks if any of the provided objects are {@code null}.
      *
      * @param objects the objects to check
      * @return {@code true} if any object is {@code null}, {@code false} otherwise
@@ -46,7 +47,7 @@ public final class ObjectsUtils {
     }
 
     /**
-     * Checks if any element in the collection is null.
+     * Checks if any element in the collection is {@code null}.
      *
      * @param collection the collection to check
      * @return {@code true} if any element is {@code null}, {@code false} otherwise
@@ -65,7 +66,7 @@ public final class ObjectsUtils {
     }
 
     /**
-     * Checks if all provided objects are non-null.
+     * Checks if all provided objects are non-{@code null}.
      *
      * @param objects the objects to check
      * @return {@code true} if all objects are non-{@code null}, {@code false} otherwise
@@ -84,7 +85,7 @@ public final class ObjectsUtils {
     }
 
     /**
-     * Checks if all elements in the collection are non-null.
+     * Checks if all elements in the collection are non-{@code null}.
      *
      * @param collection the collection to check
      * @return {@code true} if all elements are non-{@code null}, {@code false} otherwise
@@ -103,7 +104,7 @@ public final class ObjectsUtils {
     }
 
     /**
-     * Checks if all provided objects are null.
+     * Checks if all provided objects are {@code null}.
      *
      * @param objects the objects to check
      * @return {@code true} if all objects are {@code null}, {@code false} otherwise
@@ -122,7 +123,7 @@ public final class ObjectsUtils {
     }
 
     /**
-     * Checks if all elements in the collection are null.
+     * Checks if all elements in the collection are {@code null}.
      *
      * @param collection the collection to check
      * @return {@code true} if all elements are {@code null}, {@code false} otherwise

@@ -20,6 +20,7 @@ package rife.bld.extension.tools;
  * Text Utilities and Tools.
  */
 public final class TextUtils {
+
     private TextUtils() {
         // no-op
     }
@@ -58,45 +59,6 @@ public final class TextUtils {
         }
         for (var str : strings) {
             if (!isBlank(str)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Checks if all strings are not {@code null}, not empty, and not whitespace-only.
-     *
-     * @param strings The strings to check
-     * @return {@code true} if all strings are not {@code null}, not empty, and not whitespace-only;
-     * {@code false} otherwise
-     * @since 1.0
-     */
-    public static boolean isNotBlank(String... strings) {
-        if (strings == null) {
-            return false;
-        }
-        for (var str : strings) {
-            if (isBlank(str)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Checks if all strings are not {@code null} and not empty.
-     *
-     * @param strings The strings to check
-     * @return {@code true} if all strings are not {@code null} and not empty; {@code false} otherwise
-     * @since 1.0
-     */
-    public static boolean isNotEmpty(String... strings) {
-        if (strings == null) {
-            return false;
-        }
-        for (var str : strings) {
-            if (isEmpty(str)) {
                 return false;
             }
         }
@@ -160,6 +122,26 @@ public final class TextUtils {
     }
 
     /**
+     * Checks if all strings are not {@code null}, not empty, and not whitespace-only.
+     *
+     * @param strings The strings to check
+     * @return {@code true} if all strings are not {@code null}, not empty, and not whitespace-only;
+     * {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean isNotBlank(String... strings) {
+        if (strings == null) {
+            return false;
+        }
+        for (var str : strings) {
+            if (isBlank(str)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Checks if an object is not {@code null}, not empty, and not whitespace-only.
      * <p>
      * If the object is not {@code null}, it will be converted to its string representation
@@ -185,6 +167,25 @@ public final class TextUtils {
      */
     public static boolean isNotBlank(String str) {
         return !isBlank(str);
+    }
+
+    /**
+     * Checks if all strings are not {@code null} and not empty.
+     *
+     * @param strings The strings to check
+     * @return {@code true} if all strings are not {@code null} and not empty; {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean isNotEmpty(String... strings) {
+        if (strings == null) {
+            return false;
+        }
+        for (var str : strings) {
+            if (isEmpty(str)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

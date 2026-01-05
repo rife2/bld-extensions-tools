@@ -22,6 +22,7 @@ import java.util.Collection;
  * Collection Utilities and Tools.
  */
 public final class CollectionUtils {
+
     private CollectionUtils() {
         // no-op
     }
@@ -68,7 +69,7 @@ public final class CollectionUtils {
     }
 
     /**
-     * Checks if any of the provided collections is not {@code null} and not empty.
+     * Checks if any of the provided collections are not {@code null} and not empty.
      *
      * @param collections The collections to check; can be {@code null} or contain {@code null} elements
      * @return {@code true} if any collection is not {@code null} and not empty; {@code false} if all are {@code null} or empty

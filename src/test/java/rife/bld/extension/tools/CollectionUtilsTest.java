@@ -12,12 +12,14 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DisplayName("CollectionUtils")
-@SuppressWarnings( "PMD.AvoidDuplicateLiterals")
+@DisplayName("Collection Utils Tests")
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class CollectionUtilsTest {
+
     @Nested
     @DisplayName("isEmpty()")
     class IsEmptyTest {
+
         static Stream<Arguments> emptyCollections() {
             return Stream.of(
                     Arguments.of(new ArrayList<>()),
@@ -56,31 +58,12 @@ class CollectionUtilsTest {
     @Nested
     @DisplayName("isEmpty(Collection<?>...)")
     class IsEmptyVarargsTest {
-        @Test
-        @DisplayName("should return true when all collections are empty")
-        void shouldReturnTrueWhenAllCollectionsAreEmpty() {
-            assertTrue(CollectionUtils.isEmpty(
-                    new ArrayList<>(),
-                    new HashSet<>(),
-                    Collections.emptyList()
-            ));
-        }
 
         @Test
-        @DisplayName("should return true when all collections are null")
-        void shouldReturnTrueWhenAllCollectionsAreNull() {
-            assertTrue(CollectionUtils.isEmpty(null, null, null));
-        }
-
-        @Test
-        @DisplayName("should return true when mix of null and empty collections")
-        void shouldReturnTrueWhenMixOfNullAndEmpty() {
-            assertTrue(CollectionUtils.isEmpty(
-                    null,
-                    new ArrayList<>(),
-                    null,
-                    Collections.emptySet()
-            ));
+        @DisplayName("should handle single collection")
+        void shouldHandleSingleCollection() {
+            assertTrue(CollectionUtils.isEmpty(new ArrayList<>()));
+            assertFalse(CollectionUtils.isEmpty(List.of("item")));
         }
 
         @Test
@@ -114,22 +97,43 @@ class CollectionUtilsTest {
         }
 
         @Test
-        @DisplayName("should return true when no collections provided")
-        void shouldReturnTrueWhenNoCollectionsProvided() {
-            assertTrue(CollectionUtils.isEmpty());
+        @DisplayName("should return true when all collections are empty")
+        void shouldReturnTrueWhenAllCollectionsAreEmpty() {
+            assertTrue(CollectionUtils.isEmpty(
+                    new ArrayList<>(),
+                    new HashSet<>(),
+                    Collections.emptyList()
+            ));
         }
 
         @Test
-        @DisplayName("should handle single collection")
-        void shouldHandleSingleCollection() {
-            assertTrue(CollectionUtils.isEmpty(new ArrayList<>()));
-            assertFalse(CollectionUtils.isEmpty(List.of("item")));
+        @DisplayName("should return true when all collections are null")
+        void shouldReturnTrueWhenAllCollectionsAreNull() {
+            assertTrue(CollectionUtils.isEmpty(null, null, null));
+        }
+
+        @Test
+        @DisplayName("should return true when mix of null and empty collections")
+        void shouldReturnTrueWhenMixOfNullAndEmpty() {
+            assertTrue(CollectionUtils.isEmpty(
+                    null,
+                    new ArrayList<>(),
+                    null,
+                    Collections.emptySet()
+            ));
+        }
+
+        @Test
+        @DisplayName("should return true when no collections provided")
+        void shouldReturnTrueWhenNoCollectionsProvided() {
+            assertTrue(CollectionUtils.isEmpty());
         }
     }
 
     @Nested
     @DisplayName("isNotEmpty()")
     class IsNotEmptyTest {
+
         static Stream<Arguments> emptyCollections() {
             return Stream.of(
                     Arguments.of(new ArrayList<>()),
@@ -168,6 +172,14 @@ class CollectionUtilsTest {
     @Nested
     @DisplayName("isNotEmpty(Collection<?>...)")
     class IsNotEmptyVarargsTest {
+
+        @Test
+        @DisplayName("should handle single collection")
+        void shouldHandleSingleCollection() {
+            assertFalse(CollectionUtils.isNotEmpty(new ArrayList<>()));
+            assertTrue(CollectionUtils.isNotEmpty(List.of("item")));
+        }
+
         @Test
         @DisplayName("should return false when all collections are empty")
         void shouldReturnFalseWhenAllCollectionsAreEmpty() {
@@ -193,6 +205,12 @@ class CollectionUtilsTest {
                     null,
                     Collections.emptySet()
             ));
+        }
+
+        @Test
+        @DisplayName("should return false when no collections provided")
+        void shouldReturnFalseWhenNoCollectionsProvided() {
+            assertFalse(CollectionUtils.isNotEmpty());
         }
 
         @Test
@@ -226,19 +244,6 @@ class CollectionUtilsTest {
         }
 
         @Test
-        @DisplayName("should return false when no collections provided")
-        void shouldReturnFalseWhenNoCollectionsProvided() {
-            assertFalse(CollectionUtils.isNotEmpty());
-        }
-
-        @Test
-        @DisplayName("should handle single collection")
-        void shouldHandleSingleCollection() {
-            assertFalse(CollectionUtils.isNotEmpty(new ArrayList<>()));
-            assertTrue(CollectionUtils.isNotEmpty(List.of("item")));
-        }
-
-        @Test
         @DisplayName("should return true when multiple collections are not empty")
         void shouldReturnTrueWhenMultipleCollectionsAreNotEmpty() {
             assertTrue(CollectionUtils.isNotEmpty(
@@ -252,6 +257,7 @@ class CollectionUtilsTest {
     @Nested
     @DisplayName("isEmpty() and isNotEmpty() logical consistency")
     class LogicalConsistencyTest {
+
         static Stream<Arguments> allCollectionStates() {
             return Stream.of(
                     Arguments.of((Collection<?>) null),
