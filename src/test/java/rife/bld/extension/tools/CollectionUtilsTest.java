@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullSource;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -38,6 +39,13 @@ class CollectionUtilsTest {
                     Arguments.of(new ArrayList<>(List.of("item"))),
                     Arguments.of(new HashSet<>(Set.of(42)))
             );
+        }
+
+        @ParameterizedTest
+        @DisplayName("should handle null collections")
+        @NullSource
+        void shouldHandleNullCollections(Collection<?>... collection) {
+            assertTrue(CollectionUtils.isEmpty(collection));
         }
 
         @ParameterizedTest
@@ -152,6 +160,13 @@ class CollectionUtilsTest {
                     Arguments.of(new ArrayList<>(List.of("item"))),
                     Arguments.of(new HashSet<>(Set.of(42)))
             );
+        }
+
+        @ParameterizedTest
+        @DisplayName("should handle null collections")
+        @NullSource
+        void shouldHandleNullCollections(Collection<?>... collection) {
+            assertFalse(CollectionUtils.isNotEmpty(collection));
         }
 
         @ParameterizedTest

@@ -206,7 +206,7 @@ class IOUtilsTest {
             @DisplayName("should return true for system executable")
             void shouldReturnTrueForSystemExecutable() {
                 // Test with a system executable that should exist on most systems
-                String executable = System.getProperty("os.name").toLowerCase().contains("win")
+                var executable = System.getProperty("os.name").toLowerCase().contains("win")
                         ? "C:\\Windows\\System32\\cmd.exe"
                         : "/bin/sh";
 
@@ -220,6 +220,12 @@ class IOUtilsTest {
         @Nested
         @DisplayName("canExecute(String)")
         class CanExecuteStringTest {
+
+            @Test
+            @DisplayName("should handle invalid char in path")
+            void shouldHandleInvalidCharInPath() {
+                assertFalse(IOUtils.canExecute("foo\0bar"));
+            }
 
             @Test
             @DisplayName("should return false for blank string")
@@ -307,6 +313,7 @@ class IOUtilsTest {
     @Nested
     @DisplayName("exists(...) Tests")
     class ExistsTests {
+
 
         @Nested
         @DisplayName("exists edge cases")
@@ -427,6 +434,13 @@ class IOUtilsTest {
                 var result = IOUtils.exists(nonExistentPath);
                 assertFalse(result);
             }
+
+            @Test
+            @DisplayName("should handle invalid char in path")
+            void shouldHandleInvalidCharInPath() {
+                assertFalse(IOUtils.exists("foo\0bar"));
+            }
+
 
             @Test
             @DisplayName("should return false when string path is null")
@@ -695,6 +709,14 @@ class IOUtilsTest {
             }
 
             @Test
+            @DisplayName("should handle invalid character in path")
+            @EnabledOnOs({OS.MAC, OS.LINUX})
+            void testInvalidCharInPath() {
+                assertFalse(IOUtils.isDirectory("foo\0bar"));
+            }
+
+
+            @Test
             @DisplayName("should return true for nested directory")
             void testNestedDirectory() throws IOException {
                 var nested = Files.createDirectory(tempDir.resolve("nested-string"));
@@ -953,6 +975,11 @@ class IOUtilsTest {
             @Nested
             @DisplayName("When path contains special characters")
             class SpecialCharacters {
+                @Test
+                @DisplayName("should handle invalid char in path")
+                void shouldHandleInvalidCharInPath() {
+                    assertFalse(IOUtils.mkdirs("foo\0bar"));
+                }
 
                 @ParameterizedTest
                 @ValueSource(strings = {"dir-with-dash", "dirWith_underscore", "dir.with.dots"})

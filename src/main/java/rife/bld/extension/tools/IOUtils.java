@@ -19,6 +19,7 @@ package rife.bld.extension.tools;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 
 /**
@@ -63,7 +64,11 @@ public final class IOUtils {
      * @since 1.0
      */
     public static boolean canExecute(String path) {
-        return TextUtils.isNotBlank(path) && canExecute(Path.of(path));
+        try {
+            return TextUtils.isNotBlank(path) && canExecute(Path.of(path));
+        } catch (InvalidPathException | SecurityException e) {
+            return false;
+        }
     }
 
     /**
@@ -99,7 +104,12 @@ public final class IOUtils {
      * @since 1.0
      */
     public static boolean exists(String path) {
-        return TextUtils.isNotBlank(path) && Files.exists(Path.of(path));
+        try {
+            return TextUtils.isNotBlank(path) && Files.exists(Path.of(path));
+        }
+        catch (InvalidPathException | SecurityException e) {
+            return false;
+        }
     }
 
     /**
@@ -141,7 +151,7 @@ public final class IOUtils {
         }
         try {
             return Files.isDirectory(Path.of(path));
-        } catch (java.nio.file.InvalidPathException e) {
+        } catch (InvalidPathException | SecurityException e) {
             return false;
         }
     }
@@ -199,7 +209,12 @@ public final class IOUtils {
      * the provided {@code path} is {@code null} or blank
      */
     public static boolean mkdirs(String path) {
-        return TextUtils.isNotBlank(path) && mkdirs(Path.of(path));
+        try {
+            return TextUtils.isNotBlank(path) && mkdirs(Path.of(path));
+        }
+        catch (InvalidPathException | SecurityException e) {
+            return false;
+        }
     }
 
     /**
