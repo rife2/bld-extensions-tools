@@ -22,11 +22,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Files and Paths Utilities and Tools.
+ * I/O Utilities and Tools.
  */
-public final class FilesUtils {
+public final class IOUtils {
 
-    private FilesUtils() {
+    private IOUtils() {
         // no-op
     }
 

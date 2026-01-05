@@ -13,19 +13,17 @@ This project provides a collection of tools used by various
 To use, include the following in your `bld` build file:
 
 ```java
-repositories =List.
-
-of(RIFE2_SNAPSHOTS, RIFE2_RELEASES);
+repositories = List.of(RIFE2_SNAPSHOTS, RIFE2_RELEASES);
 
 scope(test).include(
-    dependency("com.uwyn.rife2", "bld-extensions-tools",version(0, 9,0,"SNAPSHOT"))
+    dependency("com.uwyn.rife2", "bld-extensions-tools", version(0, 9,0,"SNAPSHOT"))
 );
 ```
 
 Please check the [documentation](https://rife2.github.io/bld-extensions-tools)
 for more information.
 
-## Classpath Utilities
+## Classpath Tools
 
 The following static methods are provided:
 
@@ -34,7 +32,7 @@ The following static methods are provided:
 | [`buildClasspath(String... path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathUtils.html#buildClasspath(java.lang.String...))               | Constructs a classpath string.                          |
 | [`joinClasspathJar(Collection<String> jars)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathUtils.html#joinClasspathJar(java.util.Collection)) | Joins a list of JAR file paths into a single classpath. |
 
-## Collection Utilities
+## Collection Tools
 
 The following static methods are provided:
 
@@ -45,31 +43,31 @@ The following static methods are provided:
 
 *NOTE:* All methods properly handle `null` collections.
 
-## Files Utilities
+## IO Tools
 
 The following static methods are provided:
 
 | Method                                                                                                                                            | Description                         |
 |:--------------------------------------------------------------------------------------------------------------------------------------------------|:------------------------------------|
-| [`canExecute(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#canExecute(java.io.File))         | Check if a file is executable.      |
-| [`canExecute(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#canExecute(java.nio.file.Path))   | Check if a file path is exectuable. |
-| [`canExecute(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#canExecute(java.lang.String))   | Check if a file path is exectuable. |
-| [`exists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#exists(java.io.File))                 | Check if a file exists.             |
-| [`exists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#exists(java.nio.file.Path))           | Check if a path exists.             |
-| [`exists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#exits(java.lang.String))            | Check if a path exists.             |
-| [`isDirectory(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#isDirectory(java.io.File))       | Check if a file is a directory.     |
-| [`isDirectory(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#isDirectory(java.nio.file.Path)) | Check if a path is a directory.     |
-| [`isDirectory(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#isDirectory(java.lang.String)) | Check if a path is a directory.     |
-| [`mkdirs(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#mkdirs(java.io.File))                 | Make directories.                   |
-| [`mkdirs(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#mkdirs(java.nio.file.Path))           | Make directories.                   |
-| [`mkdirs(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#mkdirs(java.lang.String))           | Make directories.                   |
-| [`notExists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#notExists(java.io.File))           | Check if a file exists.             |
-| [`notExists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#notExists(java.nio.file.Path))     | Check if a path exists.             |
-| [`notExists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/FilesUtils.html#notExits(java.lang.String))      | Check if a path exists.             |
+| [`canExecute(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#canExecute(java.io.File))         | Check if a file is executable.      |
+| [`canExecute(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#canExecute(java.nio.file.Path))   | Check if a file path is exectuable. |
+| [`canExecute(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#canExecute(java.lang.String))   | Check if a file path is exectuable. |
+| [`exists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#exists(java.io.File))                 | Check if a file exists.             |
+| [`exists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#exists(java.nio.file.Path))           | Check if a path exists.             |
+| [`exists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#exits(java.lang.String))            | Check if a path exists.             |
+| [`isDirectory(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#isDirectory(java.io.File))       | Check if a file is a directory.     |
+| [`isDirectory(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#isDirectory(java.nio.file.Path)) | Check if a path is a directory.     |
+| [`isDirectory(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#isDirectory(java.lang.String)) | Check if a path is a directory.     |
+| [`mkdirs(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#mkdirs(java.io.File))                 | Make directories.                   |
+| [`mkdirs(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#mkdirs(java.nio.file.Path))           | Make directories.                   |
+| [`mkdirs(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#mkdirs(java.lang.String))           | Make directories.                   |
+| [`notExists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#notExists(java.io.File))           | Check if a file exists.             |
+| [`notExists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#notExists(java.nio.file.Path))     | Check if a path exists.             |
+| [`notExists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#notExits(java.lang.String))      | Check if a path exists.             |
 
 *NOTE:* All methods properly handle `null` values
 
-## Objects Utilities
+## Objects Tools
 
 The following static methods are provided:
 
@@ -82,7 +80,7 @@ The following static methods are provided:
 | [`isNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isNull(java.lang.Object...))            | Checks if the provided objects are all `null`.        |
 | [`isNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isNull(java.util.Collection))       | Checks if the provided objects are all `null`.        | Description                         |
 |
-## System Utilities
+## System Tools
 
 The following static methods are provided:
 
@@ -99,7 +97,7 @@ The following static methods are provided:
 | [`isSolaris()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isSolaris()) | Determines if the current operating system is Solaris.                                                           |
 | [`isWindows()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isWindows()) | Determines if the current operating system is Windows.                                                           |
 
-## Text Utilities
+## Text Tools
 
 The following static methods are provided:
 

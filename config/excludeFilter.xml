@@ -6,7 +6,7 @@
         <Bug pattern="OCP_OVERLY_CONCRETE_COLLECTION_PARAMETER"/>
     </Match>
     <Match>
-        <Class name="rife.bld.extension.tools.FilesUtils"/>
+        <Class name="rife.bld.extension.tools.IOUtils"/>
         <Method name="notExists" param="java.lang.String"/>
         <Bug pattern="PATH_TRAVERSAL_IN"/>
     </Match>
