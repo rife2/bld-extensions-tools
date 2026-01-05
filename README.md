@@ -69,6 +69,19 @@ The following static methods are provided:
 
 *NOTE:* All methods properly handle `null` values
 
+## Objects Utilities
+
+The following static methods are provided:
+
+| Method                                                                                                                                                        | Description                                           |
+|:--------------------------------------------------------------------------------------------------------------------------------------------------------------|:------------------------------------------------------|
+| [`isAnyNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isAnyNull(java.lang.Object...))      | Checks if any of the provided objects are `null`.     |
+| [`isAnyNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isAnyNull(java.util.Collection)) | Checks if any of the provided objects are `null`.     |
+| [`isNotNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isNotNull(java.lang.Object...))      | Checks if any of the provided objects are not `null`. |
+| [`isNotNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isNotNull(java.util.Collection)) | Checks if any of the provided objects are not `null`. |
+| [`isNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isNull(java.lang.Object...))            | Checks if the provided objects are all `null`.        |
+| [`isNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isNull(java.util.Collection))       | Checks if the provided objects are all `null`.        | Description                         |
+|
 ## System Utilities
 
 The following static methods are provided:
