@@ -64,7 +64,7 @@ The following static methods are provided:
 | [`notExists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#notExists(java.io.File))                                            | Check if a file exists.                       |
 | [`notExists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#notExists(java.nio.file.Path))                                      | Check if a path exists.                       |
 | [`notExists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#notExits(java.lang.String))                                       | Check if a path exists.                       |
-| [`resolveFile(File base, String... segments)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#resolveFile(java.ioFile,java.lang.String...)) | Resolve a file with additional path segments. |
+| [`resolveFile(File base, String... segments)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#resolveFile(java.io.File,java.lang.String...)) | Resolve a file with additional path segments. |
 *NOTE:* All methods properly handle `null` values
 
 ## Objects Tools
@@ -80,6 +80,7 @@ The following static methods are provided:
 | [`isNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isNull(java.lang.Object...))            | Checks if the provided objects are all `null`.        |
 | [`isNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isNull(java.util.Collection))       | Checks if the provided objects are all `null`.        | Description                         |
 |
+
 ## System Tools
 
 The following static methods are provided:
@@ -113,3 +114,4 @@ The following static methods are provided:
 | [`isNotEmpty(String... strings str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotEmpty(java.lang.String...)) | Checks if strings are not empty. |
 
 *NOTE:* All methods properly handle `null` strings.
+

@@ -1222,7 +1222,7 @@ class IOUtilsTest {
                                 new String[]{"documents", "work", "report.txt"}, 5),
                         Arguments.of(new File("project"),
                                 new String[]{"src", "main", "java", "Main.java"}, 5),
-                        Arguments.of(new File("C:", "Program Files"),
+                        Arguments.of(Path.of("base", "path").toFile(),
                                 new String[]{"App", "config", "settings.xml"}, 5)
                 );
             }
