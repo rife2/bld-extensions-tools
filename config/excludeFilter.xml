@@ -6,8 +6,11 @@
         <Bug pattern="OCP_OVERLY_CONCRETE_COLLECTION_PARAMETER"/>
     </Match>
     <Match>
-        <Class name="rife.bld.extension.tools.IOUtils"/>
-        <Method name="notExists" param="java.lang.String"/>
+        <Or>
+            <Class name="rife.bld.extension.tools.IOUtils"/>
+            <Method name="notExists" param="java.lang.String"/>
+            <Method name="resolveFile"/>
+        </Or>
         <Bug pattern="PATH_TRAVERSAL_IN"/>
     </Match>
 </FindBugsFilter>

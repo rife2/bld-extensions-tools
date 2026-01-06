@@ -22,10 +22,7 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
-import org.junit.jupiter.params.provider.NullSource;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -428,19 +425,18 @@ class IOUtilsTest {
             Path tempDir;
 
             @Test
+            @DisplayName("should handle invalid char in path")
+            void shouldHandleInvalidCharInPath() {
+                assertFalse(IOUtils.exists("foo\0bar"));
+            }
+
+            @Test
             @DisplayName("should return false when string path does not exist")
             void shouldReturnFalseWhenStringPathDoesNotExist() {
                 var nonExistentPath = tempDir.resolve("nonexistent.txt").toString();
                 var result = IOUtils.exists(nonExistentPath);
                 assertFalse(result);
             }
-
-            @Test
-            @DisplayName("should handle invalid char in path")
-            void shouldHandleInvalidCharInPath() {
-                assertFalse(IOUtils.exists("foo\0bar"));
-            }
-
 
             @Test
             @DisplayName("should return false when string path is null")
@@ -687,6 +683,13 @@ class IOUtilsTest {
                 assertTrue(IOUtils.isDirectory(tempDir.toString()));
             }
 
+            @Test
+            @DisplayName("should handle invalid character in path")
+            @EnabledOnOs({OS.MAC, OS.LINUX})
+            void testInvalidCharInPath() {
+                assertFalse(IOUtils.isDirectory("foo\0bar"));
+            }
+
             @ParameterizedTest
             @DisplayName("should return false for paths with invalid characters")
             @ValueSource(strings = {
@@ -707,14 +710,6 @@ class IOUtilsTest {
             void testInvalidPaths(String path) {
                 assertFalse(IOUtils.isDirectory(path));
             }
-
-            @Test
-            @DisplayName("should handle invalid character in path")
-            @EnabledOnOs({OS.MAC, OS.LINUX})
-            void testInvalidCharInPath() {
-                assertFalse(IOUtils.isDirectory("foo\0bar"));
-            }
-
 
             @Test
             @DisplayName("should return true for nested directory")
@@ -975,6 +970,7 @@ class IOUtilsTest {
             @Nested
             @DisplayName("When path contains special characters")
             class SpecialCharacters {
+
                 @Test
                 @DisplayName("should handle invalid char in path")
                 void shouldHandleInvalidCharInPath() {
@@ -1135,6 +1131,239 @@ class IOUtilsTest {
             void shouldReturnTrueWhenStringPathIsNull() {
                 var result = IOUtils.notExists((String) null);
                 assertTrue(result);
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Resolve File Tests")
+    class ResolveFileTests {
+
+        @Nested
+        @DisplayName("When comparing with File constructor behavior")
+        class BehaviorConsistencyTests {
+
+            @Test
+            @DisplayName("should match behavior of nested File constructors")
+            void shouldMatchNestedFileConstructors() {
+                var base = new File("home", "user");
+                var result = IOUtils.resolveFile(base, "docs", "work", "file.txt");
+
+                var expected = new File(new File(new File(base, "docs"), "work"), "file.txt");
+                assertEquals(expected.getPath(), result.getPath());
+            }
+
+            @Test
+            @DisplayName("should not create actual file on filesystem")
+            void shouldNotCreateActualFile() {
+                var base = new File(System.getProperty("java.io.tmpdir"));
+                var uniqueName = "test-file-" + System.currentTimeMillis();
+                var result = IOUtils.resolveFile(base, uniqueName);
+
+                assertFalse(result.exists(), "File should not exist on filesystem");
+            }
+        }
+
+        @Nested
+        @DisplayName("When resolving paths with edge case segments")
+        class EdgeCaseSegmentsTests {
+
+            @Test
+            @DisplayName("should handle segments with dots for relative navigation")
+            void shouldHandleDotsInSegments() {
+                var base = new File("home", "user");
+                var result = IOUtils.resolveFile(base, "..", "other", "file.txt");
+
+                assertTrue(result.getPath().contains(".."));
+                assertTrue(result.getPath().contains("other"));
+            }
+
+            @Test
+            @DisplayName("should handle segments with special characters")
+            void shouldHandleSpecialCharacters() {
+                var base = new File("home", "user");
+                var result = IOUtils.resolveFile(base, "my-file", "name_with.dots", "file@2024");
+
+                assertTrue(result.getPath().contains("my-file"));
+                assertTrue(result.getPath().contains("name_with.dots"));
+                assertTrue(result.getPath().contains("file@2024"));
+            }
+
+            @Test
+            @DisplayName("should handle very long segment names")
+            void shouldHandleVeryLongSegmentNames() {
+                var base = new File("/home");
+                var longName = "a".repeat(255);
+                var result = IOUtils.resolveFile(base, longName);
+
+                assertTrue(result.getPath().contains(longName));
+            }
+
+            @ParameterizedTest
+            @ValueSource(strings = {"", "  ", "\t", "\n"})
+            @DisplayName("should handle whitespace and empty segments")
+            void shouldHandleWhitespaceSegments(String segment) {
+                var base = new File("home", "user");
+                var result = IOUtils.resolveFile(base, "before", segment, "after");
+
+                assertNotNull(result);
+                assertTrue(result.getPath().contains("before"));
+                assertTrue(result.getPath().contains("after"));
+            }
+        }
+
+        @Nested
+        @DisplayName("When resolving paths with multiple segments")
+        class MultipleSegmentsTests {
+
+            static Stream<Arguments> multipleSegmentProvider() {
+                return Stream.of(
+                        Arguments.of(new File("home", "user"),
+                                new String[]{"documents", "work", "report.txt"}, 5),
+                        Arguments.of(new File("project"),
+                                new String[]{"src", "main", "java", "Main.java"}, 5),
+                        Arguments.of(new File("C:", "Program Files"),
+                                new String[]{"App", "config", "settings.xml"}, 5)
+                );
+            }
+
+            @ParameterizedTest(name = "should resolve {1} segments correctly")
+            @MethodSource("multipleSegmentProvider")
+            @DisplayName("should append multiple segments in correct order")
+            void shouldAppendMultipleSegments(File basePath, String[] segments, int expectedDepth) {
+                var result = IOUtils.resolveFile(basePath, segments);
+
+                // Verify all segments appear in the path
+                for (String segment : segments) {
+                    assertTrue(result.getPath().contains(segment),
+                            () -> "Expected path to contain: " + segment + ", but was: " + result.getPath());
+                }
+
+                // Verify path depth
+                var separatorPattern = "\\".equals(File.separator) ? "\\\\" : File.separator;
+                var pathParts = result.getPath().split(separatorPattern);
+                assertTrue(pathParts.length >= expectedDepth,
+                        () -> "Expected at least " + expectedDepth + " path segments, but got: " + pathParts.length);
+            }
+
+            @Test
+            @DisplayName("should create deeply nested path structure")
+            void shouldCreateDeeplyNestedPath() {
+                var base = new File("root");
+                var result = IOUtils.resolveFile(base, "a", "b", "c", "d", "e", "f");
+
+                var separatorPattern = "\\".equals(File.separator) ? "\\\\" : File.separator;
+                var pathParts = result.getPath().split(separatorPattern);
+                assertTrue(pathParts.length >= 7, "Path should have at least 7 segments");
+            }
+        }
+
+        @Nested
+        @DisplayName("When resolving paths with no segments")
+        class NoSegmentsTests {
+
+            @Test
+            @DisplayName("should return equivalent path with empty varargs")
+            void shouldHandleEmptyVarargs() {
+                var base = new File("home", "user");
+                var result = IOUtils.resolveFile(base);
+
+                // When joining an empty array, should get base + empty string
+                var expected = new File(base, "");
+                assertEquals(expected.getPath(), result.getPath());
+            }
+
+            @Test
+            @DisplayName("should handle explicit empty array")
+            void shouldHandleExplicitEmptyArray() {
+                var base = new File("home", "user");
+                var emptySegments = new String[]{};
+                var result = IOUtils.resolveFile(base, emptySegments);
+
+                var expected = new File(base, "");
+                assertEquals(expected.getPath(), result.getPath());
+            }
+        }
+
+        @Nested
+        @DisplayName("When handling null inputs")
+        class NullInputTests {
+
+            @Test
+            void shouldHandleNullBase() {
+                assertEquals(new File("foo"), IOUtils.resolveFile(null, "foo"));
+            }
+
+            @ParameterizedTest
+            @NullSource
+            @DisplayName("should throw NullPointerException when segments array is null")
+            void shouldThrowWhenSegmentsIsNull(String... segments) {
+                var base = new File("home", "user");
+
+                assertThrows(NullPointerException.class, () -> IOUtils.resolveFile(base, segments));
+            }
+        }
+
+        @Nested
+        @DisplayName("When verifying platform independence")
+        class PlatformIndependenceTests {
+
+            @Test
+            @DisplayName("should handle both Unix and Windows base paths gracefully")
+            void shouldHandleBothPathStyles() {
+                var unixBase = Path.of("usr", "local", "bin").toFile();
+                var unixResult = IOUtils.resolveFile(unixBase, "app");
+                assertNotNull(unixResult);
+
+                var windowsBase = new File("C:", "Program Files");
+                var windowsResult = IOUtils.resolveFile(windowsBase, "App");
+                assertNotNull(windowsResult);
+            }
+
+            @Test
+            @DisplayName("should use platform-specific file separator")
+            void shouldUsePlatformSpecificSeparator() {
+                var base = new File("home", "user");
+                var result = IOUtils.resolveFile(base, "docs", "file.txt");
+
+                var separator = File.separator;
+                assertTrue(result.getPath().contains(separator),
+                        "Path should contain platform separator: " + separator);
+            }
+        }
+
+        @Nested
+        @DisplayName("When resolving paths with single segment")
+        class SingleSegmentTests {
+
+            @Test
+            @DisplayName("should append single segment to base path")
+            void shouldAppendSingleSegment() {
+                var base = new File("home", "user");
+                var result = IOUtils.resolveFile(base, "documents");
+
+                var expected = new File(base, "documents").getPath();
+                assertEquals(expected, result.getPath());
+            }
+
+            @Test
+            @DisplayName("should handle Windows-style base path")
+            void shouldHandleWindowsStylePath() {
+                var base = new File("C:\\Users\\John");
+                var result = IOUtils.resolveFile(base, "Desktop");
+
+                assertTrue(result.getPath().endsWith("Desktop"));
+                assertTrue(result.getPath().contains("John"));
+            }
+
+            @Test
+            @DisplayName("should work with relative base path")
+            void shouldWorkWithRelativeBase() {
+                var base = new File("project");
+                var result = IOUtils.resolveFile(base, "src");
+
+                var expected = new File(base, "src").getPath();
+                assertEquals(expected, result.getPath());
             }
         }
     }
