@@ -33,10 +33,10 @@ public final class ClasspathUtils {
 
     /**
      * Constructs a classpath string by concatenating non-blank paths using the system's
-     * path separator. Blank or null paths are ignored.
+     * path separator. Blank or {@code null} paths are ignored.
      *
-     * @param path An array of strings representing individual classpath entries. Null or
-     *             blank strings are skipped in the final classpath
+     * @param path An array of strings representing individual classpath entries.
+     *             {@code null} or blank strings are skipped in the final classpath
      * @return A string representing the concatenated classpath entries, separated by
      * the system's path separator. If no valid paths are provided, an empty
      * string is returned
@@ -53,39 +53,22 @@ public final class ClasspathUtils {
     }
 
     /**
-     * Joins a list of JAR file paths into a single classpath string using the system's path separator.
-     * <p>
-     * Each JAR file's absolute path is included in the resulting classpath string.
-     *
-     * @param jars A list of {@link File} objects representing the JAR files to include in the classpath.
-     *             If the list is empty, an empty string is returned
-     * @return A classpath string where the absolute paths of the provided JAR files are joined
-     * by the system's path separator. If the input list is empty, an empty string is returned
-     * @since 1.0
-     */
-    public static String joinClasspathJar(Collection<File> jars) {
-        return jars.stream()
-                .map(File::getAbsolutePath)
-                .collect(Collectors.joining(File.pathSeparator));
-    }
-
-    /**
-     * Joins multiple collections of JAR file paths into a single classpath string using the system's
+     * Joins multiple collections of file paths into a single classpath string using the system's
      * path separator.
      * <p>
-     * Each JAR file's absolute path from all provided collections is included in the resulting
-     * classpath string. Null collections are safely ignored.
+     * Each file's absolute path from all provided collections is included in the resulting
+     * classpath string. {@code null} collections are safely ignored.
      *
-     * @param jars Variable number of {@link Collection}s of {@link File} objects representing the JAR
-     *             files to include in the classpath. Null collections are skipped. If all collections
-     *             are empty or null, an empty string is returned
-     * @return A classpath string where the absolute paths of all provided JAR files are joined
-     * by the system's path separator. If no valid JAR files are provided, an empty string is returned
+     * @param files Variable number of {@link Collection}s of {@link File} objects representing the
+     *              files to include in the classpath. {@code null} collections are skipped. If all
+     *              collections are empty or {@code null}, an empty string is returned
+     * @return A classpath string where the absolute paths of all provided files are joined by the
+     * system's path separator. If no valid files are provided, an empty string is returned
      * @since 1.0
      */
     @SafeVarargs
-    public static String joinClasspathJar(Collection<File>... jars) {
-        return Stream.of(jars)
+    public static String joinClasspath(Collection<File>... files) {
+        return Stream.of(files)
                 .filter(Objects::nonNull)
                 .flatMap(Collection::stream)
                 .map(File::getAbsolutePath)

@@ -255,13 +255,14 @@ public final class IOUtils {
      * Resolves a file path by joining a base file with additional path segments.
      * <p>
      * This method constructs a file path by appending one or more path segments to a base file,
-     * using the platform-specific file separator. The resulting File object represents the
+     * using the platform-specific file separator. The resulting {@link File} object represents the
      * complete path but does not create an actual file on the filesystem.
      * </p>
      *
      * @param base     the base file path to start from
      * @param segments additional path segments to append, in order.
-     * @throws NullPointerException if {@code base} is null or if {@code segments} is {@code null}
+     * @throws NullPointerException if {@code base} is {@code null} or if {@code segments} is {@code null}
+     * @since 1.0
      */
     public static File resolveFile(File base, String... segments) {
         return new File(base, String.join(File.separator, segments));

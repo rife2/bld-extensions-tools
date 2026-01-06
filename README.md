@@ -27,10 +27,10 @@ for more information.
 
 The following static methods are provided:
 
-| Method                                                                                                                                                                          | Description                                             |
-|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------|
-| [`buildClasspath(String... path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathUtils.html#buildClasspath(java.lang.String...))               | Constructs a classpath string.                          |
-| [`joinClasspathJar(Collection<String> jars)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathUtils.html#joinClasspathJar(java.util.Collection)) | Joins a list of JAR file paths into a single classpath. |
+| Method                                                                                                                                                                          | Description                                            |
+|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------------------------------|
+| [`buildClasspath(String... path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathUtils.html#buildClasspath(java.lang.String...))               | Constructs a classpath string.                         |
+| [`joinClasspath(Collection<String>... jars)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathUtils.html#joinClasspath(java.util.Collection...)) | Joins lists of JAR file paths into a single classpath. |
 
 ## Collection Tools
 
