@@ -19,6 +19,7 @@ package rife.bld.extension.tools;
 import java.io.File;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -32,19 +33,21 @@ public final class ClasspathUtils {
     }
 
     /**
-     * Constructs a classpath string by concatenating non-blank paths using the system's
-     * path separator. Blank or {@code null} paths are ignored.
+     * Join string paths into a single classpath by concatenating non-blank
+     * paths using the system's path separator.
+     * <p>
+     * Blank or {@code null} paths are ignored.
      *
-     * @param path An array of strings representing individual classpath entries.
+     * @param paths An array of strings representing individual classpath entries.
      *             {@code null} or blank strings are skipped in the final classpath
      * @return A string representing the concatenated classpath entries, separated by
      * the system's path separator. If no valid paths are provided, an empty
      * string is returned
      * @since 1.0
      */
-    public static String buildClasspath(String... path) {
-        var joiner = new java.util.StringJoiner(File.pathSeparator);
-        for (var p : path) {
+    public static String joinClasspath(String... paths) {
+        var joiner = new StringJoiner(File.pathSeparator);
+        for (var p : paths) {
             if (TextUtils.isNotBlank(p)) {
                 joiner.add(p);
             }
@@ -53,8 +56,8 @@ public final class ClasspathUtils {
     }
 
     /**
-     * Joins multiple collections of file paths into a single classpath string using the system's
-     * path separator.
+     * Joins multiple collections of file paths into a single classpath string
+     * using the system's path separator.
      * <p>
      * Each file's absolute path from all provided collections is included in the resulting
      * classpath string. {@code null} collections are safely ignored.

@@ -27,10 +27,10 @@ for more information.
 
 The following static methods are provided:
 
-| Method                                                                                                                                                                          | Description                                            |
-|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------------------------------|
-| [`buildClasspath(String... path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathUtils.html#buildClasspath(java.lang.String...))               | Constructs a classpath string.                         |
-| [`joinClasspath(Collection<String>... jars)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathUtils.html#joinClasspath(java.util.Collection...)) | Joins lists of JAR file paths into a single classpath. |
+| Method                                                                                                                                                                           | Description                            |
+|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------------------------|
+| [`joinClasspath(String... paths)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathUtils.html#joinClasspath(java.lang.String...))                 | Join string paths into a classpath.    |
+| [`joinClasspath(Collection<String>... files)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathUtils.html#joinClasspath(java.util.Collection...)) | Joins lists of files into a classpath. |
 
 ## Collection Tools
 
@@ -65,6 +65,7 @@ The following static methods are provided:
 | [`notExists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#notExists(java.nio.file.Path))                                      | Check if a path exists.                       |
 | [`notExists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#notExits(java.lang.String))                                       | Check if a path exists.                       |
 | [`resolveFile(File base, String... segments)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#resolveFile(java.io.File,java.lang.String...)) | Resolve a file with additional path segments. |
+
 *NOTE:* All methods properly handle `null` values
 
 ## Objects Tools
@@ -78,8 +79,7 @@ The following static methods are provided:
 | [`isNotNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isNotNull(java.lang.Object...))      | Checks if any of the provided objects are not `null`. |
 | [`isNotNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isNotNull(java.util.Collection)) | Checks if any of the provided objects are not `null`. |
 | [`isNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isNull(java.lang.Object...))            | Checks if the provided objects are all `null`.        |
-| [`isNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isNull(java.util.Collection))       | Checks if the provided objects are all `null`.        | Description                         |
-|
+| [`isNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isNull(java.util.Collection))       | Checks if the provided objects are all `null`.        |
 
 ## System Tools
 

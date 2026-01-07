@@ -42,8 +42,8 @@ class ClasspathUtilsTest {
     private static final String PATH_SEP = File.pathSeparator;
 
     @Nested
-    @DisplayName("buildClasspath() method")
-    class BuildClasspathTests {
+    @DisplayName("joinClasspath(String...) method")
+    class JoinClasspathArrayTests {
 
         private static Stream<Arguments> providePathCombinations() {
             var path1 = "lib" + FILE_SEP + "a.jar";
@@ -73,20 +73,13 @@ class ClasspathUtilsTest {
         }
 
         @Test
-        @DisplayName("should return empty string when no paths provided")
-        void emptyWhenNoPathsProvided() {
-            var result = ClasspathUtils.buildClasspath();
-            assertEquals("", result);
-        }
-
-        @Test
         @DisplayName("should filter out blank paths from mixed input")
         void filterBlankPathsFromMixed() {
             var path1 = "path" + FILE_SEP + "to" + FILE_SEP + "jar1.jar";
             var path2 = "path" + FILE_SEP + "to" + FILE_SEP + "jar2.jar";
             var path3 = "path" + FILE_SEP + "to" + FILE_SEP + "jar3.jar";
 
-            var result = ClasspathUtils.buildClasspath(
+            var result = ClasspathUtils.joinClasspath(
                     path1,
                     "",
                     null,
@@ -102,7 +95,7 @@ class ClasspathUtilsTest {
         @MethodSource("providePathCombinations")
         @DisplayName("should handle various path combinations")
         void handleVariousPathCombinations(String[] paths, String expected) {
-            var result = ClasspathUtils.buildClasspath(paths);
+            var result = ClasspathUtils.joinClasspath(paths);
             assertEquals(expected, result);
         }
 
@@ -111,7 +104,7 @@ class ClasspathUtilsTest {
         @ValueSource(strings = {"   ", "\t", "\n"})
         @DisplayName("should ignore blank and null paths")
         void ignoreBlankAndNullPaths(String blankPath) {
-            var result = ClasspathUtils.buildClasspath(blankPath);
+            var result = ClasspathUtils.joinClasspath(blankPath);
             assertEquals("", result);
         }
 
@@ -122,7 +115,7 @@ class ClasspathUtilsTest {
             var path2 = "path" + FILE_SEP + "to" + FILE_SEP + "jar2.jar";
             var path3 = "path" + FILE_SEP + "to" + FILE_SEP + "jar3.jar";
 
-            var result = ClasspathUtils.buildClasspath(path1, path2, path3);
+            var result = ClasspathUtils.joinClasspath(path1, path2, path3);
             var expected = String.join(PATH_SEP, path1, path2, path3);
             assertEquals(expected, result);
         }
@@ -131,7 +124,7 @@ class ClasspathUtilsTest {
         @DisplayName("should build classpath with single valid path")
         void singleValidPath() {
             var path = "path" + FILE_SEP + "to" + FILE_SEP + "jar.jar";
-            var result = ClasspathUtils.buildClasspath(path);
+            var result = ClasspathUtils.joinClasspath(path);
             assertEquals(path, result);
         }
 
@@ -148,7 +141,7 @@ class ClasspathUtilsTest {
                 );
                 var jarClasspath = ClasspathUtils.joinClasspath(jarFiles);
 
-                var fullClasspath = ClasspathUtils.buildClasspath(
+                var fullClasspath = ClasspathUtils.joinClasspath(
                         "classes",
                         jarClasspath,
                         "resources"
@@ -165,8 +158,8 @@ class ClasspathUtilsTest {
     }
 
     @Nested
-    @DisplayName("joinClasspath() method")
-    class JoinClasspathTests {
+    @DisplayName("joinClasspath(Collection...) method")
+    class JoinClasspathCollectionTests {
 
         private static Stream<Arguments> provideFileLists() {
             return Stream.of(
@@ -358,14 +351,7 @@ class ClasspathUtilsTest {
             @Test
             @DisplayName("should return empty string when all collections are null")
             void shouldReturnEmptyStringWhenAllCollectionsAreNull() {
-                assertEquals("", ClasspathUtils.joinClasspath(null, null, null));
-            }
-
-            @Test
-            @DisplayName("should return empty string when no collections are provided")
-            void shouldReturnEmptyStringWhenNoCollectionsAreProvided() {
-                var result = ClasspathUtils.joinClasspath();
-                assertEquals("", result);
+                assertEquals("", ClasspathUtils.joinClasspath((String) null, null, null));
             }
 
             @Test
