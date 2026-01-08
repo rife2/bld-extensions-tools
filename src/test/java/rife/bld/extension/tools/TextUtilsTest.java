@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TextUtilsTest {
 
     @Nested
-    @DisplayName("isBlank(Object) Tests")
+    @DisplayName("isBlank(Object...) Tests")
     class IsBlankObjectTests {
 
         @ParameterizedTest
@@ -38,6 +38,14 @@ class TextUtilsTest {
         @DisplayName("should return false for non-null non-blank objects")
         void shouldReturnFalseForNonBlankObjects(Integer input) {
             var result = TextUtils.isBlank(input);
+            assertFalse(result);
+        }
+
+        @ParameterizedTest
+        @ValueSource(ints = {0, 1, 42, -1})
+        @DisplayName("should return false when all objects are not blank")
+        void shouldReturnFalseWhenAllObjectsAreNotBlank(Integer input) {
+            var result = TextUtils.isBlank(input, 123, "text");
             assertFalse(result);
         }
 
@@ -50,10 +58,35 @@ class TextUtilsTest {
         }
 
         @ParameterizedTest
+        @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
+        @DisplayName("should return false when at least one object is not blank")
+        void shouldReturnFalseWhenAtLeastOneObjectIsNotBlank(String input) {
+            var result = TextUtils.isBlank("", " ", input, "\t");
+            assertFalse(result);
+        }
+
+        @ParameterizedTest
         @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return true for empty or whitespace-only string objects")
         void shouldReturnTrueForBlankStringObjects(String input) {
             var result = TextUtils.isBlank((Object) input);
+            assertTrue(result);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
+        @DisplayName("should return true when all objects are blank")
+        void shouldReturnTrueWhenAllObjectsAreBlank(String input) {
+            var result = TextUtils.isBlank(input, "", "  ", "\t");
+            assertTrue(result);
+        }
+
+        @ParameterizedTest
+        @NullSource
+        @DisplayName("should return true for null array")
+        @SuppressWarnings("PMD.UseVarargs")
+        void shouldReturnTrueForNullArray(Object[] input) {
+            var result = TextUtils.isBlank(input);
             assertTrue(result);
         }
 
@@ -127,7 +160,7 @@ class TextUtilsTest {
     }
 
     @Nested
-    @DisplayName("isEmpty(Object) Tests")
+    @DisplayName("isEmpty(Object...) Tests")
     class IsEmptyObjectTests {
 
         @ParameterizedTest
@@ -147,10 +180,43 @@ class TextUtilsTest {
         }
 
         @ParameterizedTest
+        @ValueSource(ints = {0, 1, 42, -1})
+        @DisplayName("should return false when all objects are not empty")
+        void shouldReturnFalseWhenAllObjectsAreNotEmpty(Integer input) {
+            var result = TextUtils.isEmpty(input, 123, " ");
+            assertFalse(result);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
+        @DisplayName("should return false when at least one object is not empty")
+        void shouldReturnFalseWhenAtLeastOneObjectIsNotEmpty(String input) {
+            var result = TextUtils.isEmpty("", null, input);
+            assertFalse(result);
+        }
+
+        @ParameterizedTest
         @ValueSource(strings = {""})
         @DisplayName("should return true for empty string object")
         void shouldReturnTrueForEmptyStringObject(String input) {
             var result = TextUtils.isEmpty((Object) input);
+            assertTrue(result);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {""})
+        @DisplayName("should return true when all objects are empty or null")
+        void shouldReturnTrueWhenAllObjectsAreEmpty(String input) {
+            var result = TextUtils.isEmpty(input, "", null);
+            assertTrue(result);
+        }
+
+        @ParameterizedTest
+        @NullSource
+        @DisplayName("should return true for null array")
+        @SuppressWarnings("PMD.UseVarargs")
+        void shouldReturnTrueForNullArray(Object[] input) {
+            var result = TextUtils.isEmpty(input);
             assertTrue(result);
         }
 
@@ -224,7 +290,7 @@ class TextUtilsTest {
     }
 
     @Nested
-    @DisplayName("isNotBlank(Object) Tests")
+    @DisplayName("isNotBlank(Object...) Tests")
     class IsNotBlankObjectTests {
 
         @ParameterizedTest
@@ -232,6 +298,31 @@ class TextUtilsTest {
         @DisplayName("should return false for empty or whitespace-only string objects")
         void shouldReturnFalseForBlankStringObjects(String input) {
             var result = TextUtils.isNotBlank((Object) input);
+            assertFalse(result);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
+        @DisplayName("should return false when all objects are blank")
+        void shouldReturnFalseWhenAllObjectsAreBlank(String input) {
+            var result = TextUtils.isNotBlank(input, "", "  ", "\t");
+            assertFalse(result);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
+        @DisplayName("should return false when at least one object is blank")
+        void shouldReturnFalseWhenAtLeastOneObjectIsBlank(String input) {
+            var result = TextUtils.isNotBlank(123, "text", input, "data");
+            assertFalse(result);
+        }
+
+        @ParameterizedTest
+        @NullSource
+        @DisplayName("should return false for null array")
+        @SuppressWarnings("PMD.UseVarargs")
+        void shouldReturnFalseForNullArray(Object[] input) {
+            var result = TextUtils.isNotBlank(input);
             assertFalse(result);
         }
 
@@ -256,6 +347,14 @@ class TextUtilsTest {
         @DisplayName("should return true for non-blank string objects")
         void shouldReturnTrueForNonBlankStringObjects(String input) {
             var result = TextUtils.isNotBlank((Object) input);
+            assertTrue(result);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
+        @DisplayName("should return true when all objects are not blank")
+        void shouldReturnTrueWhenAllObjectsAreNotBlank(String input) {
+            var result = TextUtils.isNotBlank(input, "text", 42);
             assertTrue(result);
         }
     }
@@ -321,7 +420,7 @@ class TextUtilsTest {
     }
 
     @Nested
-    @DisplayName("isNotEmpty(Object) Tests")
+    @DisplayName("isNotEmpty(Object...) Tests")
     class IsNotEmptyObjectTests {
 
         @ParameterizedTest
@@ -329,6 +428,31 @@ class TextUtilsTest {
         @DisplayName("should return false for empty string object")
         void shouldReturnFalseForEmptyStringObject(String input) {
             var result = TextUtils.isNotEmpty((Object) input);
+            assertFalse(result);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {""})
+        @DisplayName("should return false when all objects are empty or null")
+        void shouldReturnFalseWhenAllObjectsAreEmpty(String input) {
+            var result = TextUtils.isNotEmpty(input, "", null);
+            assertFalse(result);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {""})
+        @DisplayName("should return false when at least one object is empty or null")
+        void shouldReturnFalseWhenAtLeastOneObjectIsEmpty(String input) {
+            var result = TextUtils.isNotEmpty("text", " ", input, "data");
+            assertFalse(result);
+        }
+
+        @ParameterizedTest
+        @NullSource
+        @DisplayName("should return false for null array")
+        @SuppressWarnings("PMD.UseVarargs")
+        void shouldReturnFalseForNullArray(Object[] input) {
+            var result = TextUtils.isNotEmpty(input);
             assertFalse(result);
         }
 
@@ -353,6 +477,14 @@ class TextUtilsTest {
         @DisplayName("should return true for non-null objects")
         void shouldReturnTrueForNonNullObjects(Integer input) {
             var result = TextUtils.isNotEmpty(input);
+            assertTrue(result);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
+        @DisplayName("should return true when all objects are not empty")
+        void shouldReturnTrueWhenAllObjectsAreNotEmpty(String input) {
+            var result = TextUtils.isNotEmpty(input, "text", " ");
             assertTrue(result);
         }
     }

@@ -66,29 +66,46 @@ public final class TextUtils {
     }
 
     /**
-     * Checks if an object is {@code null}, empty, or contains only whitespace characters.
+     * Checks if all objects are {@code null}, empty, or contain only whitespace characters.
      * <p>
-     * If the object is not {@code null}, it will be converted to its string representation
+     * If an object is not {@code null}, it will be converted to its string representation
      * for the check.
      *
-     * @param obj The object to check
-     * @return {@code true} if the object is {@code null}, its string representation is empty,
-     * or its string representation is whitespace-only; {@code false} otherwise
+     * @param objects The objects to check
+     * @return {@code true} if all objects are {@code null}, their string representations are empty,
+     * or their string representations are whitespace-only; {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isBlank(Object obj) {
-        return obj == null || isBlank(obj.toString());
+    public static boolean isBlank(Object... objects) {
+        if (objects == null) {
+            return true;
+        }
+        for (var obj : objects) {
+            if (obj != null && !isBlank(obj.toString())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
-     * Checks if an object is {@code null} or its string representation is empty.
+     * Checks if all objects are {@code null} or their string representations are empty.
      *
-     * @param obj The object to check
-     * @return {@code true} if the object is {@code null} or its string representation is empty; {@code false} otherwise
+     * @param objects The objects to check
+     * @return {@code true} if all objects are {@code null} or their string representations are empty;
+     * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isEmpty(Object obj) {
-        return obj == null || isEmpty(obj.toString());
+    public static boolean isEmpty(Object... objects) {
+        if (objects == null) {
+            return true;
+        }
+        for (var obj : objects) {
+            if (obj != null && !isEmpty(obj.toString())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -142,19 +159,27 @@ public final class TextUtils {
     }
 
     /**
-     * Checks if an object is not {@code null}, not empty, and not whitespace-only.
+     * Checks if all objects are not {@code null}, not empty, and not whitespace-only.
      * <p>
-     * If the object is not {@code null}, it will be converted to its string representation
+     * If an object is not {@code null}, it will be converted to its string representation
      * for the check.
      *
-     * @param obj The object to check
-     * @return {@code true} if the object is not {@code null}, its string representation
-     * is not empty, and its string representation is not whitespace-only;
+     * @param objects The objects to check
+     * @return {@code true} if all objects are not {@code null}, their string representations
+     * are not empty, and their string representations are not whitespace-only;
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isNotBlank(Object obj) {
-        return !isBlank(obj);
+    public static boolean isNotBlank(Object... objects) {
+        if (objects == null) {
+            return false;
+        }
+        for (var obj : objects) {
+            if (obj == null || isBlank(obj.toString())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -200,14 +225,22 @@ public final class TextUtils {
     }
 
     /**
-     * Checks if an object is not {@code null} and its string representation is not empty.
+     * Checks if all objects are not {@code null} and their string representations are not empty.
      *
-     * @param obj The object to check
-     * @return {@code true} if the object is not {@code null} and its string representation is not empty;
+     * @param objects The objects to check
+     * @return {@code true} if all objects are not {@code null} and their string representations are not empty;
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isNotEmpty(Object obj) {
-        return !isEmpty(obj);
+    public static boolean isNotEmpty(Object... objects) {
+        if (objects == null) {
+            return false;
+        }
+        for (var obj : objects) {
+            if (obj == null || isEmpty(obj.toString())) {
+                return false;
+            }
+        }
+        return true;
     }
 }
