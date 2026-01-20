@@ -84,7 +84,9 @@ public class ToolsBuild extends Project {
     public void test() throws Exception {
         var op = testOperation().fromProject(this);
         // Set the reports directory
-        op.testToolOptions().reportsDir(new File("build/test-results/test/"));
+        op.testToolOptions().reportsDir(
+                IOUtils.resolveFile(new File("build"), "test-results", "test")
+        );
         op.execute();
     }
 
