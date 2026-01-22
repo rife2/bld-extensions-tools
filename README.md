@@ -15,7 +15,7 @@ To use, include the following in your `bld` build file:
 ```java
 repositories = List.of(RIFE2_SNAPSHOTS, RIFE2_RELEASES);
 
-scope(test).include(
+scope(compile).include(
     dependency("com.uwyn.rife2", "bld-extensions-tools", version(0, 9,0,"SNAPSHOT"))
 );
 ```
@@ -76,6 +76,10 @@ The following static methods are provided:
 |:--------------------------------------------------------------------------------------------------------------------------------------------------------------|:------------------------------------------------------|
 | [`isAnyNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isAnyNull(java.lang.Object...))      | Checks if any of the provided objects are `null`.     |
 | [`isAnyNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isAnyNull(java.util.Collection)) | Checks if any of the provided objects are `null`.     |
+| [`isEmpty(Object[] array)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ArrayUtils.html#isEmpty(java.lang.Object[]))              | Checks if an array is empty.                        |
+| [`isNotEmpty(Object[] array)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ArrayUtils.html#isNotEmpty(java.lang.Object[]))        | Checks if an array is not empty.                    |
+| [`isEmpty(Object[]... arrays)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ArrayUtils.html#isEmpty(java.lang.Object[]...))       | Checks if any of the provided arrays are empty.     |
+| [`isNotEmpty(Object[]... arrays)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ArrayUtils.html#isNotEmpty(java.lang.Object[]...)) | Checks if any of the provided arrays are not empty. |
 | [`isNotNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isNotNull(java.lang.Object...))      | Checks if any of the provided objects are not `null`. |
 | [`isNotNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isNotNull(java.util.Collection)) | Checks if any of the provided objects are not `null`. |
 | [`isNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectsUtils.html#isNull(java.lang.Object...))            | Checks if the provided objects are all `null`.        |

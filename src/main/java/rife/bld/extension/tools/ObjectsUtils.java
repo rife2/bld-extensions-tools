@@ -66,6 +66,68 @@ public final class ObjectsUtils {
     }
 
     /**
+     * Checks if the provided array is empty or {@code null}.
+     *
+     * @param array The array to check; can be {@code null}
+     * @return {@code true} if the array is {@code null} or empty; {@code false} otherwise
+     * @since 1.0
+     */
+    @SuppressWarnings("PMD.UseVarargs")
+    public static boolean isEmpty(Object[] array) {
+        return array == null || array.length == 0;
+    }
+
+    /**
+     * Checks if all provided arrays are empty or {@code null}.
+     *
+     * @param arrays The arrays to check; can be {@code null} or contain {@code null} elements
+     * @return {@code true} if all arrays are {@code null} or empty; {@code false} if any array is not empty
+     * @since 1.0
+     */
+    public static boolean isEmpty(Object[]... arrays) {
+        if (arrays == null) {
+            return true;
+        }
+        for (Object[] array : arrays) {
+            if (array != null && array.length > 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Checks if the provided array is not {@code null} and not empty.
+     *
+     * @param array The array to check; can be {@code null}
+     * @return {@code true} if the array is not {@code null} and not empty; {@code false} otherwise
+     * @since 1.0
+     */
+    @SuppressWarnings("PMD.UseVarargs")
+    public static boolean isNotEmpty(Object[] array) {
+        return array != null && array.length > 0;
+    }
+
+    /**
+     * Checks if any of the provided arrays are not {@code null} and not empty.
+     *
+     * @param arrays The arrays to check; can be {@code null} or contain {@code null} elements
+     * @return {@code true} if any array is not {@code null} and not empty; {@code false} if all are {@code null} or empty
+     * @since 1.0
+     */
+    public static boolean isNotEmpty(Object[]... arrays) {
+        if (arrays == null) {
+            return false;
+        }
+        for (Object[] array : arrays) {
+            if (array != null && array.length > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Checks if all provided objects are non-{@code null}.
      *
      * @param objects the objects to check
