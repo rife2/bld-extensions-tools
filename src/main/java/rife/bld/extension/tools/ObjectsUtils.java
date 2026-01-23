@@ -16,11 +16,14 @@
 
 package rife.bld.extension.tools;
 
+import java.util.AbstractMap;
 import java.util.Collection;
+import java.util.Hashtable;
 
 /**
  * Objects Utilities and Tools.
  */
+@SuppressWarnings({"PMD.LooseCoupling", "PMD.ReplaceHashtableWithMap"})
 public final class ObjectsUtils {
 
     private ObjectsUtils() {
@@ -78,6 +81,28 @@ public final class ObjectsUtils {
     }
 
     /**
+     * Checks if the provided {@link AbstractMap} is empty or {@code null}.
+     *
+     * @param map The map to check; can be {@code null}
+     * @return {@code true} if the map is {@code null} or empty; {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean isEmpty(AbstractMap<?, ?> map) {
+        return map == null || map.isEmpty();
+    }
+
+    /**
+     * Checks if the provided {@link Hashtable} is empty or {@code null}.
+     *
+     * @param table The hashtable to check; can be {@code null}
+     * @return {@code true} if the hashtable is {@code null} or empty; {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean isEmpty(Hashtable<?, ?> table) {
+        return table == null || table.isEmpty();
+    }
+
+    /**
      * Checks if all provided arrays are empty or {@code null}.
      *
      * @param arrays The arrays to check; can be {@code null} or contain {@code null} elements
@@ -106,6 +131,28 @@ public final class ObjectsUtils {
     @SuppressWarnings("PMD.UseVarargs")
     public static boolean isNotEmpty(Object[] array) {
         return array != null && array.length > 0;
+    }
+
+    /**
+     * Checks if the provided {@link AbstractMap} is not {@code null} and not empty.
+     *
+     * @param map The map to check; can be {@code null}
+     * @return {@code true} if the map is not {@code null} and not empty; {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean isNotEmpty(AbstractMap<?, ?> map) {
+        return map != null && !map.isEmpty();
+    }
+
+    /**
+     * Checks if the provided {@link Hashtable} is not {@code null} and not empty.
+     *
+     * @param table The hashtable to check; can be {@code null}
+     * @return {@code true} if the hashtable is not {@code null} and not empty; {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean isNotEmpty(Hashtable<?, ?> table) {
+        return table != null && !table.isEmpty();
     }
 
     /**

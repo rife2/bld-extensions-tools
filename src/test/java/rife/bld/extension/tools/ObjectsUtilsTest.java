@@ -23,17 +23,15 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DisplayName("Objects Utils Tests")
-@SuppressWarnings({"PMD.UseVarargs", "ConstantValue"})
+@SuppressWarnings({"PMD.UseVarargs", "ConstantValue", "PMD.AvoidDuplicateLiterals",
+        "PMD.LooseCoupling", "PMD.ReplaceHashtableWithMap"})
 class ObjectsUtilsTest {
 
     @Nested
@@ -268,6 +266,263 @@ class ObjectsUtilsTest {
             @DisplayName("should return true for non-empty arrays")
             void shouldReturnTrueForNonEmptyArrays(Object[] array) {
                 var result = ObjectsUtils.isNotEmpty(array);
+                assertTrue(result);
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Map Tests")
+    class MapTests {
+
+        @Nested
+        @DisplayName("Edge Cases and Special Scenarios")
+        class EdgeCasesTests {
+
+            @Test
+            @DisplayName("should handle different AbstractMap implementations")
+            void shouldHandleDifferentAbstractMapImplementations() {
+                var hashMap = new HashMap<>(Map.of("key", "value"));
+                var treeMap = new TreeMap<>(Map.of("key", "value"));
+
+                assertTrue(ObjectsUtils.isNotEmpty(hashMap));
+                assertTrue(ObjectsUtils.isNotEmpty(treeMap));
+                assertFalse(ObjectsUtils.isEmpty(hashMap));
+                assertFalse(ObjectsUtils.isEmpty(treeMap));
+            }
+
+            @Test
+            @DisplayName("should handle hashtables with multiple entries")
+            void shouldHandleHashtablesWithMultipleEntries() {
+                var table = new Hashtable<String, Integer>();
+                table.put("one", 1);
+                table.put("two", 2);
+                table.put("three", 3);
+
+                assertTrue(ObjectsUtils.isNotEmpty(table));
+                assertFalse(ObjectsUtils.isEmpty(table));
+            }
+
+            @Test
+            @DisplayName("should handle large hashtables efficiently")
+            void shouldHandleLargeHashtablesEfficiently() {
+                var largeTable = new Hashtable<Integer, String>();
+                for (int i = 0; i < 10000; i++) {
+                    largeTable.put(i, "value" + i);
+                }
+
+                assertTrue(ObjectsUtils.isNotEmpty(largeTable));
+                assertFalse(ObjectsUtils.isEmpty(largeTable));
+            }
+
+            @Test
+            @DisplayName("should handle large maps efficiently")
+            void shouldHandleLargeMapsEfficiently() {
+                var largeMap = new HashMap<Integer, String>();
+                for (int i = 0; i < 10000; i++) {
+                    largeMap.put(i, "value" + i);
+                }
+
+                assertTrue(ObjectsUtils.isNotEmpty(largeMap));
+                assertFalse(ObjectsUtils.isEmpty(largeMap));
+            }
+
+            @Test
+            @DisplayName("should handle maps with null values as non-empty")
+            void shouldHandleMapsWithNullValuesAsNonEmpty() {
+                var map = new HashMap<String, String>();
+                map.put("key1", null);
+                map.put("key2", null);
+
+                assertTrue(ObjectsUtils.isNotEmpty(map));
+                assertFalse(ObjectsUtils.isEmpty(map));
+            }
+        }
+
+        @Nested
+        @DisplayName("isEmpty(AbstractMap<?, ?>) Tests")
+        class IsEmptyAbstractMapTests {
+
+            static Stream<Arguments> nonEmptyMaps() {
+                var mapWithNull1 = new HashMap<Integer, String>();
+                mapWithNull1.put(1, null);
+
+                var mapWithNull2 = new HashMap<String, String>();
+                mapWithNull2.put("key", "value");
+                mapWithNull2.put("key2", null);
+
+                return Stream.of(
+                        Arguments.of(new HashMap<>(Map.of("key1", "value1"))),
+                        Arguments.of(new HashMap<>(Map.of("a", 1, "b", 2, "c", 3))),
+                        Arguments.of(new TreeMap<>(Map.of("x", "y"))),
+                        Arguments.of(mapWithNull1),
+                        Arguments.of(mapWithNull2)
+                );
+            }
+
+            @ParameterizedTest
+            @MethodSource("nonEmptyMaps")
+            @DisplayName("should return false for non-empty maps")
+            void shouldReturnFalseForNonEmptyMaps(AbstractMap<?, ?> map) {
+                var result = ObjectsUtils.isEmpty(map);
+                assertFalse(result);
+            }
+
+            @Test
+            @DisplayName("should return true for empty map")
+            @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+            void shouldReturnTrueForEmptyMap() {
+                var map = new HashMap<>();
+                var result = ObjectsUtils.isEmpty(map);
+                assertTrue(result);
+            }
+
+            @Test
+            @DisplayName("should return true for null map")
+            void shouldReturnTrueForNullMap() {
+                var result = ObjectsUtils.isEmpty((AbstractMap<?, ?>) null);
+                assertTrue(result);
+            }
+        }
+
+        @Nested
+        @DisplayName("isEmpty(Hashtable<?, ?>) Tests")
+        class IsEmptyHashtableTests {
+
+            static Stream<Arguments> nonEmptyHashtables() {
+                var ht1 = new Hashtable<String, String>();
+                ht1.put("key1", "value1");
+
+                var ht2 = new Hashtable<String, Integer>();
+                ht2.put("a", 1);
+                ht2.put("b", 2);
+                ht2.put("c", 3);
+
+                var ht3 = new Hashtable<Integer, String>();
+                ht3.put(1, "one");
+
+                return Stream.of(
+                        Arguments.of(ht1),
+                        Arguments.of(ht2),
+                        Arguments.of(ht3)
+                );
+            }
+
+            @ParameterizedTest
+            @MethodSource("nonEmptyHashtables")
+            @DisplayName("should return false for non-empty hashtables")
+            void shouldReturnFalseForNonEmptyHashtables(Hashtable<?, ?> table) {
+                var result = ObjectsUtils.isEmpty(table);
+                assertFalse(result);
+            }
+
+            @Test
+            @DisplayName("should return true for empty hashtable")
+            @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
+            void shouldReturnTrueForEmptyHashtable() {
+                var table = new Hashtable<>();
+                var result = ObjectsUtils.isEmpty(table);
+                assertTrue(result);
+            }
+
+            @Test
+            @DisplayName("should return true for null hashtable")
+            void shouldReturnTrueForNullHashtable() {
+                var result = ObjectsUtils.isEmpty((Hashtable<?, ?>) null);
+                assertTrue(result);
+            }
+        }
+
+        @Nested
+        @DisplayName("isNotEmpty(AbstractMap<?, ?>) Tests")
+        class IsNotEmptyAbstractMapTests {
+
+            static Stream<Arguments> nonEmptyMaps() {
+                var mapWithNull1 = new HashMap<Integer, String>();
+                mapWithNull1.put(1, null);
+
+                var mapWithNull2 = new HashMap<String, String>();
+                mapWithNull2.put("key", "value");
+                mapWithNull2.put("key2", null);
+
+                return Stream.of(
+                        Arguments.of(new HashMap<>(Map.of("key1", "value1"))),
+                        Arguments.of(new HashMap<>(Map.of("a", 1, "b", 2, "c", 3))),
+                        Arguments.of(new TreeMap<>(Map.of("x", "y"))),
+                        Arguments.of(mapWithNull1),
+                        Arguments.of(mapWithNull2)
+                );
+            }
+
+            @Test
+            @DisplayName("should return false for empty map")
+            @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+            void shouldReturnFalseForEmptyMap() {
+                var map = new HashMap<>();
+                var result = ObjectsUtils.isNotEmpty(map);
+                assertFalse(result);
+            }
+
+            @Test
+            @DisplayName("should return false for null map")
+            void shouldReturnFalseForNullMap() {
+                var result = ObjectsUtils.isNotEmpty((AbstractMap<?, ?>) null);
+                assertFalse(result);
+            }
+
+            @ParameterizedTest
+            @MethodSource("nonEmptyMaps")
+            @DisplayName("should return true for non-empty maps")
+            void shouldReturnTrueForNonEmptyMaps(AbstractMap<?, ?> map) {
+                var result = ObjectsUtils.isNotEmpty(map);
+                assertTrue(result);
+            }
+        }
+
+        @Nested
+        @DisplayName("isNotEmpty(Hashtable<?, ?>) Tests")
+        class IsNotEmptyHashtableTests {
+
+            static Stream<Arguments> nonEmptyHashtables() {
+                var ht1 = new Hashtable<String, String>();
+                ht1.put("key1", "value1");
+
+                var ht2 = new Hashtable<String, Integer>();
+                ht2.put("a", 1);
+                ht2.put("b", 2);
+                ht2.put("c", 3);
+
+                var ht3 = new Hashtable<Integer, String>();
+                ht3.put(1, "one");
+
+                return Stream.of(
+                        Arguments.of(ht1),
+                        Arguments.of(ht2),
+                        Arguments.of(ht3)
+                );
+            }
+
+            @Test
+            @DisplayName("should return false for empty hashtable")
+            @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
+            void shouldReturnFalseForEmptyHashtable() {
+                var table = new Hashtable<>();
+                var result = ObjectsUtils.isNotEmpty(table);
+                assertFalse(result);
+            }
+
+            @Test
+            @DisplayName("should return false for null hashtable")
+            void shouldReturnFalseForNullHashtable() {
+                var result = ObjectsUtils.isNotEmpty((Hashtable<?, ?>) null);
+                assertFalse(result);
+            }
+
+            @ParameterizedTest
+            @MethodSource("nonEmptyHashtables")
+            @DisplayName("should return true for non-empty hashtables")
+            void shouldReturnTrueForNonEmptyHashtables(Hashtable<?, ?> table) {
+                var result = ObjectsUtils.isNotEmpty(table);
                 assertTrue(result);
             }
         }
