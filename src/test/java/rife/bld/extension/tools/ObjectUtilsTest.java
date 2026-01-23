@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Objects Utils Tests")
 @SuppressWarnings({"PMD.UseVarargs", "ConstantValue", "PMD.AvoidDuplicateLiterals",
         "PMD.LooseCoupling", "PMD.ReplaceHashtableWithMap"})
-class ObjectsUtilsTest {
+class ObjectUtilsTest {
 
     @Nested
     @DisplayName("Array Tests")
@@ -48,8 +48,8 @@ class ObjectsUtilsTest {
             @DisplayName("should handle array containing only null elements as non-empty")
             void shouldHandleArrayContainingOnlyNullElements() {
                 var array = new Object[]{null, null, null};
-                assertTrue(ObjectsUtils.isNotEmpty(array));
-                assertFalse(ObjectsUtils.isEmpty(array));
+                assertTrue(ObjectUtils.isNotEmpty(array));
+                assertFalse(ObjectUtils.isEmpty(array));
             }
 
             @Test
@@ -59,9 +59,9 @@ class ObjectsUtilsTest {
                 var integerArray = new Integer[]{1, 2};
                 var objectArray = new Object[]{new Object()};
 
-                assertTrue(ObjectsUtils.isNotEmpty(stringArray));
-                assertTrue(ObjectsUtils.isNotEmpty(integerArray));
-                assertTrue(ObjectsUtils.isNotEmpty(objectArray));
+                assertTrue(ObjectUtils.isNotEmpty(stringArray));
+                assertTrue(ObjectUtils.isNotEmpty(integerArray));
+                assertTrue(ObjectUtils.isNotEmpty(objectArray));
             }
 
             @Test
@@ -72,15 +72,15 @@ class ObjectsUtilsTest {
                     largeArray[i] = i;
                 }
 
-                assertTrue(ObjectsUtils.isNotEmpty(largeArray));
-                assertFalse(ObjectsUtils.isEmpty(largeArray));
+                assertTrue(ObjectUtils.isNotEmpty(largeArray));
+                assertFalse(ObjectUtils.isEmpty(largeArray));
             }
 
             @Test
             @DisplayName("should handle varargs with single element")
             void shouldHandleVarargsWithSingleElement() {
-                var result1 = ObjectsUtils.isEmpty(new Object[]{"element"});
-                var result2 = ObjectsUtils.isNotEmpty(new Object[]{"element"});
+                var result1 = ObjectUtils.isEmpty(new Object[]{"element"});
+                var result2 = ObjectUtils.isNotEmpty(new Object[]{"element"});
 
                 assertFalse(result1);
                 assertTrue(result2);
@@ -106,35 +106,35 @@ class ObjectsUtilsTest {
             @DisplayName("should return false when at least one array is not empty")
             @SuppressWarnings("PMD.UseVarargs")
             void shouldReturnFalseWhenAtLeastOneArrayIsNotEmpty(Object[][] arrays) {
-                var result = ObjectsUtils.isEmpty(arrays);
+                var result = ObjectUtils.isEmpty(arrays);
                 assertFalse(result);
             }
 
             @Test
             @DisplayName("should return true for mix of null and empty arrays")
             void shouldReturnTrueForMixOfNullAndEmptyArrays() {
-                var result = ObjectsUtils.isEmpty(null, new Object[]{}, null, new String[]{});
+                var result = ObjectUtils.isEmpty(null, new Object[]{}, null, new String[]{});
                 assertTrue(result);
             }
 
             @Test
             @DisplayName("should return true for null varargs")
             void shouldReturnTrueForNullVarargs() {
-                var result = ObjectsUtils.isEmpty((Object[][]) null);
+                var result = ObjectUtils.isEmpty((Object[][]) null);
                 assertTrue(result);
             }
 
             @Test
             @DisplayName("should return true when all arrays are empty")
             void shouldReturnTrueWhenAllArraysAreEmpty() {
-                var result = ObjectsUtils.isEmpty(new Object[]{}, new String[]{}, new Integer[]{});
+                var result = ObjectUtils.isEmpty(new Object[]{}, new String[]{}, new Integer[]{});
                 assertTrue(result);
             }
 
             @Test
             @DisplayName("should return true when all arrays are null")
             void shouldReturnTrueWhenAllArraysAreNull() {
-                var result = ObjectsUtils.isEmpty(null, null, null);
+                var result = ObjectUtils.isEmpty((Object[]) null, null, null);
                 assertTrue(result);
             }
         }
@@ -159,7 +159,7 @@ class ObjectsUtilsTest {
             @DisplayName("should return false for non-empty arrays")
             @SuppressWarnings("PMD.UseVarargs")
             void shouldReturnFalseForNonEmptyArrays(Object[] array) {
-                var result = ObjectsUtils.isEmpty(array);
+                var result = ObjectUtils.isEmpty(array);
                 assertFalse(result);
             }
 
@@ -167,14 +167,14 @@ class ObjectsUtilsTest {
             @DisplayName("should return true for empty array")
             void shouldReturnTrueForEmptyArray() {
                 var array = new Object[]{};
-                var result = ObjectsUtils.isEmpty(array);
+                var result = ObjectUtils.isEmpty(array);
                 assertTrue(result);
             }
 
             @Test
             @DisplayName("should return true for null array")
             void shouldReturnTrueForNullArray() {
-                var result = ObjectsUtils.isEmpty((Object[]) null);
+                var result = ObjectUtils.isEmpty((Object[]) null);
                 assertTrue(result);
             }
         }
@@ -196,28 +196,28 @@ class ObjectsUtilsTest {
             @Test
             @DisplayName("should return false for mix of null and empty arrays")
             void shouldReturnFalseForMixOfNullAndEmptyArrays() {
-                var result = ObjectsUtils.isNotEmpty(null, new Object[]{}, null, new String[]{});
+                var result = ObjectUtils.isNotEmpty(null, new Object[]{}, null, new String[]{});
                 assertFalse(result);
             }
 
             @Test
             @DisplayName("should return false for null varargs")
             void shouldReturnFalseForNullVarargs() {
-                var result = ObjectsUtils.isNotEmpty((Object[][]) null);
+                var result = ObjectUtils.isNotEmpty((Object[][]) null);
                 assertFalse(result);
             }
 
             @Test
             @DisplayName("should return false when all arrays are empty")
             void shouldReturnFalseWhenAllArraysAreEmpty() {
-                var result = ObjectsUtils.isNotEmpty(new Object[]{}, new String[]{}, new Integer[]{});
+                var result = ObjectUtils.isNotEmpty(new Object[]{}, new String[]{}, new Integer[]{});
                 assertFalse(result);
             }
 
             @Test
             @DisplayName("should return false when all arrays are null")
             void shouldReturnFalseWhenAllArraysAreNull() {
-                var result = ObjectsUtils.isNotEmpty(null, null, null);
+                var result = ObjectUtils.isNotEmpty((Object[]) null, null, null);
                 assertFalse(result);
             }
 
@@ -226,7 +226,7 @@ class ObjectsUtilsTest {
             @DisplayName("should return true when at least one array is not empty")
             @SuppressWarnings("PMD.UseVarargs")
             void shouldReturnTrueWhenAtLeastOneArrayIsNotEmpty(Object[][] arrays) {
-                var result = ObjectsUtils.isNotEmpty(arrays);
+                var result = ObjectUtils.isNotEmpty(arrays);
                 assertTrue(result);
             }
         }
@@ -250,14 +250,14 @@ class ObjectsUtilsTest {
             @DisplayName("should return false for empty array")
             void shouldReturnFalseForEmptyArray() {
                 var array = new Object[]{};
-                var result = ObjectsUtils.isNotEmpty(array);
+                var result = ObjectUtils.isNotEmpty(array);
                 assertFalse(result);
             }
 
             @Test
             @DisplayName("should return false for null array")
             void shouldReturnFalseForNullArray() {
-                var result = ObjectsUtils.isNotEmpty((Object[]) null);
+                var result = ObjectUtils.isNotEmpty((Object[]) null);
                 assertFalse(result);
             }
 
@@ -266,7 +266,243 @@ class ObjectsUtilsTest {
             @SuppressWarnings("PMD.UseVarargs")
             @DisplayName("should return true for non-empty arrays")
             void shouldReturnTrueForNonEmptyArrays(Object[] array) {
-                var result = ObjectsUtils.isNotEmpty(array);
+                var result = ObjectUtils.isNotEmpty(array);
+                assertTrue(result);
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Collection Tests")
+    class CollectionTests {
+
+        @Nested
+        @DisplayName("Edge Cases and Special Scenarios")
+        class EdgeCasesTests {
+
+            @Test
+            @DisplayName("should handle collection containing only null elements as non-empty")
+            void shouldHandleCollectionContainingOnlyNullElements() {
+                var collection = Arrays.asList(null, null, null);
+                assertTrue(ObjectUtils.isNotEmpty(collection));
+                assertFalse(ObjectUtils.isEmpty(collection));
+            }
+
+            @Test
+            @DisplayName("should handle collections of different types")
+            void shouldHandleCollectionsOfDifferentTypes() {
+                var arrayList = new ArrayList<>(List.of("test"));
+                var hashSet = new HashSet<>(Set.of(1, 2));
+                var linkedList = new LinkedList<>(List.of(new Object()));
+
+                assertTrue(ObjectUtils.isNotEmpty(arrayList));
+                assertTrue(ObjectUtils.isNotEmpty(hashSet));
+                assertTrue(ObjectUtils.isNotEmpty(linkedList));
+            }
+
+            @Test
+            @DisplayName("should handle large collections efficiently")
+            void shouldHandleLargeCollectionsEfficiently() {
+                var largeCollection = new ArrayList<Integer>();
+                for (int i = 0; i < 10000; i++) {
+                    largeCollection.add(i);
+                }
+
+                assertTrue(ObjectUtils.isNotEmpty(largeCollection));
+                assertFalse(ObjectUtils.isEmpty(largeCollection));
+            }
+
+            @Test
+            @DisplayName("should handle single element collection")
+            void shouldHandleSingleElementCollection() {
+                var result1 = ObjectUtils.isEmpty(List.of("element"));
+                var result2 = ObjectUtils.isNotEmpty(List.of("element"));
+
+                assertFalse(result1);
+                assertTrue(result2);
+            }
+        }
+
+        @Nested
+        @DisplayName("isEmpty(Collection<?>...) Tests")
+        class IsEmptyMultipleCollectionsTests {
+
+            static Stream<Arguments> collectionsWithAtLeastOneNonEmpty() {
+                return Stream.of(
+                        Arguments.of((Object) new Collection<?>[]{List.of("element")}),
+                        Arguments.of((Object) new Collection<?>[]{new ArrayList<>(), List.of("a")}),
+                        Arguments.of((Object) new Collection<?>[]{null, List.of("b"), new HashSet<>()}),
+                        Arguments.of((Object) new Collection<?>[]{Set.of(1), new ArrayList<>(), null}),
+                        Arguments.of((Object) new Collection<?>[]{List.of("a"), Set.of("b")})
+                );
+            }
+
+            @ParameterizedTest
+            @MethodSource("collectionsWithAtLeastOneNonEmpty")
+            @DisplayName("should return false when at least one collection is not empty")
+            @SuppressWarnings("PMD.UseVarargs")
+            void shouldReturnFalseWhenAtLeastOneCollectionIsNotEmpty(Collection<?>[] collections) {
+                var result = ObjectUtils.isEmpty(collections);
+                assertFalse(result);
+            }
+
+            @Test
+            @DisplayName("should return true for mix of null and empty collections")
+            void shouldReturnTrueForMixOfNullAndEmptyCollections() {
+                var result = ObjectUtils.isEmpty(null, new ArrayList<>(), null, new HashSet<>());
+                assertTrue(result);
+            }
+
+            @Test
+            @DisplayName("should return true for null varargs")
+            void shouldReturnTrueForNullVarargs() {
+                var result = ObjectUtils.isEmpty((Collection<?>[]) null);
+                assertTrue(result);
+            }
+
+            @Test
+            @DisplayName("should return true when all collections are empty")
+            void shouldReturnTrueWhenAllCollectionsAreEmpty() {
+                var result = ObjectUtils.isEmpty(new ArrayList<>(), new HashSet<>(), new LinkedList<>());
+                assertTrue(result);
+            }
+
+            @Test
+            @DisplayName("should return true when all collections are null")
+            void shouldReturnTrueWhenAllCollectionsAreNull() {
+                var result = ObjectUtils.isEmpty((Collection<?>) null, null, null);
+                assertTrue(result);
+            }
+        }
+
+        @Nested
+        @DisplayName("isEmpty(Collection<?>) Tests")
+        class IsEmptySingleCollectionTests {
+
+            static Stream<Arguments> nonEmptyCollections() {
+                return Stream.of(
+                        Arguments.of(List.of("element")),
+                        Arguments.of(List.of("a", "b", "c")),
+                        Arguments.of(Set.of(1, 2, 3)),
+                        Arguments.of(Collections.singletonList(null)),
+                        Arguments.of(Arrays.asList(null, null)),
+                        Arguments.of(Arrays.asList(1, null, "test"))
+                );
+            }
+
+            @ParameterizedTest
+            @MethodSource("nonEmptyCollections")
+            @DisplayName("should return false for non-empty collections")
+            void shouldReturnFalseForNonEmptyCollections(Collection<?> collection) {
+                var result = ObjectUtils.isEmpty(collection);
+                assertFalse(result);
+            }
+
+            @Test
+            @DisplayName("should return true for empty collection")
+            @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+            void shouldReturnTrueForEmptyCollection() {
+                var collection = new ArrayList<>();
+                var result = ObjectUtils.isEmpty(collection);
+                assertTrue(result);
+            }
+
+            @Test
+            @DisplayName("should return true for null collection")
+            void shouldReturnTrueForNullCollection() {
+                var result = ObjectUtils.isEmpty((Collection<?>) null);
+                assertTrue(result);
+            }
+        }
+
+        @Nested
+        @DisplayName("isNotEmpty(Collection<?>...) Tests")
+        class IsNotEmptyMultipleCollectionsTests {
+
+            static Stream<Arguments> collectionsWithAtLeastOneNonEmpty() {
+                return Stream.of(
+                        Arguments.of((Object) new Collection<?>[]{List.of("element")}),
+                        Arguments.of((Object) new Collection<?>[]{new ArrayList<>(), List.of("a")}),
+                        Arguments.of((Object) new Collection<?>[]{null, List.of("b"), new HashSet<>()}),
+                        Arguments.of((Object) new Collection<?>[]{Set.of(1), new ArrayList<>(), null}),
+                        Arguments.of((Object) new Collection<?>[]{List.of("a"), Set.of("b")})
+                );
+            }
+
+            @Test
+            @DisplayName("should return false for mix of null and empty collections")
+            void shouldReturnFalseForMixOfNullAndEmptyCollections() {
+                var result = ObjectUtils.isNotEmpty(null, new ArrayList<>(), null, new HashSet<>());
+                assertFalse(result);
+            }
+
+            @Test
+            @DisplayName("should return false for null varargs")
+            void shouldReturnFalseForNullVarargs() {
+                var result = ObjectUtils.isNotEmpty((Collection<?>[]) null);
+                assertFalse(result);
+            }
+
+            @Test
+            @DisplayName("should return false when all collections are empty")
+            void shouldReturnFalseWhenAllCollectionsAreEmpty() {
+                var result = ObjectUtils.isNotEmpty(new ArrayList<>(), new HashSet<>(), new LinkedList<>());
+                assertFalse(result);
+            }
+
+            @Test
+            @DisplayName("should return false when all collections are null")
+            void shouldReturnFalseWhenAllCollectionsAreNull() {
+                var result = ObjectUtils.isNotEmpty((Collection<?>) null, null, null);
+                assertFalse(result);
+            }
+
+            @ParameterizedTest
+            @MethodSource("collectionsWithAtLeastOneNonEmpty")
+            @DisplayName("should return true when at least one collection is not empty")
+            @SuppressWarnings("PMD.UseVarargs")
+            void shouldReturnTrueWhenAtLeastOneCollectionIsNotEmpty(Collection<?>[] collections) {
+                var result = ObjectUtils.isNotEmpty(collections);
+                assertTrue(result);
+            }
+        }
+
+        @Nested
+        @DisplayName("isNotEmpty(Collection<?>) Tests")
+        class IsNotEmptySingleCollectionTests {
+
+            static Stream<Arguments> nonEmptyCollections() {
+                return Stream.of(
+                        Arguments.of(List.of("element")),
+                        Arguments.of(List.of("a", "b", "c")),
+                        Arguments.of(Set.of(1, 2, 3)),
+                        Arguments.of(Collections.singletonList(null)),
+                        Arguments.of(Arrays.asList(null, null)),
+                        Arguments.of(Arrays.asList(1, null, "test"))
+                );
+            }
+
+            @Test
+            @DisplayName("should return false for empty collection")
+            @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+            void shouldReturnFalseForEmptyCollection() {
+                var collection = new ArrayList<>();
+                var result = ObjectUtils.isNotEmpty(collection);
+                assertFalse(result);
+            }
+
+            @Test
+            @DisplayName("should return false for null collection")
+            void shouldReturnFalseForNullCollection() {
+                var result = ObjectUtils.isNotEmpty((Collection<?>) null);
+                assertFalse(result);
+            }
+
+            @ParameterizedTest
+            @MethodSource("nonEmptyCollections")
+            @DisplayName("should return true for non-empty collections")
+            void shouldReturnTrueForNonEmptyCollections(Collection<?> collection) {
+                var result = ObjectUtils.isNotEmpty(collection);
                 assertTrue(result);
             }
         }
@@ -288,14 +524,14 @@ class ObjectsUtilsTest {
                 var linkedHashMap = new LinkedHashMap<>(Map.of("key", "value"));
                 var concurrentHashMap = new ConcurrentHashMap<>(Map.of("key", "value"));
 
-                assertTrue(ObjectsUtils.isNotEmpty(hashMap));
-                assertTrue(ObjectsUtils.isNotEmpty(treeMap));
-                assertTrue(ObjectsUtils.isNotEmpty(linkedHashMap));
-                assertTrue(ObjectsUtils.isNotEmpty(concurrentHashMap));
-                assertFalse(ObjectsUtils.isEmpty(hashMap));
-                assertFalse(ObjectsUtils.isEmpty(treeMap));
-                assertFalse(ObjectsUtils.isEmpty(linkedHashMap));
-                assertFalse(ObjectsUtils.isEmpty(concurrentHashMap));
+                assertTrue(ObjectUtils.isNotEmpty(hashMap));
+                assertTrue(ObjectUtils.isNotEmpty(treeMap));
+                assertTrue(ObjectUtils.isNotEmpty(linkedHashMap));
+                assertTrue(ObjectUtils.isNotEmpty(concurrentHashMap));
+                assertFalse(ObjectUtils.isEmpty(hashMap));
+                assertFalse(ObjectUtils.isEmpty(treeMap));
+                assertFalse(ObjectUtils.isEmpty(linkedHashMap));
+                assertFalse(ObjectUtils.isEmpty(concurrentHashMap));
             }
 
             @Test
@@ -306,8 +542,8 @@ class ObjectsUtilsTest {
                 table.put("two", 2);
                 table.put("three", 3);
 
-                assertTrue(ObjectsUtils.isNotEmpty(table));
-                assertFalse(ObjectsUtils.isEmpty(table));
+                assertTrue(ObjectUtils.isNotEmpty(table));
+                assertFalse(ObjectUtils.isEmpty(table));
             }
 
             @Test
@@ -318,8 +554,8 @@ class ObjectsUtilsTest {
                     largeTable.put(i, "value" + i);
                 }
 
-                assertTrue(ObjectsUtils.isNotEmpty(largeTable));
-                assertFalse(ObjectsUtils.isEmpty(largeTable));
+                assertTrue(ObjectUtils.isNotEmpty(largeTable));
+                assertFalse(ObjectUtils.isEmpty(largeTable));
             }
 
             @Test
@@ -330,8 +566,8 @@ class ObjectsUtilsTest {
                     largeMap.put(i, "value" + i);
                 }
 
-                assertTrue(ObjectsUtils.isNotEmpty(largeMap));
-                assertFalse(ObjectsUtils.isEmpty(largeMap));
+                assertTrue(ObjectUtils.isNotEmpty(largeMap));
+                assertFalse(ObjectUtils.isEmpty(largeMap));
             }
 
             @Test
@@ -341,56 +577,8 @@ class ObjectsUtilsTest {
                 map.put("key1", null);
                 map.put("key2", null);
 
-                assertTrue(ObjectsUtils.isNotEmpty(map));
-                assertFalse(ObjectsUtils.isEmpty(map));
-            }
-        }
-
-        @Nested
-        @DisplayName("isEmpty(Map<?, ?>) Tests")
-        class IsEmptyMapTests {
-
-            static Stream<Arguments> nonEmptyMaps() {
-                var mapWithNull1 = new HashMap<Integer, String>();
-                mapWithNull1.put(1, null);
-
-                var mapWithNull2 = new HashMap<String, String>();
-                mapWithNull2.put("key", "value");
-                mapWithNull2.put("key2", null);
-
-                return Stream.of(
-                        Arguments.of(new HashMap<>(Map.of("key1", "value1"))),
-                        Arguments.of(new HashMap<>(Map.of("a", 1, "b", 2, "c", 3))),
-                        Arguments.of(new TreeMap<>(Map.of("x", "y"))),
-                        Arguments.of(new LinkedHashMap<>(Map.of("k", "v"))),
-                        Arguments.of(new ConcurrentHashMap<>(Map.of("test", "data"))),
-                        Arguments.of(mapWithNull1),
-                        Arguments.of(mapWithNull2)
-                );
-            }
-
-            @ParameterizedTest
-            @MethodSource("nonEmptyMaps")
-            @DisplayName("should return false for non-empty maps")
-            void shouldReturnFalseForNonEmptyMaps(Map<?, ?> map) {
-                var result = ObjectsUtils.isEmpty(map);
-                assertFalse(result);
-            }
-
-            @Test
-            @DisplayName("should return true for empty map")
-            @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
-            void shouldReturnTrueForEmptyMap() {
-                var map = new HashMap<>();
-                var result = ObjectsUtils.isEmpty(map);
-                assertTrue(result);
-            }
-
-            @Test
-            @DisplayName("should return true for null map")
-            void shouldReturnTrueForNullMap() {
-                var result = ObjectsUtils.isEmpty((Map<?, ?>) null);
-                assertTrue(result);
+                assertTrue(ObjectUtils.isNotEmpty(map));
+                assertFalse(ObjectUtils.isEmpty(map));
             }
         }
 
@@ -421,7 +609,7 @@ class ObjectsUtilsTest {
             @MethodSource("nonEmptyHashtables")
             @DisplayName("should return false for non-empty hashtables")
             void shouldReturnFalseForNonEmptyHashtables(Hashtable<?, ?> table) {
-                var result = ObjectsUtils.isEmpty(table);
+                var result = ObjectUtils.isEmpty(table);
                 assertFalse(result);
             }
 
@@ -430,21 +618,21 @@ class ObjectsUtilsTest {
             @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
             void shouldReturnTrueForEmptyHashtable() {
                 var table = new Hashtable<>();
-                var result = ObjectsUtils.isEmpty(table);
+                var result = ObjectUtils.isEmpty(table);
                 assertTrue(result);
             }
 
             @Test
             @DisplayName("should return true for null hashtable")
             void shouldReturnTrueForNullHashtable() {
-                var result = ObjectsUtils.isEmpty((Hashtable<?, ?>) null);
+                var result = ObjectUtils.isEmpty((Hashtable<?, ?>) null);
                 assertTrue(result);
             }
         }
 
         @Nested
-        @DisplayName("isNotEmpty(Map<?, ?>) Tests")
-        class IsNotEmptyMapTests {
+        @DisplayName("isEmpty(Map<?, ?>) Tests")
+        class IsEmptyMapTests {
 
             static Stream<Arguments> nonEmptyMaps() {
                 var mapWithNull1 = new HashMap<Integer, String>();
@@ -465,27 +653,27 @@ class ObjectsUtilsTest {
                 );
             }
 
-            @Test
-            @DisplayName("should return false for empty map")
-            @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
-            void shouldReturnFalseForEmptyMap() {
-                var map = new HashMap<>();
-                var result = ObjectsUtils.isNotEmpty(map);
-                assertFalse(result);
-            }
-
-            @Test
-            @DisplayName("should return false for null map")
-            void shouldReturnFalseForNullMap() {
-                var result = ObjectsUtils.isNotEmpty((Map<?, ?>) null);
-                assertFalse(result);
-            }
-
             @ParameterizedTest
             @MethodSource("nonEmptyMaps")
-            @DisplayName("should return true for non-empty maps")
-            void shouldReturnTrueForNonEmptyMaps(Map<?, ?> map) {
-                var result = ObjectsUtils.isNotEmpty(map);
+            @DisplayName("should return false for non-empty maps")
+            void shouldReturnFalseForNonEmptyMaps(Map<?, ?> map) {
+                var result = ObjectUtils.isEmpty(map);
+                assertFalse(result);
+            }
+
+            @Test
+            @DisplayName("should return true for empty map")
+            @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+            void shouldReturnTrueForEmptyMap() {
+                var map = new HashMap<>();
+                var result = ObjectUtils.isEmpty(map);
+                assertTrue(result);
+            }
+
+            @Test
+            @DisplayName("should return true for null map")
+            void shouldReturnTrueForNullMap() {
+                var result = ObjectUtils.isEmpty((Map<?, ?>) null);
                 assertTrue(result);
             }
         }
@@ -518,14 +706,14 @@ class ObjectsUtilsTest {
             @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
             void shouldReturnFalseForEmptyHashtable() {
                 var table = new Hashtable<>();
-                var result = ObjectsUtils.isNotEmpty(table);
+                var result = ObjectUtils.isNotEmpty(table);
                 assertFalse(result);
             }
 
             @Test
             @DisplayName("should return false for null hashtable")
             void shouldReturnFalseForNullHashtable() {
-                var result = ObjectsUtils.isNotEmpty((Hashtable<?, ?>) null);
+                var result = ObjectUtils.isNotEmpty((Hashtable<?, ?>) null);
                 assertFalse(result);
             }
 
@@ -533,7 +721,55 @@ class ObjectsUtilsTest {
             @MethodSource("nonEmptyHashtables")
             @DisplayName("should return true for non-empty hashtables")
             void shouldReturnTrueForNonEmptyHashtables(Hashtable<?, ?> table) {
-                var result = ObjectsUtils.isNotEmpty(table);
+                var result = ObjectUtils.isNotEmpty(table);
+                assertTrue(result);
+            }
+        }
+
+        @Nested
+        @DisplayName("isNotEmpty(Map<?, ?>) Tests")
+        class IsNotEmptyMapTests {
+
+            static Stream<Arguments> nonEmptyMaps() {
+                var mapWithNull1 = new HashMap<Integer, String>();
+                mapWithNull1.put(1, null);
+
+                var mapWithNull2 = new HashMap<String, String>();
+                mapWithNull2.put("key", "value");
+                mapWithNull2.put("key2", null);
+
+                return Stream.of(
+                        Arguments.of(new HashMap<>(Map.of("key1", "value1"))),
+                        Arguments.of(new HashMap<>(Map.of("a", 1, "b", 2, "c", 3))),
+                        Arguments.of(new TreeMap<>(Map.of("x", "y"))),
+                        Arguments.of(new LinkedHashMap<>(Map.of("k", "v"))),
+                        Arguments.of(new ConcurrentHashMap<>(Map.of("test", "data"))),
+                        Arguments.of(mapWithNull1),
+                        Arguments.of(mapWithNull2)
+                );
+            }
+
+            @Test
+            @DisplayName("should return false for empty map")
+            @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+            void shouldReturnFalseForEmptyMap() {
+                var map = new HashMap<>();
+                var result = ObjectUtils.isNotEmpty(map);
+                assertFalse(result);
+            }
+
+            @Test
+            @DisplayName("should return false for null map")
+            void shouldReturnFalseForNullMap() {
+                var result = ObjectUtils.isNotEmpty((Map<?, ?>) null);
+                assertFalse(result);
+            }
+
+            @ParameterizedTest
+            @MethodSource("nonEmptyMaps")
+            @DisplayName("should return true for non-empty maps")
+            void shouldReturnTrueForNonEmptyMaps(Map<?, ?> map) {
+                var result = ObjectUtils.isNotEmpty(map);
                 assertTrue(result);
             }
         }
@@ -570,26 +806,26 @@ class ObjectsUtilsTest {
             @MethodSource("provideNonNullCollections")
             @DisplayName("should return false when all elements are not null")
             void shouldReturnFalseWhenAllElementsAreNotNull(Collection<?> collection) {
-                assertFalse(ObjectsUtils.isAnyNull(collection));
+                assertFalse(ObjectUtils.isAnyNull(collection));
             }
 
             @Test
             @DisplayName("should return false when collection is empty")
             void shouldReturnFalseWhenCollectionIsEmpty() {
-                assertFalse(ObjectsUtils.isAnyNull(Collections.emptyList()));
+                assertFalse(ObjectUtils.isAnyNull(Collections.emptyList()));
             }
 
             @ParameterizedTest
             @MethodSource("provideNullCollections")
             @DisplayName("should return true when any element is null")
             void shouldReturnTrueWhenAnyElementIsNull(Collection<?> collection) {
-                assertTrue(ObjectsUtils.isAnyNull(collection));
+                assertTrue(ObjectUtils.isAnyNull(collection));
             }
 
             @Test
             @DisplayName("should return true when collection is null")
             void shouldReturnTrueWhenCollectionIsNull() {
-                assertTrue(ObjectsUtils.isAnyNull((Collection<?>) null));
+                assertTrue(ObjectUtils.isAnyNull((Collection<?>) null));
             }
         }
 
@@ -619,26 +855,26 @@ class ObjectsUtilsTest {
             @MethodSource("provideNonNullCases")
             @DisplayName("should return false when all objects are not null")
             void shouldReturnFalseWhenAllObjectsAreNotNull(Object[] objects) {
-                assertFalse(ObjectsUtils.isAnyNull(objects));
+                assertFalse(ObjectUtils.isAnyNull(objects));
             }
 
             @Test
             @DisplayName("should return false when empty array is provided")
             void shouldReturnFalseWhenEmptyArrayIsProvided() {
-                assertFalse(ObjectsUtils.isAnyNull());
+                assertFalse(ObjectUtils.isAnyNull());
             }
 
             @ParameterizedTest
             @MethodSource("provideNullCases")
             @DisplayName("should return true when any object is null")
             void shouldReturnTrueWhenAnyObjectIsNull(Object[] objects) {
-                assertTrue(ObjectsUtils.isAnyNull(objects));
+                assertTrue(ObjectUtils.isAnyNull(objects));
             }
 
             @Test
             @DisplayName("should return true when varargs parameter is null")
             void shouldReturnTrueWhenVarargsParameterIsNull() {
-                assertTrue(ObjectsUtils.isAnyNull((Object[]) null));
+                assertTrue(ObjectUtils.isAnyNull((Object[]) null));
             }
         }
 
@@ -668,26 +904,26 @@ class ObjectsUtilsTest {
             @MethodSource("provideNullCollections")
             @DisplayName("should return false when any element is null")
             void shouldReturnFalseWhenAnyElementIsNull(Collection<?> collection) {
-                assertFalse(ObjectsUtils.isNotNull(collection));
+                assertFalse(ObjectUtils.isNotNull(collection));
             }
 
             @Test
             @DisplayName("should return false when collection is null")
             void shouldReturnFalseWhenCollectionIsNull() {
-                assertFalse(ObjectsUtils.isNotNull((Collection<?>) null));
+                assertFalse(ObjectUtils.isNotNull((Collection<?>) null));
             }
 
             @ParameterizedTest
             @MethodSource("provideNonNullCollections")
             @DisplayName("should return true when all elements are not null")
             void shouldReturnTrueWhenAllElementsAreNotNull(Collection<?> collection) {
-                assertTrue(ObjectsUtils.isNotNull(collection));
+                assertTrue(ObjectUtils.isNotNull(collection));
             }
 
             @Test
             @DisplayName("should return true when collection is empty")
             void shouldReturnTrueWhenCollectionIsEmpty() {
-                assertTrue(ObjectsUtils.isNotNull(Collections.emptyList()));
+                assertTrue(ObjectUtils.isNotNull(Collections.emptyList()));
             }
         }
 
@@ -717,26 +953,26 @@ class ObjectsUtilsTest {
             @MethodSource("provideNullCases")
             @DisplayName("should return false when any object is null")
             void shouldReturnFalseWhenAnyObjectIsNull(Object[] objects) {
-                assertFalse(ObjectsUtils.isNotNull(objects));
+                assertFalse(ObjectUtils.isNotNull(objects));
             }
 
             @Test
             @DisplayName("should return false when varargs parameter is null")
             void shouldReturnFalseWhenVarargsParameterIsNull() {
-                assertFalse(ObjectsUtils.isNotNull((Object[]) null));
+                assertFalse(ObjectUtils.isNotNull((Object[]) null));
             }
 
             @ParameterizedTest
             @MethodSource("provideNonNullCases")
             @DisplayName("should return true when all objects are not null")
             void shouldReturnTrueWhenAllObjectsAreNotNull(Object[] objects) {
-                assertTrue(ObjectsUtils.isNotNull(objects));
+                assertTrue(ObjectUtils.isNotNull(objects));
             }
 
             @Test
             @DisplayName("should return true when empty array is provided")
             void shouldReturnTrueWhenEmptyArrayIsProvided() {
-                assertTrue(ObjectsUtils.isNotNull());
+                assertTrue(ObjectUtils.isNotNull());
             }
         }
 
@@ -766,26 +1002,26 @@ class ObjectsUtilsTest {
             @MethodSource("provideNonNullCollections")
             @DisplayName("should return false when any element is not null")
             void shouldReturnFalseWhenAnyElementIsNotNull(Collection<?> collection) {
-                assertFalse(ObjectsUtils.isNull(collection));
+                assertFalse(ObjectUtils.isNull(collection));
             }
 
             @ParameterizedTest
             @MethodSource("provideNullCollections")
             @DisplayName("should return true when all elements are null")
             void shouldReturnTrueWhenAllElementsAreNull(Collection<?> collection) {
-                assertTrue(ObjectsUtils.isNull(collection));
+                assertTrue(ObjectUtils.isNull(collection));
             }
 
             @Test
             @DisplayName("should return true when collection is empty")
             void shouldReturnTrueWhenCollectionIsEmpty() {
-                assertTrue(ObjectsUtils.isNull(Collections.emptyList()));
+                assertTrue(ObjectUtils.isNull(Collections.emptyList()));
             }
 
             @Test
             @DisplayName("should return true when collection is null")
             void shouldReturnTrueWhenCollectionIsNull() {
-                assertTrue(ObjectsUtils.isNull((Collection<?>) null));
+                assertTrue(ObjectUtils.isNull((Collection<?>) null));
             }
         }
 
@@ -815,26 +1051,26 @@ class ObjectsUtilsTest {
             @MethodSource("provideNonNullCases")
             @DisplayName("should return false when any object is not null")
             void shouldReturnFalseWhenAnyObjectIsNotNull(Object[] objects) {
-                assertFalse(ObjectsUtils.isNull(objects));
+                assertFalse(ObjectUtils.isNull(objects));
             }
 
             @ParameterizedTest
             @MethodSource("provideNullCases")
             @DisplayName("should return true when all objects are null")
             void shouldReturnTrueWhenAllObjectsAreNull(Object[] objects) {
-                assertTrue(ObjectsUtils.isNull(objects));
+                assertTrue(ObjectUtils.isNull(objects));
             }
 
             @Test
             @DisplayName("should return true when empty array is provided")
             void shouldReturnTrueWhenEmptyArrayIsProvided() {
-                assertTrue(ObjectsUtils.isNull());
+                assertTrue(ObjectUtils.isNull());
             }
 
             @Test
             @DisplayName("should return true when varargs parameter is null")
             void shouldReturnTrueWhenVarargsParameterIsNull() {
-                assertTrue(ObjectsUtils.isNull((Object[]) null));
+                assertTrue(ObjectUtils.isNull((Object[]) null));
             }
         }
     }

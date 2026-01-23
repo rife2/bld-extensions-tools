@@ -24,9 +24,9 @@ import java.util.Map;
  * Objects Utilities and Tools.
  */
 @SuppressWarnings({"PMD.LooseCoupling", "PMD.ReplaceHashtableWithMap"})
-public final class ObjectsUtils {
+public final class ObjectUtils {
 
-    private ObjectsUtils() {
+    private ObjectUtils() {
         // no-op
     }
 
@@ -122,6 +122,36 @@ public final class ObjectsUtils {
     }
 
     /**
+     * Checks if the provided collection is empty or {@code null}.
+     *
+     * @param collection The collection to check; can be {@code null}
+     * @return {@code true} if the collection is {@code null} or empty; {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean isEmpty(Collection<?> collection) {
+        return collection == null || collection.isEmpty();
+    }
+
+    /**
+     * Checks if all provided collections are empty or {@code null}.
+     *
+     * @param collections The collections to check; can be {@code null} or contain {@code null} elements
+     * @return {@code true} if all collections are {@code null} or empty; {@code false} if any collection is not empty
+     * @since 1.0
+     */
+    public static boolean isEmpty(Collection<?>... collections) {
+        if (collections == null) {
+            return true;
+        }
+        for (Collection<?> collection : collections) {
+            if (collection != null && !collection.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Checks if the provided array is not {@code null} and not empty.
      *
      * @param array The array to check; can be {@code null}
@@ -168,6 +198,36 @@ public final class ObjectsUtils {
         }
         for (Object[] array : arrays) {
             if (array != null && array.length > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Checks if the provided collection is not {@code null} and not empty.
+     *
+     * @param collection The collection to check; can be {@code null}
+     * @return {@code true} if the collection is not {@code null} and not empty; {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean isNotEmpty(Collection<?> collection) {
+        return collection != null && !collection.isEmpty();
+    }
+
+    /**
+     * Checks if any of the provided collections are not {@code null} and not empty.
+     *
+     * @param collections The collections to check; can be {@code null} or contain {@code null} elements
+     * @return {@code true} if any collection is not {@code null} and not empty; {@code false} if all are {@code null} or empty
+     * @since 1.0
+     */
+    public static boolean isNotEmpty(Collection<?>... collections) {
+        if (collections == null) {
+            return false;
+        }
+        for (Collection<?> collection : collections) {
+            if (collection != null && !collection.isEmpty()) {
                 return true;
             }
         }
