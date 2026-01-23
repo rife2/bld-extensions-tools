@@ -24,6 +24,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -280,15 +281,21 @@ class ObjectsUtilsTest {
         class EdgeCasesTests {
 
             @Test
-            @DisplayName("should handle different AbstractMap implementations")
-            void shouldHandleDifferentAbstractMapImplementations() {
+            @DisplayName("should handle different Map implementations")
+            void shouldHandleDifferentMapImplementations() {
                 var hashMap = new HashMap<>(Map.of("key", "value"));
                 var treeMap = new TreeMap<>(Map.of("key", "value"));
+                var linkedHashMap = new LinkedHashMap<>(Map.of("key", "value"));
+                var concurrentHashMap = new ConcurrentHashMap<>(Map.of("key", "value"));
 
                 assertTrue(ObjectsUtils.isNotEmpty(hashMap));
                 assertTrue(ObjectsUtils.isNotEmpty(treeMap));
+                assertTrue(ObjectsUtils.isNotEmpty(linkedHashMap));
+                assertTrue(ObjectsUtils.isNotEmpty(concurrentHashMap));
                 assertFalse(ObjectsUtils.isEmpty(hashMap));
                 assertFalse(ObjectsUtils.isEmpty(treeMap));
+                assertFalse(ObjectsUtils.isEmpty(linkedHashMap));
+                assertFalse(ObjectsUtils.isEmpty(concurrentHashMap));
             }
 
             @Test
@@ -340,8 +347,8 @@ class ObjectsUtilsTest {
         }
 
         @Nested
-        @DisplayName("isEmpty(AbstractMap<?, ?>) Tests")
-        class IsEmptyAbstractMapTests {
+        @DisplayName("isEmpty(Map<?, ?>) Tests")
+        class IsEmptyMapTests {
 
             static Stream<Arguments> nonEmptyMaps() {
                 var mapWithNull1 = new HashMap<Integer, String>();
@@ -355,6 +362,8 @@ class ObjectsUtilsTest {
                         Arguments.of(new HashMap<>(Map.of("key1", "value1"))),
                         Arguments.of(new HashMap<>(Map.of("a", 1, "b", 2, "c", 3))),
                         Arguments.of(new TreeMap<>(Map.of("x", "y"))),
+                        Arguments.of(new LinkedHashMap<>(Map.of("k", "v"))),
+                        Arguments.of(new ConcurrentHashMap<>(Map.of("test", "data"))),
                         Arguments.of(mapWithNull1),
                         Arguments.of(mapWithNull2)
                 );
@@ -363,7 +372,7 @@ class ObjectsUtilsTest {
             @ParameterizedTest
             @MethodSource("nonEmptyMaps")
             @DisplayName("should return false for non-empty maps")
-            void shouldReturnFalseForNonEmptyMaps(AbstractMap<?, ?> map) {
+            void shouldReturnFalseForNonEmptyMaps(Map<?, ?> map) {
                 var result = ObjectsUtils.isEmpty(map);
                 assertFalse(result);
             }
@@ -380,7 +389,7 @@ class ObjectsUtilsTest {
             @Test
             @DisplayName("should return true for null map")
             void shouldReturnTrueForNullMap() {
-                var result = ObjectsUtils.isEmpty((AbstractMap<?, ?>) null);
+                var result = ObjectsUtils.isEmpty((Map<?, ?>) null);
                 assertTrue(result);
             }
         }
@@ -434,8 +443,8 @@ class ObjectsUtilsTest {
         }
 
         @Nested
-        @DisplayName("isNotEmpty(AbstractMap<?, ?>) Tests")
-        class IsNotEmptyAbstractMapTests {
+        @DisplayName("isNotEmpty(Map<?, ?>) Tests")
+        class IsNotEmptyMapTests {
 
             static Stream<Arguments> nonEmptyMaps() {
                 var mapWithNull1 = new HashMap<Integer, String>();
@@ -449,6 +458,8 @@ class ObjectsUtilsTest {
                         Arguments.of(new HashMap<>(Map.of("key1", "value1"))),
                         Arguments.of(new HashMap<>(Map.of("a", 1, "b", 2, "c", 3))),
                         Arguments.of(new TreeMap<>(Map.of("x", "y"))),
+                        Arguments.of(new LinkedHashMap<>(Map.of("k", "v"))),
+                        Arguments.of(new ConcurrentHashMap<>(Map.of("test", "data"))),
                         Arguments.of(mapWithNull1),
                         Arguments.of(mapWithNull2)
                 );
@@ -466,14 +477,14 @@ class ObjectsUtilsTest {
             @Test
             @DisplayName("should return false for null map")
             void shouldReturnFalseForNullMap() {
-                var result = ObjectsUtils.isNotEmpty((AbstractMap<?, ?>) null);
+                var result = ObjectsUtils.isNotEmpty((Map<?, ?>) null);
                 assertFalse(result);
             }
 
             @ParameterizedTest
             @MethodSource("nonEmptyMaps")
             @DisplayName("should return true for non-empty maps")
-            void shouldReturnTrueForNonEmptyMaps(AbstractMap<?, ?> map) {
+            void shouldReturnTrueForNonEmptyMaps(Map<?, ?> map) {
                 var result = ObjectsUtils.isNotEmpty(map);
                 assertTrue(result);
             }

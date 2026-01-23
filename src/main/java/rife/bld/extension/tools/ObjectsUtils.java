@@ -16,9 +16,9 @@
 
 package rife.bld.extension.tools;
 
-import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Hashtable;
+import java.util.Map;
 
 /**
  * Objects Utilities and Tools.
@@ -81,13 +81,13 @@ public final class ObjectsUtils {
     }
 
     /**
-     * Checks if the provided {@link AbstractMap} is empty or {@code null}.
+     * Checks if the provided {@link Map} is empty or {@code null}.
      *
      * @param map The map to check; can be {@code null}
      * @return {@code true} if the map is {@code null} or empty; {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isEmpty(AbstractMap<?, ?> map) {
+    public static boolean isEmpty(Map<?, ?> map) {
         return map == null || map.isEmpty();
     }
 
@@ -134,13 +134,13 @@ public final class ObjectsUtils {
     }
 
     /**
-     * Checks if the provided {@link AbstractMap} is not {@code null} and not empty.
+     * Checks if the provided {@link Map} is not {@code null} and not empty.
      *
      * @param map The map to check; can be {@code null}
      * @return {@code true} if the map is not {@code null} and not empty; {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isNotEmpty(AbstractMap<?, ?> map) {
+    public static boolean isNotEmpty(Map<?, ?> map) {
         return map != null && !map.isEmpty();
     }
 
