@@ -17,11 +17,11 @@
 package rife.bld.extension.tools;
 
 /**
- * Text Utilities and Tools.
+ * Text Tools.
  */
-public final class TextUtils {
+public final class TextTools {
 
-    private TextUtils() {
+    private TextTools() {
         // no-op
     }
 

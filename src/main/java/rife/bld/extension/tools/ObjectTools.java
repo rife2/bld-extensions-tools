@@ -21,12 +21,12 @@ import java.util.Hashtable;
 import java.util.Map;
 
 /**
- * Object Utilities and Tools.
+ * Object Tools.
  */
 @SuppressWarnings({"PMD.LooseCoupling", "PMD.ReplaceHashtableWithMap"})
-public final class ObjectUtils {
+public final class ObjectTools {
 
-    private ObjectUtils() {
+    private ObjectTools() {
         // no-op
     }
 

@@ -2,7 +2,7 @@
 <FindBugsFilter>
     <Match>
         <Or>
-            <Class name="rife.bld.extension.tools.IOUtils"/>
+            <Class name="rife.bld.extension.tools.IOTools"/>
             <Method name="notExists" param="java.lang.String"/>
             <Method name="resolveFile"/>
         </Or>

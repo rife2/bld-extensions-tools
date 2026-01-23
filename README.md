@@ -29,8 +29,8 @@ The following static methods are provided:
 
 | Method                                                                                                                                                                           | Description                            |
 |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------------------------|
-| [`joinClasspath(Collection<String>... files)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathUtils.html#joinClasspath(java.util.Collection...)) | Joins lists of files into a classpath. |
-| [`joinClasspath(String... paths)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathUtils.html#joinClasspath(java.lang.String...))                 | Join string paths into a classpath.    |
+| [`joinClasspath(Collection<String>... files)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathTools.html#joinClasspath(java.util.Collection...)) | Joins lists of files into a classpath. |
+| [`joinClasspath(String... paths)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathTools.html#joinClasspath(java.lang.String...))                 | Join string paths into a classpath.    |
 
 ## I/O Tools
 
@@ -38,22 +38,22 @@ The following static methods are provided:
 
 | Method                                                                                                                                                                          | Description                                   |
 |:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:----------------------------------------------|
-| [`canExecute(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#canExecute(java.io.File))                                          | Check if a file is executable.                |
-| [`canExecute(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#canExecute(java.nio.file.Path))                                    | Check if a file path is exectuable.           |
-| [`canExecute(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#canExecute(java.lang.String))                                    | Check if a file path is exectuable.           |
-| [`exists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#exists(java.io.File))                                                  | Check if a file exists.                       |
-| [`exists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#exists(java.nio.file.Path))                                            | Check if a path exists.                       |
-| [`exists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#exits(java.lang.String))                                             | Check if a path exists.                       |
-| [`isDirectory(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#isDirectory(java.io.File))                                        | Check if a file is a directory.               |
-| [`isDirectory(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#isDirectory(java.nio.file.Path))                                  | Check if a path is a directory.               |
-| [`isDirectory(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#isDirectory(java.lang.String))                                  | Check if a path is a directory.               |
-| [`mkdirs(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#mkdirs(java.io.File))                                                  | Make directories.                             |
-| [`mkdirs(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#mkdirs(java.nio.file.Path))                                            | Make directories.                             |
-| [`mkdirs(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#mkdirs(java.lang.String))                                            | Make directories.                             |
-| [`notExists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#notExists(java.io.File))                                            | Check if a file exists.                       |
-| [`notExists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#notExists(java.nio.file.Path))                                      | Check if a path exists.                       |
-| [`notExists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#notExits(java.lang.String))                                       | Check if a path exists.                       |
-| [`resolveFile(File base, String... segments)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOUtils.html#resolveFile(java.io.File,java.lang.String...)) | Resolve a file with additional path segments. |
+| [`canExecute(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#canExecute(java.io.File))                                          | Check if a file is executable.                |
+| [`canExecute(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#canExecute(java.nio.file.Path))                                    | Check if a file path is exectuable.           |
+| [`canExecute(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#canExecute(java.lang.String))                                    | Check if a file path is exectuable.           |
+| [`exists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#exists(java.io.File))                                                  | Check if a file exists.                       |
+| [`exists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#exists(java.nio.file.Path))                                            | Check if a path exists.                       |
+| [`exists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#exits(java.lang.String))                                             | Check if a path exists.                       |
+| [`isDirectory(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#isDirectory(java.io.File))                                        | Check if a file is a directory.               |
+| [`isDirectory(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#isDirectory(java.nio.file.Path))                                  | Check if a path is a directory.               |
+| [`isDirectory(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#isDirectory(java.lang.String))                                  | Check if a path is a directory.               |
+| [`mkdirs(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#mkdirs(java.io.File))                                                  | Make directories.                             |
+| [`mkdirs(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#mkdirs(java.nio.file.Path))                                            | Make directories.                             |
+| [`mkdirs(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#mkdirs(java.lang.String))                                            | Make directories.                             |
+| [`notExists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#notExists(java.io.File))                                            | Check if a file exists.                       |
+| [`notExists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#notExists(java.nio.file.Path))                                      | Check if a path exists.                       |
+| [`notExists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#notExits(java.lang.String))                                       | Check if a path exists.                       |
+| [`resolveFile(File base, String... segments)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#resolveFile(java.io.File,java.lang.String...)) | Resolve a file with additional path segments. |
 
 *NOTE:* All methods properly handle `null` values
 
@@ -63,22 +63,22 @@ The following static methods are provided:
 
 | Method                                                                                                                                                        | Description                                           |
 |:--------------------------------------------------------------------------------------------------------------------------------------------------------------|:------------------------------------------------------|
-| [`isAnyNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isAnyNull(java.util.Collection)) | Checks if any of the provided objects are `null`.     |
-| [`isAnyNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isAnyNull(java.lang.Object...))      | Checks if any of the provided objects are `null`.     |
-| [`isEmpty(Collection<?> collection)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isEmpty(java.util.Collection))       | Checks if a collection is empty.     |
-| [`isEmpty(Hashtable table)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isEmpty(java.util.Hashtable))         | Checks if a hashtable is empty.                       |
-| [`isEmpty(Map map)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isEmpty(java.util.Map))                       | Checks if a  map is empty.                            |
-| [`isEmpty(Object[] array)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isEmpty(java.lang.Object[]))                | Checks if an array is empty.                          |
-| [`isEmpty(Object[]... arrays)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isEmpty(java.lang.Object[]...))         | Checks if any of the provided arrays are empty.       |
-| [`isNotEmpty(Collection<?> collection)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNotEmpty(java.util.Collection)) | Checks if a collection is not empty. |
-| [`isNotEmpty(Hashtable table)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNotEmpty(java.util.Hashtable))   | Checks if a hashtable is not empty.                   |
-| [`isNotEmpty(Map map)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNotEmpty(java.util.Map))                 | Checks if a map is not empty.                         |
-| [`isNotEmpty(Object[] array)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNotEmpty(java.lang.Object[]))          | Checks if an array is not empty.                      |
-| [`isNotEmpty(Object[]... arrays)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNotEmpty(java.lang.Object[]...))   | Checks if any of the provided arrays are not empty.   |
-| [`isNotNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNotNull(java.util.Collection)) | Checks if any of the provided objects are not `null`. |
-| [`isNotNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNotNull(java.lang.Object...))      | Checks if any of the provided objects are not `null`. |
-| [`isNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNull(java.util.Collection))       | Checks if the provided objects are all `null`.        |
-| [`isNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNull(java.lang.Object...))            | Checks if the provided objects are all `null`.        |
+| [`isAnyNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isAnyNull(java.util.Collection)) | Checks if any of the provided objects are `null`.     |
+| [`isAnyNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isAnyNull(java.lang.Object...))      | Checks if any of the provided objects are `null`.     |
+| [`isEmpty(Collection<?> collection)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isEmpty(java.util.Collection))       | Checks if a collection is empty.     |
+| [`isEmpty(Hashtable table)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isEmpty(java.util.Hashtable))         | Checks if a hashtable is empty.                       |
+| [`isEmpty(Map map)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isEmpty(java.util.Map))                       | Checks if a  map is empty.                            |
+| [`isEmpty(Object[] array)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isEmpty(java.lang.Object[]))                | Checks if an array is empty.                          |
+| [`isEmpty(Object[]... arrays)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isEmpty(java.lang.Object[]...))         | Checks if any of the provided arrays are empty.       |
+| [`isNotEmpty(Collection<?> collection)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isNotEmpty(java.util.Collection)) | Checks if a collection is not empty. |
+| [`isNotEmpty(Hashtable table)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isNotEmpty(java.util.Hashtable))   | Checks if a hashtable is not empty.                   |
+| [`isNotEmpty(Map map)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isNotEmpty(java.util.Map))                 | Checks if a map is not empty.                         |
+| [`isNotEmpty(Object[] array)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isNotEmpty(java.lang.Object[]))          | Checks if an array is not empty.                      |
+| [`isNotEmpty(Object[]... arrays)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isNotEmpty(java.lang.Object[]...))   | Checks if any of the provided arrays are not empty.   |
+| [`isNotNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isNotNull(java.util.Collection)) | Checks if any of the provided objects are not `null`. |
+| [`isNotNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isNotNull(java.lang.Object...))      | Checks if any of the provided objects are not `null`. |
+| [`isNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isNull(java.util.Collection))       | Checks if the provided objects are all `null`.        |
+| [`isNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isNull(java.lang.Object...))            | Checks if the provided objects are all `null`.        |
 
 *NOTE:* All methods properly handle `null` objects
 
@@ -88,16 +88,16 @@ The following static methods are provided:
 
 | Method                                                                                                              | Description                                                                                                      |
 |:--------------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------|
-| [`isAix()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isAix())         | Determines if the current operating system is AIX.                                                               |
-| [`isCygwin()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isCygwin())   | Determines if the current operating system is Cygwin.                                                            |
-| [`isFreeBsd()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isFreeBsd()) | Determines if the current operating system is FreeBSD.                                                           |
-| [`isLinux()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isLinux())     | Determines if the current operating system is Linux.                                                             |
-| [`isMacOS()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isMacOS())     | Determines if the current operating system is macOS.                                                             |
-| [`isMingw()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isMingw())     | Determines if the current operating system is MinGW.                                                             |
-| [`isOpenVms()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isOpenVms()) | Determines if the current operating system is OpenVMS.                                                           |
-| [`isOtherOS()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isOtherOS()) | Determines if the current operating system is other than AIX, FreeBSD, Linux, macOS, OpenVMS, Solaris or Windows |
-| [`isSolaris()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isSolaris()) | Determines if the current operating system is Solaris.                                                           |
-| [`isWindows()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemUtils.html#isWindows()) | Determines if the current operating system is Windows.                                                           |
+| [`isAix()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemTools.html#isAix())         | Determines if the current operating system is AIX.                                                               |
+| [`isCygwin()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemTools.html#isCygwin())   | Determines if the current operating system is Cygwin.                                                            |
+| [`isFreeBsd()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemTools.html#isFreeBsd()) | Determines if the current operating system is FreeBSD.                                                           |
+| [`isLinux()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemTools.html#isLinux())     | Determines if the current operating system is Linux.                                                             |
+| [`isMacOS()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemTools.html#isMacOS())     | Determines if the current operating system is macOS.                                                             |
+| [`isMingw()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemTools.html#isMingw())     | Determines if the current operating system is MinGW.                                                             |
+| [`isOpenVms()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemTools.html#isOpenVms()) | Determines if the current operating system is OpenVMS.                                                           |
+| [`isOtherOS()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemTools.html#isOtherOS()) | Determines if the current operating system is other than AIX, FreeBSD, Linux, macOS, OpenVMS, Solaris or Windows |
+| [`isSolaris()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemTools.html#isSolaris()) | Determines if the current operating system is Solaris.                                                           |
+| [`isWindows()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/SystemTools.html#isWindows()) | Determines if the current operating system is Windows.                                                           |
 
 ## Text Tools
 
@@ -105,13 +105,13 @@ The following static methods are provided:
 
 | Method                                                                                                                                                      | Description                      |
 |:------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------------------|
-| [`isBlank(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isBlank(java.lang.String))                     | Checks if a string is blank.     |
-| [`isBlank(String... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isBlank(java.lang.String...))           | Checks if strings are blank.     |
-| [`isEmpty(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isEmpty(java.lang.String))                     | Checks if a string is empty.     |
-| [`isEmpty(String... strings str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isEmpty(java.lang.String...))       | Checks if strings are empty.     |
-| [`isNotBlank(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotBlank(java.lang.String))               | Checks if a string is not blank. |
-| [`isNotBlank(String... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotBlank(java.lang.String...))     | Checks if strings are not blank. |
-| [`isNotEmpty(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotEmpty(java.lang.String))               | Checks if a string is not empty. |
-| [`isNotEmpty(String... strings str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotEmpty(java.lang.String...)) | Checks if strings are not empty. |
+| [`isBlank(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isBlank(java.lang.String))                     | Checks if a string is blank.     |
+| [`isBlank(String... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isBlank(java.lang.String...))           | Checks if strings are blank.     |
+| [`isEmpty(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isEmpty(java.lang.String))                     | Checks if a string is empty.     |
+| [`isEmpty(String... strings str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isEmpty(java.lang.String...))       | Checks if strings are empty.     |
+| [`isNotBlank(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotBlank(java.lang.String))               | Checks if a string is not blank. |
+| [`isNotBlank(String... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotBlank(java.lang.String...))     | Checks if strings are not blank. |
+| [`isNotEmpty(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotEmpty(java.lang.String))               | Checks if a string is not empty. |
+| [`isNotEmpty(String... strings str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotEmpty(java.lang.String...)) | Checks if strings are not empty. |
 
 *NOTE:* All methods properly handle `null` strings.

@@ -34,9 +34,9 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DisplayName("IO Utils Tests")
+@DisplayName("IO Tools Tests")
 @SuppressWarnings({"PMD.AvoidDuplicateLiterals", "ConstantValue", "PMD.TestClassWithoutTestCases"})
-class IOUtilsTest {
+class IOToolsTest {
 
     @Nested
     @DisplayName("canExecute(...) Tests")
@@ -50,7 +50,7 @@ class IOUtilsTest {
             @DisplayName("should return false for directory")
             void shouldReturnFalseForDirectory(@TempDir Path tempDir) {
                 var dir = tempDir.toFile();
-                assertFalse(IOUtils.canExecute(dir));
+                assertFalse(IOTools.canExecute(dir));
             }
 
             @Test
@@ -60,21 +60,21 @@ class IOUtilsTest {
                 var file = tempDir.resolve("test.txt").toFile();
                 assertTrue(file.createNewFile());
                 assertTrue(file.setExecutable(false));
-                assertFalse(IOUtils.canExecute(file));
+                assertFalse(IOTools.canExecute(file));
             }
 
             @Test
             @DisplayName("should return false for non-existent file")
             void shouldReturnFalseForNonExistentFile() {
                 var file = new File("non-existent-file-12345.txt");
-                assertFalse(IOUtils.canExecute(file));
+                assertFalse(IOTools.canExecute(file));
             }
 
             @ParameterizedTest
             @NullSource
             @DisplayName("should return false for null file")
             void shouldReturnFalseForNullFile(File file) {
-                assertFalse(IOUtils.canExecute(file));
+                assertFalse(IOTools.canExecute(file));
             }
 
             @Test
@@ -83,7 +83,7 @@ class IOUtilsTest {
                 var file = tempDir.resolve("test.sh").toFile();
                 assertTrue(file.createNewFile());
                 assertTrue(file.setExecutable(true));
-                assertTrue(IOUtils.canExecute(file));
+                assertTrue(IOTools.canExecute(file));
             }
 
             @Test
@@ -99,12 +99,12 @@ class IOUtilsTest {
                             PosixFilePermission.OWNER_EXECUTE
                     );
                     Files.setPosixFilePermissions(filePath, permissions);
-                    assertTrue(IOUtils.canExecute(filePath.toFile()));
+                    assertTrue(IOTools.canExecute(filePath.toFile()));
                 } catch (UnsupportedOperationException e) {
                     // POSIX not supported on this file system (e.g., Windows)
                     var file = filePath.toFile();
                     assertTrue(file.setExecutable(true));
-                    assertTrue(IOUtils.canExecute(file));
+                    assertTrue(IOTools.canExecute(file));
                 }
             }
         }
@@ -130,7 +130,7 @@ class IOUtilsTest {
                     var symlink = tempDir.resolve("link.sh");
                     Files.createSymbolicLink(symlink, targetFile);
 
-                    assertTrue(IOUtils.canExecute(symlink));
+                    assertTrue(IOTools.canExecute(symlink));
                 } catch (UnsupportedOperationException e) {
                     // Symbolic links or POSIX not supported on this file system
                     var ignored = targetFile.toFile().setExecutable(true);
@@ -140,7 +140,7 @@ class IOUtilsTest {
             @Test
             @DisplayName("should return false for directory")
             void shouldReturnFalseForDirectory(@TempDir Path tempDir) {
-                assertFalse(IOUtils.canExecute(tempDir));
+                assertFalse(IOTools.canExecute(tempDir));
             }
 
             @Test
@@ -161,21 +161,21 @@ class IOUtilsTest {
                     var ignored = path.toFile().setExecutable(false);
                 }
 
-                assertFalse(IOUtils.canExecute(path));
+                assertFalse(IOTools.canExecute(path));
             }
 
             @Test
             @DisplayName("should return false for non-existent path")
             void shouldReturnFalseForNonExistentPath() {
                 var path = Path.of("non-existent-file-12345.txt");
-                assertFalse(IOUtils.canExecute(path));
+                assertFalse(IOTools.canExecute(path));
             }
 
             @ParameterizedTest
             @NullSource
             @DisplayName("should return false for null path")
             void shouldReturnFalseForNullPath(Path path) {
-                assertFalse(IOUtils.canExecute(path));
+                assertFalse(IOTools.canExecute(path));
             }
 
             @Test
@@ -196,7 +196,7 @@ class IOUtilsTest {
                     var ignored = path.toFile().setExecutable(true);
                 }
 
-                assertTrue(IOUtils.canExecute(path));
+                assertTrue(IOTools.canExecute(path));
             }
 
             @Test
@@ -209,7 +209,7 @@ class IOUtilsTest {
 
                 var path = Path.of(executable);
                 if (Files.exists(path)) {
-                    assertTrue(IOUtils.canExecute(path));
+                    assertTrue(IOTools.canExecute(path));
                 }
             }
         }
@@ -221,20 +221,20 @@ class IOUtilsTest {
             @Test
             @DisplayName("should handle invalid char in path")
             void shouldHandleInvalidCharInPath() {
-                assertFalse(IOUtils.canExecute("foo\0bar"));
+                assertFalse(IOTools.canExecute("foo\0bar"));
             }
 
             @Test
             @DisplayName("should return false for blank string")
             void shouldReturnFalseForBlankString() {
-                assertFalse(IOUtils.canExecute(""));
-                assertFalse(IOUtils.canExecute("   "));
+                assertFalse(IOTools.canExecute(""));
+                assertFalse(IOTools.canExecute("   "));
             }
 
             @Test
             @DisplayName("should return false for directory")
             void shouldReturnFalseForDirectory(@TempDir Path tempDir) {
-                assertFalse(IOUtils.canExecute(tempDir.toString()));
+                assertFalse(IOTools.canExecute(tempDir.toString()));
             }
 
             @Test
@@ -255,20 +255,20 @@ class IOUtilsTest {
                     var ignored = path.toFile().setExecutable(false);
                 }
 
-                assertFalse(IOUtils.canExecute(path.toString()));
+                assertFalse(IOTools.canExecute(path.toString()));
             }
 
             @Test
             @DisplayName("should return false for non-existent path")
             void shouldReturnFalseForNonExistentPath() {
-                assertFalse(IOUtils.canExecute("non-existent-file-12345.txt"));
+                assertFalse(IOTools.canExecute("non-existent-file-12345.txt"));
             }
 
             @ParameterizedTest
             @NullSource
             @DisplayName("should return false for null string")
             void shouldReturnFalseForNullString(String path) {
-                assertFalse(IOUtils.canExecute(path));
+                assertFalse(IOTools.canExecute(path));
             }
 
             @Test
@@ -289,7 +289,7 @@ class IOUtilsTest {
                     var ignored = path.toFile().setExecutable(true);
                 }
 
-                assertTrue(IOUtils.canExecute(path.toString()));
+                assertTrue(IOTools.canExecute(path.toString()));
             }
 
             @Test
@@ -301,7 +301,7 @@ class IOUtilsTest {
                         : "/bin/sh";
 
                 if (Files.exists(Path.of(executable))) {
-                    assertTrue(IOUtils.canExecute(executable));
+                    assertTrue(IOTools.canExecute(executable));
                 }
             }
         }
@@ -320,7 +320,7 @@ class IOUtilsTest {
             @NullSource
             @DisplayName("exists(File) should handle null input")
             void existsFileShouldHandleNull(File file) {
-                var result = IOUtils.exists(file);
+                var result = IOTools.exists(file);
                 assertFalse(result);
             }
 
@@ -328,7 +328,7 @@ class IOUtilsTest {
             @NullSource
             @DisplayName("exists(Path) should handle null input")
             void existsPathShouldHandleNull(Path path) {
-                var result = IOUtils.exists(path);
+                var result = IOTools.exists(path);
                 assertFalse(result);
             }
 
@@ -336,7 +336,7 @@ class IOUtilsTest {
             @ValueSource(strings = {"", " ", "   "})
             @DisplayName("exists(String) should handle empty and whitespace strings")
             void existsStringShouldHandleEmptyStrings(String path) {
-                var result = IOUtils.exists(path);
+                var result = IOTools.exists(path);
                 assertFalse(result);
             }
 
@@ -344,7 +344,7 @@ class IOUtilsTest {
             @NullSource
             @DisplayName("exists(String) should handle null input")
             void existsStringShouldHandleNull(String path) {
-                var result = IOUtils.exists(path);
+                var result = IOTools.exists(path);
                 assertFalse(result);
             }
         }
@@ -363,14 +363,14 @@ class IOUtilsTest {
             @DisplayName("should return false when file does not exist")
             void shouldReturnFalseWhenFileDoesNotExist() {
                 var nonExistentFile = new File(tempDir.toFile(), "nonexistent.txt");
-                var result = IOUtils.exists(nonExistentFile);
+                var result = IOTools.exists(nonExistentFile);
                 assertFalse(result);
             }
 
             @Test
             @DisplayName("should return false when file is null")
             void shouldReturnFalseWhenFileIsNull() {
-                var result = IOUtils.exists((File) null);
+                var result = IOTools.exists((File) null);
                 assertFalse(result);
             }
 
@@ -378,7 +378,7 @@ class IOUtilsTest {
             @DisplayName("should return true when file exists")
             void shouldReturnTrueWhenFileExists() {
                 var existingFile = tempFile.toFile();
-                var result = IOUtils.exists(existingFile);
+                var result = IOTools.exists(existingFile);
                 assertTrue(result);
             }
         }
@@ -396,21 +396,21 @@ class IOUtilsTest {
             @DisplayName("should return false when path does not exist")
             void shouldReturnFalseWhenPathDoesNotExist() {
                 var nonExistentPath = tempDir.resolve("nonexistent.txt");
-                var result = IOUtils.exists(nonExistentPath);
+                var result = IOTools.exists(nonExistentPath);
                 assertFalse(result);
             }
 
             @Test
             @DisplayName("should return false when path is null")
             void shouldReturnFalseWhenPathIsNull() {
-                var result = IOUtils.exists((Path) null);
+                var result = IOTools.exists((Path) null);
                 assertFalse(result);
             }
 
             @Test
             @DisplayName("should return true when path exists")
             void shouldReturnTrueWhenPathExists() {
-                var result = IOUtils.exists(existingPath);
+                var result = IOTools.exists(existingPath);
                 assertTrue(result);
             }
         }
@@ -427,28 +427,28 @@ class IOUtilsTest {
             @Test
             @DisplayName("should handle invalid char in path")
             void shouldHandleInvalidCharInPath() {
-                assertFalse(IOUtils.exists("foo\0bar"));
+                assertFalse(IOTools.exists("foo\0bar"));
             }
 
             @Test
             @DisplayName("should return false when string path does not exist")
             void shouldReturnFalseWhenStringPathDoesNotExist() {
                 var nonExistentPath = tempDir.resolve("nonexistent.txt").toString();
-                var result = IOUtils.exists(nonExistentPath);
+                var result = IOTools.exists(nonExistentPath);
                 assertFalse(result);
             }
 
             @Test
             @DisplayName("should return false when string path is null")
             void shouldReturnFalseWhenStringPathIsNull() {
-                var result = IOUtils.exists((String) null);
+                var result = IOTools.exists((String) null);
                 assertFalse(result);
             }
 
             @Test
             @DisplayName("should return true when string path exists")
             void shouldReturnTrueWhenStringPathExists() {
-                var result = IOUtils.exists(existingPath.toString());
+                var result = IOTools.exists(existingPath.toString());
                 assertTrue(result);
             }
         }
@@ -465,7 +465,7 @@ class IOUtilsTest {
 
         @BeforeAll
         static void setUpAll() throws IOException {
-            var baseDir = Files.createTempDirectory("IOUtils-test");
+            var baseDir = Files.createTempDirectory("IOTools-test");
             tempDir = Files.createDirectory(baseDir.resolve("test-directory"));
             tempFile = Files.createFile(baseDir.resolve("test-file.txt"));
             nonExistentPath = baseDir.resolve("non-existent");
@@ -495,9 +495,9 @@ class IOUtilsTest {
                 var path = tempDir;
                 var string = tempDir.toString();
 
-                boolean fileResult = IOUtils.isDirectory(file);
-                boolean pathResult = IOUtils.isDirectory(path);
-                boolean stringResult = IOUtils.isDirectory(string);
+                boolean fileResult = IOTools.isDirectory(file);
+                boolean pathResult = IOTools.isDirectory(path);
+                boolean stringResult = IOTools.isDirectory(string);
 
                 assertTrue(fileResult);
                 assertTrue(pathResult);
@@ -513,9 +513,9 @@ class IOUtilsTest {
                 var path = tempFile;
                 var string = tempFile.toString();
 
-                boolean fileResult = IOUtils.isDirectory(file);
-                boolean pathResult = IOUtils.isDirectory(path);
-                boolean stringResult = IOUtils.isDirectory(string);
+                boolean fileResult = IOTools.isDirectory(file);
+                boolean pathResult = IOTools.isDirectory(path);
+                boolean stringResult = IOTools.isDirectory(string);
 
                 assertFalse(fileResult);
                 assertFalse(pathResult);
@@ -531,9 +531,9 @@ class IOUtilsTest {
                 var path = nonExistentPath;
                 var string = nonExistentPath.toString();
 
-                boolean fileResult = IOUtils.isDirectory(file);
-                boolean pathResult = IOUtils.isDirectory(path);
-                boolean stringResult = IOUtils.isDirectory(string);
+                boolean fileResult = IOTools.isDirectory(file);
+                boolean pathResult = IOTools.isDirectory(path);
+                boolean stringResult = IOTools.isDirectory(string);
 
                 assertFalse(fileResult);
                 assertFalse(pathResult);
@@ -551,7 +551,7 @@ class IOUtilsTest {
             @DisplayName("should return true for existing directory")
             void testExistingDirectory() {
                 var dir = tempDir.toFile();
-                assertTrue(IOUtils.isDirectory(dir));
+                assertTrue(IOTools.isDirectory(dir));
             }
 
             @Test
@@ -559,7 +559,7 @@ class IOUtilsTest {
             void testNestedDirectory() throws IOException {
                 var nested = Files.createDirectory(tempDir.resolve("nested"));
                 try {
-                    assertTrue(IOUtils.isDirectory(nested.toFile()));
+                    assertTrue(IOTools.isDirectory(nested.toFile()));
                 } finally {
                     Files.delete(nested);
                 }
@@ -569,20 +569,20 @@ class IOUtilsTest {
             @DisplayName("should return false for non-existent file")
             void testNonExistentFile() {
                 var file = nonExistentPath.toFile();
-                assertFalse(IOUtils.isDirectory(file));
+                assertFalse(IOTools.isDirectory(file));
             }
 
             @Test
             @DisplayName("should return false when file is null")
             void testNullFile() {
-                assertFalse(IOUtils.isDirectory((File) null));
+                assertFalse(IOTools.isDirectory((File) null));
             }
 
             @Test
             @DisplayName("should return false for regular file")
             void testRegularFile() {
                 var file = tempFile.toFile();
-                assertFalse(IOUtils.isDirectory(file));
+                assertFalse(IOTools.isDirectory(file));
             }
 
             @ParameterizedTest
@@ -590,7 +590,7 @@ class IOUtilsTest {
             @ValueSource(strings = {".", ".."})
             void testSystemDirectories(String path) {
                 var file = new File(path);
-                assertTrue(IOUtils.isDirectory(file));
+                assertTrue(IOTools.isDirectory(file));
             }
         }
 
@@ -601,7 +601,7 @@ class IOUtilsTest {
             @Test
             @DisplayName("should return true for existing directory")
             void testExistingDirectory() {
-                assertTrue(IOUtils.isDirectory(tempDir));
+                assertTrue(IOTools.isDirectory(tempDir));
             }
 
             @Test
@@ -609,7 +609,7 @@ class IOUtilsTest {
             void testNestedDirectory() throws IOException {
                 var nested = Files.createDirectory(tempDir.resolve("nested-path"));
                 try {
-                    assertTrue(IOUtils.isDirectory(nested));
+                    assertTrue(IOTools.isDirectory(nested));
                 } finally {
                     Files.delete(nested);
                 }
@@ -618,19 +618,19 @@ class IOUtilsTest {
             @Test
             @DisplayName("should return false for non-existent path")
             void testNonExistentPath() {
-                assertFalse(IOUtils.isDirectory(nonExistentPath));
+                assertFalse(IOTools.isDirectory(nonExistentPath));
             }
 
             @Test
             @DisplayName("should return false when path is null")
             void testNullPath() {
-                assertFalse(IOUtils.isDirectory((Path) null));
+                assertFalse(IOTools.isDirectory((Path) null));
             }
 
             @Test
             @DisplayName("should return false for regular file")
             void testRegularFile() {
-                assertFalse(IOUtils.isDirectory(tempFile));
+                assertFalse(IOTools.isDirectory(tempFile));
             }
 
             @Test
@@ -640,7 +640,7 @@ class IOUtilsTest {
                 var link = tempDir.getParent().resolve("link-to-dir");
                 try {
                     Files.createSymbolicLink(link, tempDir);
-                    assertTrue(IOUtils.isDirectory(link));
+                    assertTrue(IOTools.isDirectory(link));
                 } finally {
                     if (Files.exists(link)) {
                         Files.delete(link);
@@ -653,7 +653,7 @@ class IOUtilsTest {
             @ValueSource(strings = {".", ".."})
             void testSystemPaths(String pathStr) {
                 var path = Path.of(pathStr);
-                assertTrue(IOUtils.isDirectory(path));
+                assertTrue(IOTools.isDirectory(path));
             }
         }
 
@@ -674,20 +674,20 @@ class IOUtilsTest {
             @NullAndEmptySource
             @ValueSource(strings = {"  ", "\t", "\n", "   \t\n  "})
             void testBlankStrings(String path) {
-                assertFalse(IOUtils.isDirectory(path));
+                assertFalse(IOTools.isDirectory(path));
             }
 
             @Test
             @DisplayName("should return true for existing directory")
             void testExistingDirectory() {
-                assertTrue(IOUtils.isDirectory(tempDir.toString()));
+                assertTrue(IOTools.isDirectory(tempDir.toString()));
             }
 
             @Test
             @DisplayName("should handle invalid character in path")
             @EnabledOnOs({OS.MAC, OS.LINUX})
             void testInvalidCharInPath() {
-                assertFalse(IOUtils.isDirectory("foo\0bar"));
+                assertFalse(IOTools.isDirectory("foo\0bar"));
             }
 
             @ParameterizedTest
@@ -701,14 +701,14 @@ class IOUtilsTest {
             @EnabledOnOs(OS.WINDOWS)
             void testInvalidCharactersWindows(String invalidPath) {
                 // Windows-specific invalid characters should return false
-                assertFalse(IOUtils.isDirectory(invalidPath));
+                assertFalse(IOTools.isDirectory(invalidPath));
             }
 
             @ParameterizedTest
             @DisplayName("should return false for invalid path strings")
             @MethodSource("provideInvalidPaths")
             void testInvalidPaths(String path) {
-                assertFalse(IOUtils.isDirectory(path));
+                assertFalse(IOTools.isDirectory(path));
             }
 
             @Test
@@ -716,7 +716,7 @@ class IOUtilsTest {
             void testNestedDirectory() throws IOException {
                 var nested = Files.createDirectory(tempDir.resolve("nested-string"));
                 try {
-                    assertTrue(IOUtils.isDirectory(nested.toString()));
+                    assertTrue(IOTools.isDirectory(nested.toString()));
                 } finally {
                     Files.delete(nested);
                 }
@@ -725,13 +725,13 @@ class IOUtilsTest {
             @Test
             @DisplayName("should return false for non-existent path")
             void testNonExistentPath() {
-                assertFalse(IOUtils.isDirectory(nonExistentPath.toString()));
+                assertFalse(IOTools.isDirectory(nonExistentPath.toString()));
             }
 
             @Test
             @DisplayName("should return false when string is null")
             void testNullString() {
-                assertFalse(IOUtils.isDirectory((String) null));
+                assertFalse(IOTools.isDirectory((String) null));
             }
 
             @Test
@@ -739,7 +739,7 @@ class IOUtilsTest {
             void testPathWithLeadingSpaces() {
                 // The method should NOT trim, so paths with leading spaces should fail
                 var pathWithLeadingSpaces = " " + tempDir.toString();
-                assertFalse(IOUtils.isDirectory(pathWithLeadingSpaces));
+                assertFalse(IOTools.isDirectory(pathWithLeadingSpaces));
             }
 
             @Test
@@ -747,7 +747,7 @@ class IOUtilsTest {
             void testPathWithSpecialCharacters() throws IOException {
                 var specialDir = Files.createDirectory(tempDir.resolve("test-dir_123"));
                 try {
-                    assertTrue(IOUtils.isDirectory(specialDir.toString()));
+                    assertTrue(IOTools.isDirectory(specialDir.toString()));
                 } finally {
                     Files.delete(specialDir);
                 }
@@ -758,20 +758,20 @@ class IOUtilsTest {
             void testPathWithTrailingSpaces() {
                 // InvalidPathException is caught and returns false
                 var pathWithTrailingSpaces = tempDir.toString() + " ";
-                assertFalse(IOUtils.isDirectory(pathWithTrailingSpaces));
+                assertFalse(IOTools.isDirectory(pathWithTrailingSpaces));
             }
 
             @Test
             @DisplayName("should return false for regular file")
             void testRegularFile() {
-                assertFalse(IOUtils.isDirectory(tempFile.toString()));
+                assertFalse(IOTools.isDirectory(tempFile.toString()));
             }
 
             @ParameterizedTest
             @DisplayName("should handle system path strings")
             @ValueSource(strings = {".", ".."})
             void testSystemPathStrings(String path) {
-                assertTrue(IOUtils.isDirectory(path));
+                assertTrue(IOTools.isDirectory(path));
             }
         }
     }
@@ -789,8 +789,8 @@ class IOUtilsTest {
             var path = tempDir.resolve("consistent/test/dir");
             var file = path.toFile();
 
-            var pathResult = IOUtils.mkdirs(path);
-            var fileResult = IOUtils.mkdirs(file);
+            var pathResult = IOTools.mkdirs(path);
+            var fileResult = IOTools.mkdirs(file);
 
             assertEquals(pathResult, fileResult);
             assertTrue(Files.exists(path));
@@ -801,7 +801,7 @@ class IOUtilsTest {
         @DisplayName("mkdirs(File) with existing directory returns true")
         void mkdirsFileWithExistingDirectoryReturnsTrue() {
             var existing = tempDir.toFile();
-            assertTrue(IOUtils.mkdirs(existing));
+            assertTrue(IOTools.mkdirs(existing));
         }
 
         @Test
@@ -810,7 +810,7 @@ class IOUtilsTest {
             var file = new File(tempDir.toFile(), "existing-file.txt");
             assertTrue(file.createNewFile());
 
-            assertFalse(IOUtils.mkdirs(file));
+            assertFalse(IOTools.mkdirs(file));
         }
 
         @Test
@@ -819,7 +819,7 @@ class IOUtilsTest {
             var newDir = new File(tempDir.toFile(), "new/nested/directory");
             assertFalse(newDir.exists());
 
-            assertTrue(IOUtils.mkdirs(newDir));
+            assertTrue(IOTools.mkdirs(newDir));
             assertTrue(newDir.exists());
             assertTrue(newDir.isDirectory());
         }
@@ -828,13 +828,13 @@ class IOUtilsTest {
         @NullSource
         @DisplayName("mkdirs(File) with null returns false")
         void mkdirsFileWithNullReturnsFalse(File file) {
-            assertFalse(IOUtils.mkdirs(file));
+            assertFalse(IOTools.mkdirs(file));
         }
 
         @Test
         @DisplayName("mkdirs(Path) with existing directory returns true")
         void mkdirsPathWithExistingDirectoryReturnsTrue() {
-            assertTrue(IOUtils.mkdirs(tempDir));
+            assertTrue(IOTools.mkdirs(tempDir));
         }
 
         @Test
@@ -843,7 +843,7 @@ class IOUtilsTest {
             var file = tempDir.resolve("existing-file.txt");
             Files.createFile(file);
 
-            assertFalse(IOUtils.mkdirs(file));
+            assertFalse(IOTools.mkdirs(file));
         }
 
         @Test
@@ -852,7 +852,7 @@ class IOUtilsTest {
             var newDir = tempDir.resolve("new/nested/directory");
             assertFalse(Files.exists(newDir));
 
-            assertTrue(IOUtils.mkdirs(newDir));
+            assertTrue(IOTools.mkdirs(newDir));
             assertTrue(Files.exists(newDir));
             assertTrue(Files.isDirectory(newDir));
         }
@@ -861,7 +861,7 @@ class IOUtilsTest {
         @NullSource
         @DisplayName("mkdirs(Path) with null returns false")
         void mkdirsPathWithNullReturnsFalse(Path path) {
-            assertFalse(IOUtils.mkdirs(path));
+            assertFalse(IOTools.mkdirs(path));
         }
 
         @Nested
@@ -877,7 +877,7 @@ class IOUtilsTest {
                 void shouldHandleAbsolutePath(@TempDir Path tempDir) {
                     var absolute = tempDir.resolve("absolute/path/test").toAbsolutePath().toString();
 
-                    assertTrue(IOUtils.mkdirs(absolute));
+                    assertTrue(IOTools.mkdirs(absolute));
                     var absolutePath = Path.of(absolute);
                     assertTrue(Files.exists(absolutePath));
                     assertTrue(Files.isDirectory(absolutePath));
@@ -895,7 +895,7 @@ class IOUtilsTest {
                     var filePath = tempDir.resolve("existingfile");
                     Files.createFile(filePath);
 
-                    assertFalse(IOUtils.mkdirs(filePath.toString()));
+                    assertFalse(IOTools.mkdirs(filePath.toString()));
                 }
 
             }
@@ -909,7 +909,7 @@ class IOUtilsTest {
                 void shouldCreateDeeplyNestedDirectories(@TempDir Path tempDir) {
                     var deepPath = tempDir.resolve("a/b/c/d/e/f/g").toString();
 
-                    assertTrue(IOUtils.mkdirs(deepPath));
+                    assertTrue(IOTools.mkdirs(deepPath));
                     assertTrue(Files.exists(Path.of(deepPath)));
                 }
 
@@ -918,7 +918,7 @@ class IOUtilsTest {
                 void shouldCreateParentDirectories(@TempDir Path tempDir) {
                     var grandchild = tempDir.resolve("parent/child/grandchild").toString();
 
-                    assertTrue(IOUtils.mkdirs(grandchild));
+                    assertTrue(IOTools.mkdirs(grandchild));
                     var grandchildPath = Path.of(grandchild);
                     assertTrue(Files.exists(grandchildPath));
                     assertTrue(Files.isDirectory(grandchildPath));
@@ -935,7 +935,7 @@ class IOUtilsTest {
                 @ValueSource(strings = {" ", "  ", "\t", "\n", " \t\n "})
                 @DisplayName("Should return false")
                 void shouldReturnFalse(String path) {
-                    assertFalse(IOUtils.mkdirs(path));
+                    assertFalse(IOTools.mkdirs(path));
                 }
 
             }
@@ -949,7 +949,7 @@ class IOUtilsTest {
                 void shouldCreateDirectory(@TempDir Path tempDir) {
                     var newDir = tempDir.resolve("newdir").toString();
 
-                    assertTrue(IOUtils.mkdirs(newDir));
+                    assertTrue(IOTools.mkdirs(newDir));
                     var newDirPath = Path.of(newDir);
                     assertTrue(Files.exists(newDirPath));
                     assertTrue(Files.isDirectory(newDirPath));
@@ -961,7 +961,7 @@ class IOUtilsTest {
                     var existingDir = tempDir.resolve("existing");
                     Files.createDirectory(existingDir);
 
-                    assertTrue(IOUtils.mkdirs(existingDir.toString()));
+                    assertTrue(IOTools.mkdirs(existingDir.toString()));
                     assertTrue(Files.exists(existingDir));
                 }
 
@@ -974,7 +974,7 @@ class IOUtilsTest {
                 @Test
                 @DisplayName("should handle invalid char in path")
                 void shouldHandleInvalidCharInPath() {
-                    assertFalse(IOUtils.mkdirs("foo\0bar"));
+                    assertFalse(IOTools.mkdirs("foo\0bar"));
                 }
 
                 @ParameterizedTest
@@ -983,7 +983,7 @@ class IOUtilsTest {
                 void shouldHandleSpecialCharacters(String dirName, @TempDir Path tempDir) {
                     var dirPath = tempDir.resolve(dirName).toString();
 
-                    assertTrue(IOUtils.mkdirs(dirPath));
+                    assertTrue(IOTools.mkdirs(dirPath));
                     assertTrue(Files.exists(Path.of(dirPath)));
                 }
             }
@@ -1003,7 +1003,7 @@ class IOUtilsTest {
             @NullSource
             @DisplayName("notExists(File) should handle null input")
             void notExistsFileShouldHandleNull(File file) {
-                var result = IOUtils.notExists(file);
+                var result = IOTools.notExists(file);
                 assertTrue(result);
             }
 
@@ -1011,7 +1011,7 @@ class IOUtilsTest {
             @NullSource
             @DisplayName("notExists(Path) should handle null input")
             void notExistsPathShouldHandleNull(Path path) {
-                var result = IOUtils.notExists(path);
+                var result = IOTools.notExists(path);
                 assertTrue(result);
             }
 
@@ -1019,7 +1019,7 @@ class IOUtilsTest {
             @ValueSource(strings = {"", " ", "   "})
             @DisplayName("notExists(String) should handle empty and whitespace strings")
             void notExistsStringShouldHandleEmptyStrings(String path) {
-                var result = IOUtils.notExists(path);
+                var result = IOTools.notExists(path);
                 assertTrue(result);
             }
 
@@ -1027,7 +1027,7 @@ class IOUtilsTest {
             @NullSource
             @DisplayName("notExists(String) should handle null input")
             void notExistsStringShouldHandleNull(String path) {
-                var result = IOUtils.notExists(path);
+                var result = IOTools.notExists(path);
                 assertTrue(result);
             }
         }
@@ -1046,7 +1046,7 @@ class IOUtilsTest {
             @DisplayName("should return false when file exists")
             void shouldReturnFalseWhenFileExists() {
                 var existingFile = tempFile.toFile();
-                var result = IOUtils.notExists(existingFile);
+                var result = IOTools.notExists(existingFile);
                 assertFalse(result);
             }
 
@@ -1054,14 +1054,14 @@ class IOUtilsTest {
             @DisplayName("should return true when file does not exist")
             void shouldReturnTrueWhenFileDoesNotExist() {
                 var nonExistentFile = new File(tempDir.toFile(), "nonexistent.txt");
-                var result = IOUtils.notExists(nonExistentFile);
+                var result = IOTools.notExists(nonExistentFile);
                 assertTrue(result);
             }
 
             @Test
             @DisplayName("should return true when file is null")
             void shouldReturnTrueWhenFileIsNull() {
-                var result = IOUtils.notExists((File) null);
+                var result = IOTools.notExists((File) null);
                 assertTrue(result);
             }
 
@@ -1080,7 +1080,7 @@ class IOUtilsTest {
             @Test
             @DisplayName("should return false when path exists")
             void shouldReturnFalseWhenPathExists() {
-                var result = IOUtils.notExists(existingPath);
+                var result = IOTools.notExists(existingPath);
                 assertFalse(result);
             }
 
@@ -1088,14 +1088,14 @@ class IOUtilsTest {
             @DisplayName("should return true when path does not exist")
             void shouldReturnTrueWhenPathDoesNotExist() {
                 var nonExistentPath = tempDir.resolve("nonexistent.txt");
-                var result = IOUtils.notExists(nonExistentPath);
+                var result = IOTools.notExists(nonExistentPath);
                 assertTrue(result);
             }
 
             @Test
             @DisplayName("should return true when path is null")
             void shouldReturnTrueWhenPathIsNull() {
-                var result = IOUtils.notExists((Path) null);
+                var result = IOTools.notExists((Path) null);
                 assertTrue(result);
             }
 
@@ -1114,7 +1114,7 @@ class IOUtilsTest {
             @Test
             @DisplayName("should return false when string path exists")
             void shouldReturnFalseWhenStringPathExists() {
-                var result = IOUtils.notExists(existingPath.toString());
+                var result = IOTools.notExists(existingPath.toString());
                 assertFalse(result);
             }
 
@@ -1122,14 +1122,14 @@ class IOUtilsTest {
             @DisplayName("should return true when string path does not exist")
             void shouldReturnTrueWhenStringPathDoesNotExist() {
                 var nonExistentPath = tempDir.resolve("nonexistent.txt").toString();
-                var result = IOUtils.notExists(nonExistentPath);
+                var result = IOTools.notExists(nonExistentPath);
                 assertTrue(result);
             }
 
             @Test
             @DisplayName("should return true when string path is null")
             void shouldReturnTrueWhenStringPathIsNull() {
-                var result = IOUtils.notExists((String) null);
+                var result = IOTools.notExists((String) null);
                 assertTrue(result);
             }
         }
@@ -1147,7 +1147,7 @@ class IOUtilsTest {
             @DisplayName("should match behavior of nested File constructors")
             void shouldMatchNestedFileConstructors() {
                 var base = new File("home", "user");
-                var result = IOUtils.resolveFile(base, "docs", "work", "file.txt");
+                var result = IOTools.resolveFile(base, "docs", "work", "file.txt");
 
                 var expected = new File(new File(new File(base, "docs"), "work"), "file.txt");
                 assertEquals(expected.getPath(), result.getPath());
@@ -1158,7 +1158,7 @@ class IOUtilsTest {
             void shouldNotCreateActualFile() {
                 var base = new File(System.getProperty("java.io.tmpdir"));
                 var uniqueName = "test-file-" + System.currentTimeMillis();
-                var result = IOUtils.resolveFile(base, uniqueName);
+                var result = IOTools.resolveFile(base, uniqueName);
 
                 assertFalse(result.exists(), "File should not exist on filesystem");
             }
@@ -1172,7 +1172,7 @@ class IOUtilsTest {
             @DisplayName("should handle segments with dots for relative navigation")
             void shouldHandleDotsInSegments() {
                 var base = new File("home", "user");
-                var result = IOUtils.resolveFile(base, "..", "other", "file.txt");
+                var result = IOTools.resolveFile(base, "..", "other", "file.txt");
 
                 assertTrue(result.getPath().contains(".."));
                 assertTrue(result.getPath().contains("other"));
@@ -1182,7 +1182,7 @@ class IOUtilsTest {
             @DisplayName("should handle segments with special characters")
             void shouldHandleSpecialCharacters() {
                 var base = new File("home", "user");
-                var result = IOUtils.resolveFile(base, "my-file", "name_with.dots", "file@2024");
+                var result = IOTools.resolveFile(base, "my-file", "name_with.dots", "file@2024");
 
                 assertTrue(result.getPath().contains("my-file"));
                 assertTrue(result.getPath().contains("name_with.dots"));
@@ -1194,7 +1194,7 @@ class IOUtilsTest {
             void shouldHandleVeryLongSegmentNames() {
                 var base = new File("/home");
                 var longName = "a".repeat(255);
-                var result = IOUtils.resolveFile(base, longName);
+                var result = IOTools.resolveFile(base, longName);
 
                 assertTrue(result.getPath().contains(longName));
             }
@@ -1204,7 +1204,7 @@ class IOUtilsTest {
             @DisplayName("should handle whitespace and empty segments")
             void shouldHandleWhitespaceSegments(String segment) {
                 var base = new File("home", "user");
-                var result = IOUtils.resolveFile(base, "before", segment, "after");
+                var result = IOTools.resolveFile(base, "before", segment, "after");
 
                 assertNotNull(result);
                 assertTrue(result.getPath().contains("before"));
@@ -1231,7 +1231,7 @@ class IOUtilsTest {
             @MethodSource("multipleSegmentProvider")
             @DisplayName("should append multiple segments in correct order")
             void shouldAppendMultipleSegments(File basePath, String[] segments, int expectedDepth) {
-                var result = IOUtils.resolveFile(basePath, segments);
+                var result = IOTools.resolveFile(basePath, segments);
 
                 // Verify all segments appear in the path
                 for (String segment : segments) {
@@ -1250,7 +1250,7 @@ class IOUtilsTest {
             @DisplayName("should create deeply nested path structure")
             void shouldCreateDeeplyNestedPath() {
                 var base = new File("root");
-                var result = IOUtils.resolveFile(base, "a", "b", "c", "d", "e", "f");
+                var result = IOTools.resolveFile(base, "a", "b", "c", "d", "e", "f");
 
                 var separatorPattern = "\\".equals(File.separator) ? "\\\\" : File.separator;
                 var pathParts = result.getPath().split(separatorPattern);
@@ -1266,7 +1266,7 @@ class IOUtilsTest {
             @DisplayName("should return equivalent path with empty varargs")
             void shouldHandleEmptyVarargs() {
                 var base = new File("home", "user");
-                var result = IOUtils.resolveFile(base);
+                var result = IOTools.resolveFile(base);
 
                 // When joining an empty array, should get base + empty string
                 var expected = new File(base, "");
@@ -1278,7 +1278,7 @@ class IOUtilsTest {
             void shouldHandleExplicitEmptyArray() {
                 var base = new File("home", "user");
                 var emptySegments = new String[]{};
-                var result = IOUtils.resolveFile(base, emptySegments);
+                var result = IOTools.resolveFile(base, emptySegments);
 
                 var expected = new File(base, "");
                 assertEquals(expected.getPath(), result.getPath());
@@ -1291,7 +1291,7 @@ class IOUtilsTest {
 
             @Test
             void shouldHandleNullBase() {
-                assertEquals(new File("foo"), IOUtils.resolveFile(null, "foo"));
+                assertEquals(new File("foo"), IOTools.resolveFile(null, "foo"));
             }
 
             @ParameterizedTest
@@ -1300,7 +1300,7 @@ class IOUtilsTest {
             void shouldThrowWhenSegmentsIsNull(String... segments) {
                 var base = new File("home", "user");
 
-                assertThrows(NullPointerException.class, () -> IOUtils.resolveFile(base, segments));
+                assertThrows(NullPointerException.class, () -> IOTools.resolveFile(base, segments));
             }
         }
 
@@ -1312,11 +1312,11 @@ class IOUtilsTest {
             @DisplayName("should handle both Unix and Windows base paths gracefully")
             void shouldHandleBothPathStyles() {
                 var unixBase = Path.of("usr", "local", "bin").toFile();
-                var unixResult = IOUtils.resolveFile(unixBase, "app");
+                var unixResult = IOTools.resolveFile(unixBase, "app");
                 assertNotNull(unixResult);
 
                 var windowsBase = new File("C:", "Program Files");
-                var windowsResult = IOUtils.resolveFile(windowsBase, "App");
+                var windowsResult = IOTools.resolveFile(windowsBase, "App");
                 assertNotNull(windowsResult);
             }
 
@@ -1324,7 +1324,7 @@ class IOUtilsTest {
             @DisplayName("should use platform-specific file separator")
             void shouldUsePlatformSpecificSeparator() {
                 var base = new File("home", "user");
-                var result = IOUtils.resolveFile(base, "docs", "file.txt");
+                var result = IOTools.resolveFile(base, "docs", "file.txt");
 
                 var separator = File.separator;
                 assertTrue(result.getPath().contains(separator),
@@ -1340,7 +1340,7 @@ class IOUtilsTest {
             @DisplayName("should append single segment to base path")
             void shouldAppendSingleSegment() {
                 var base = new File("home", "user");
-                var result = IOUtils.resolveFile(base, "documents");
+                var result = IOTools.resolveFile(base, "documents");
 
                 var expected = new File(base, "documents").getPath();
                 assertEquals(expected, result.getPath());
@@ -1350,7 +1350,7 @@ class IOUtilsTest {
             @DisplayName("should handle Windows-style base path")
             void shouldHandleWindowsStylePath() {
                 var base = new File("C:\\Users\\John");
-                var result = IOUtils.resolveFile(base, "Desktop");
+                var result = IOTools.resolveFile(base, "Desktop");
 
                 assertTrue(result.getPath().endsWith("Desktop"));
                 assertTrue(result.getPath().contains("John"));
@@ -1360,7 +1360,7 @@ class IOUtilsTest {
             @DisplayName("should work with relative base path")
             void shouldWorkWithRelativeBase() {
                 var base = new File("project");
-                var result = IOUtils.resolveFile(base, "src");
+                var result = IOTools.resolveFile(base, "src");
 
                 var expected = new File(base, "src").getPath();
                 assertEquals(expected, result.getPath());

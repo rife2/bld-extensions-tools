@@ -34,9 +34,9 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DisplayName("Classpath Utils Tests")
+@DisplayName("Classpath Tools Tests")
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-class ClasspathUtilsTest {
+class ClasspathToolsTest {
 
     private static final String FILE_SEP = File.separator;
     private static final String PATH_SEP = File.pathSeparator;
@@ -79,7 +79,7 @@ class ClasspathUtilsTest {
             var path2 = "path" + FILE_SEP + "to" + FILE_SEP + "jar2.jar";
             var path3 = "path" + FILE_SEP + "to" + FILE_SEP + "jar3.jar";
 
-            var result = ClasspathUtils.joinClasspath(
+            var result = ClasspathTools.joinClasspath(
                     path1,
                     "",
                     null,
@@ -95,7 +95,7 @@ class ClasspathUtilsTest {
         @MethodSource("providePathCombinations")
         @DisplayName("should handle various path combinations")
         void handleVariousPathCombinations(String[] paths, String expected) {
-            var result = ClasspathUtils.joinClasspath(paths);
+            var result = ClasspathTools.joinClasspath(paths);
             assertEquals(expected, result);
         }
 
@@ -104,7 +104,7 @@ class ClasspathUtilsTest {
         @ValueSource(strings = {"   ", "\t", "\n"})
         @DisplayName("should ignore blank and null paths")
         void ignoreBlankAndNullPaths(String blankPath) {
-            var result = ClasspathUtils.joinClasspath(blankPath);
+            var result = ClasspathTools.joinClasspath(blankPath);
             assertEquals("", result);
         }
 
@@ -115,7 +115,7 @@ class ClasspathUtilsTest {
             var path2 = "path" + FILE_SEP + "to" + FILE_SEP + "jar2.jar";
             var path3 = "path" + FILE_SEP + "to" + FILE_SEP + "jar3.jar";
 
-            var result = ClasspathUtils.joinClasspath(path1, path2, path3);
+            var result = ClasspathTools.joinClasspath(path1, path2, path3);
             var expected = String.join(PATH_SEP, path1, path2, path3);
             assertEquals(expected, result);
         }
@@ -124,7 +124,7 @@ class ClasspathUtilsTest {
         @DisplayName("should build classpath with single valid path")
         void singleValidPath() {
             var path = "path" + FILE_SEP + "to" + FILE_SEP + "jar.jar";
-            var result = ClasspathUtils.joinClasspath(path);
+            var result = ClasspathTools.joinClasspath(path);
             assertEquals(path, result);
         }
 
@@ -139,9 +139,9 @@ class ClasspathUtilsTest {
                         new File("lib" + FILE_SEP + "dependency1.jar"),
                         new File("lib" + FILE_SEP + "dependency2.jar")
                 );
-                var jarClasspath = ClasspathUtils.joinClasspath(jarFiles);
+                var jarClasspath = ClasspathTools.joinClasspath(jarFiles);
 
-                var fullClasspath = ClasspathUtils.joinClasspath(
+                var fullClasspath = ClasspathTools.joinClasspath(
                         "classes",
                         jarClasspath,
                         "resources"
@@ -181,7 +181,7 @@ class ClasspathUtilsTest {
         @DisplayName("should return empty string for empty list")
         void emptyStringForEmptyList() {
             var emptyList = new ArrayList<File>();
-            var result = ClasspathUtils.joinClasspath(emptyList);
+            var result = ClasspathTools.joinClasspath(emptyList);
             assertEquals("", result);
         }
 
@@ -192,7 +192,7 @@ class ClasspathUtilsTest {
             var absoluteFile = new File("absolute" + FILE_SEP + "path" + FILE_SEP + "lib.jar");
             var jars = List.of(relativeFile, absoluteFile);
 
-            var result = ClasspathUtils.joinClasspath(jars);
+            var result = ClasspathTools.joinClasspath(jars);
 
             assertTrue(result.contains(relativeFile.getAbsolutePath()));
             assertTrue(result.contains(absoluteFile.getAbsolutePath()));
@@ -203,7 +203,7 @@ class ClasspathUtilsTest {
         @MethodSource("provideFileLists")
         @DisplayName("should handle various jar file lists")
         void handleVariousFileLists(List<File> jars, int expectedParts) {
-            var result = ClasspathUtils.joinClasspath(jars);
+            var result = ClasspathTools.joinClasspath(jars);
 
             if (expectedParts == 0) {
                 assertEquals("", result);
@@ -221,7 +221,7 @@ class ClasspathUtilsTest {
             var file3 = new File("path" + FILE_SEP + "to" + FILE_SEP + "library3.jar");
             var jars = List.of(file1, file2, file3);
 
-            var result = ClasspathUtils.joinClasspath(jars);
+            var result = ClasspathTools.joinClasspath(jars);
 
             var expected = String.join(PATH_SEP,
                     file1.getAbsolutePath(),
@@ -236,7 +236,7 @@ class ClasspathUtilsTest {
         void joinSingleFile() {
             var file = new File("path" + FILE_SEP + "to" + FILE_SEP + "library.jar");
             var jars = List.of(file);
-            var result = ClasspathUtils.joinClasspath(jars);
+            var result = ClasspathTools.joinClasspath(jars);
             assertEquals(file.getAbsolutePath(), result);
         }
 
@@ -304,7 +304,7 @@ class ClasspathUtilsTest {
                 var file2 = new File("path" + FILE_SEP + "to" + FILE_SEP + "lib2.jar");
                 var expected = file1.getAbsolutePath() + PATH_SEP + file2.getAbsolutePath();
 
-                assertEquals(expected, ClasspathUtils.joinClasspath(
+                assertEquals(expected, ClasspathTools.joinClasspath(
                         List.of(file1),
                         Collections.emptyList(),
                         List.of(file2)
@@ -317,7 +317,7 @@ class ClasspathUtilsTest {
                 var file1 = new File("path" + FILE_SEP + "to" + FILE_SEP + "lib1.jar");
                 var expected = file1.getAbsolutePath();
 
-                assertEquals(expected, ClasspathUtils.joinClasspath(
+                assertEquals(expected, ClasspathTools.joinClasspath(
                         null,
                         Collections.emptyList(),
                         List.of(file1),
@@ -329,20 +329,20 @@ class ClasspathUtilsTest {
             @MethodSource("provideMultipleCollectionCases")
             @DisplayName("should join multiple collections into classpath string")
             void shouldJoinMultipleCollectionsIntoClasspathString(Collection<File>[] jars, String expected) {
-                assertEquals(expected, ClasspathUtils.joinClasspath(jars));
+                assertEquals(expected, ClasspathTools.joinClasspath(jars));
             }
 
             @ParameterizedTest
             @MethodSource("provideSingleCollectionCases")
             @DisplayName("should join single collection into classpath string")
             void shouldJoinSingleCollectionIntoClasspathString(Collection<File> jars, String expected) {
-                assertEquals(expected, ClasspathUtils.joinClasspath(jars));
+                assertEquals(expected, ClasspathTools.joinClasspath(jars));
             }
 
             @Test
             @DisplayName("should return empty string when all collections are empty")
             void shouldReturnEmptyStringWhenAllCollectionsAreEmpty() {
-                assertEquals("", ClasspathUtils.joinClasspath(
+                assertEquals("", ClasspathTools.joinClasspath(
                         Collections.emptyList(),
                         Collections.emptyList()
                 ));
@@ -351,7 +351,7 @@ class ClasspathUtilsTest {
             @Test
             @DisplayName("should return empty string when all collections are null")
             void shouldReturnEmptyStringWhenAllCollectionsAreNull() {
-                assertEquals("", ClasspathUtils.joinClasspath((String) null, null, null));
+                assertEquals("", ClasspathTools.joinClasspath((String) null, null, null));
             }
 
             @Test
@@ -361,7 +361,7 @@ class ClasspathUtilsTest {
                 var file3 = new File("path" + FILE_SEP + "to" + FILE_SEP + "lib3.jar");
                 var expected = file1.getAbsolutePath() + PATH_SEP + file3.getAbsolutePath();
 
-                assertEquals(expected, ClasspathUtils.joinClasspath(
+                assertEquals(expected, ClasspathTools.joinClasspath(
                         List.of(file1),
                         null,
                         List.of(file3)

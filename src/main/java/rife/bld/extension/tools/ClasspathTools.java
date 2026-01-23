@@ -24,11 +24,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Classpath Utilities and Tools.
+ * Classpath Tools.
  */
-public final class ClasspathUtils {
+public final class ClasspathTools {
 
-    private ClasspathUtils() {
+    private ClasspathTools() {
         // no-op
     }
 
@@ -48,7 +48,7 @@ public final class ClasspathUtils {
     public static String joinClasspath(String... paths) {
         var joiner = new StringJoiner(File.pathSeparator);
         for (var p : paths) {
-            if (TextUtils.isNotBlank(p)) {
+            if (TextTools.isNotBlank(p)) {
                 joiner.add(p);
             }
         }

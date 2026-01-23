@@ -23,11 +23,11 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 
 /**
- * I/O Utilities and Tools.
+ * I/O Tools.
  */
-public final class IOUtils {
+public final class IOTools {
 
-    private IOUtils() {
+    private IOTools() {
         // no-op
     }
 
@@ -65,7 +65,7 @@ public final class IOUtils {
      */
     public static boolean canExecute(String path) {
         try {
-            return TextUtils.isNotBlank(path) && canExecute(Path.of(path));
+            return TextTools.isNotBlank(path) && canExecute(Path.of(path));
         } catch (InvalidPathException | SecurityException e) {
             return false;
         }
@@ -105,7 +105,7 @@ public final class IOUtils {
      */
     public static boolean exists(String path) {
         try {
-            return TextUtils.isNotBlank(path) && Files.exists(Path.of(path));
+            return TextTools.isNotBlank(path) && Files.exists(Path.of(path));
         } catch (InvalidPathException | SecurityException e) {
             return false;
         }
@@ -145,7 +145,7 @@ public final class IOUtils {
      * @since 1.0
      */
     public static boolean isDirectory(String path) {
-        if (TextUtils.isBlank(path)) {
+        if (TextTools.isBlank(path)) {
             return false;
         }
         try {
@@ -209,7 +209,7 @@ public final class IOUtils {
      */
     public static boolean mkdirs(String path) {
         try {
-            return TextUtils.isNotBlank(path) && mkdirs(Path.of(path));
+            return TextTools.isNotBlank(path) && mkdirs(Path.of(path));
         } catch (InvalidPathException | SecurityException e) {
             return false;
         }
@@ -224,7 +224,7 @@ public final class IOUtils {
      * @since 1.0
      */
     public static boolean notExists(String path) {
-        return TextUtils.isBlank(path) || !new File(path).exists();
+        return TextTools.isBlank(path) || !new File(path).exists();
     }
 
     /**

@@ -25,9 +25,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DisplayName("Text Utils Tests")
+@DisplayName("Text Tools Tests")
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-class TextUtilsTest {
+class TextToolsTest {
 
     @Nested
     @DisplayName("isBlank(Object...) Tests")
@@ -37,7 +37,7 @@ class TextUtilsTest {
         @ValueSource(ints = {0, 1, 42, -1})
         @DisplayName("should return false for non-null non-blank objects")
         void shouldReturnFalseForNonBlankObjects(Integer input) {
-            var result = TextUtils.isBlank(input);
+            var result = TextTools.isBlank(input);
             assertFalse(result);
         }
 
@@ -45,7 +45,7 @@ class TextUtilsTest {
         @ValueSource(ints = {0, 1, 42, -1})
         @DisplayName("should return false when all objects are not blank")
         void shouldReturnFalseWhenAllObjectsAreNotBlank(Integer input) {
-            var result = TextUtils.isBlank(input, 123, "text");
+            var result = TextTools.isBlank(input, 123, "text");
             assertFalse(result);
         }
 
@@ -53,7 +53,7 @@ class TextUtilsTest {
         @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
         @DisplayName("should return false for non-blank string objects")
         void shouldReturnFalseForNonBlankStringObjects(String input) {
-            var result = TextUtils.isBlank((Object) input);
+            var result = TextTools.isBlank((Object) input);
             assertFalse(result);
         }
 
@@ -61,7 +61,7 @@ class TextUtilsTest {
         @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
         @DisplayName("should return false when at least one object is not blank")
         void shouldReturnFalseWhenAtLeastOneObjectIsNotBlank(String input) {
-            var result = TextUtils.isBlank("", " ", input, "\t");
+            var result = TextTools.isBlank("", " ", input, "\t");
             assertFalse(result);
         }
 
@@ -69,7 +69,7 @@ class TextUtilsTest {
         @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return true for empty or whitespace-only string objects")
         void shouldReturnTrueForBlankStringObjects(String input) {
-            var result = TextUtils.isBlank((Object) input);
+            var result = TextTools.isBlank((Object) input);
             assertTrue(result);
         }
 
@@ -77,7 +77,7 @@ class TextUtilsTest {
         @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return true when all objects are blank")
         void shouldReturnTrueWhenAllObjectsAreBlank(String input) {
-            var result = TextUtils.isBlank(input, "", "  ", "\t");
+            var result = TextTools.isBlank(input, "", "  ", "\t");
             assertTrue(result);
         }
 
@@ -86,7 +86,7 @@ class TextUtilsTest {
         @DisplayName("should return true for null array")
         @SuppressWarnings("PMD.UseVarargs")
         void shouldReturnTrueForNullArray(Object[] input) {
-            var result = TextUtils.isBlank(input);
+            var result = TextTools.isBlank(input);
             assertTrue(result);
         }
 
@@ -94,7 +94,7 @@ class TextUtilsTest {
         @NullSource
         @DisplayName("should return true for null object")
         void shouldReturnTrueForNullObject(Object input) {
-            var result = TextUtils.isBlank(input);
+            var result = TextTools.isBlank(input);
             assertTrue(result);
         }
     }
@@ -107,7 +107,7 @@ class TextUtilsTest {
         @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
         @DisplayName("should return false for non-blank strings")
         void shouldReturnFalseForNonBlankStrings(String input) {
-            var result = TextUtils.isBlank(input);
+            var result = TextTools.isBlank(input);
             assertFalse(result);
         }
 
@@ -116,7 +116,7 @@ class TextUtilsTest {
         @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return true for null, empty, or whitespace-only strings")
         void shouldReturnTrueForBlankStrings(String input) {
-            var result = TextUtils.isBlank(input);
+            var result = TextTools.isBlank(input);
             assertTrue(result);
         }
     }
@@ -129,7 +129,7 @@ class TextUtilsTest {
         @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
         @DisplayName("should return false when all strings are not blank")
         void shouldReturnFalseWhenAllStringsAreNotBlank(String input) {
-            var result = TextUtils.isBlank(input, "text", "more");
+            var result = TextTools.isBlank(input, "text", "more");
             assertFalse(result);
         }
 
@@ -137,7 +137,7 @@ class TextUtilsTest {
         @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
         @DisplayName("should return false when at least one string is not blank")
         void shouldReturnFalseWhenAtLeastOneStringIsNotBlank(String input) {
-            var result = TextUtils.isBlank("", " ", input, "\t");
+            var result = TextTools.isBlank("", " ", input, "\t");
             assertFalse(result);
         }
 
@@ -146,7 +146,7 @@ class TextUtilsTest {
         @DisplayName("should return true for null array")
         @SuppressWarnings("PMD.UseVarargs")
         void shouldReturnTrueForNullArray(String[] input) {
-            var result = TextUtils.isBlank(input);
+            var result = TextTools.isBlank(input);
             assertTrue(result);
         }
 
@@ -154,7 +154,7 @@ class TextUtilsTest {
         @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return true when all strings are blank")
         void shouldReturnTrueWhenAllStringsAreBlank(String input) {
-            var result = TextUtils.isBlank(input, "", "  ", "\t");
+            var result = TextTools.isBlank(input, "", "  ", "\t");
             assertTrue(result);
         }
     }
@@ -167,7 +167,7 @@ class TextUtilsTest {
         @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return false for non-empty string objects")
         void shouldReturnFalseForNonEmptyStringObjects(String input) {
-            var result = TextUtils.isEmpty((Object) input);
+            var result = TextTools.isEmpty((Object) input);
             assertFalse(result);
         }
 
@@ -175,7 +175,7 @@ class TextUtilsTest {
         @ValueSource(ints = {0, 1, 42, -1})
         @DisplayName("should return false for non-null objects")
         void shouldReturnFalseForNonNullObjects(Integer input) {
-            var result = TextUtils.isEmpty(input);
+            var result = TextTools.isEmpty(input);
             assertFalse(result);
         }
 
@@ -183,7 +183,7 @@ class TextUtilsTest {
         @ValueSource(ints = {0, 1, 42, -1})
         @DisplayName("should return false when all objects are not empty")
         void shouldReturnFalseWhenAllObjectsAreNotEmpty(Integer input) {
-            var result = TextUtils.isEmpty(input, 123, " ");
+            var result = TextTools.isEmpty(input, 123, " ");
             assertFalse(result);
         }
 
@@ -191,7 +191,7 @@ class TextUtilsTest {
         @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return false when at least one object is not empty")
         void shouldReturnFalseWhenAtLeastOneObjectIsNotEmpty(String input) {
-            var result = TextUtils.isEmpty("", null, input);
+            var result = TextTools.isEmpty("", null, input);
             assertFalse(result);
         }
 
@@ -199,7 +199,7 @@ class TextUtilsTest {
         @ValueSource(strings = {""})
         @DisplayName("should return true for empty string object")
         void shouldReturnTrueForEmptyStringObject(String input) {
-            var result = TextUtils.isEmpty((Object) input);
+            var result = TextTools.isEmpty((Object) input);
             assertTrue(result);
         }
 
@@ -207,7 +207,7 @@ class TextUtilsTest {
         @ValueSource(strings = {""})
         @DisplayName("should return true when all objects are empty or null")
         void shouldReturnTrueWhenAllObjectsAreEmpty(String input) {
-            var result = TextUtils.isEmpty(input, "", null);
+            var result = TextTools.isEmpty(input, "", null);
             assertTrue(result);
         }
 
@@ -216,7 +216,7 @@ class TextUtilsTest {
         @DisplayName("should return true for null array")
         @SuppressWarnings("PMD.UseVarargs")
         void shouldReturnTrueForNullArray(Object[] input) {
-            var result = TextUtils.isEmpty(input);
+            var result = TextTools.isEmpty(input);
             assertTrue(result);
         }
 
@@ -224,7 +224,7 @@ class TextUtilsTest {
         @NullSource
         @DisplayName("should return true for null object")
         void shouldReturnTrueForNullObject(Object input) {
-            var result = TextUtils.isEmpty(input);
+            var result = TextTools.isEmpty(input);
             assertTrue(result);
         }
     }
@@ -237,7 +237,7 @@ class TextUtilsTest {
         @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return false for non-empty strings")
         void shouldReturnFalseForNonEmptyStrings(String input) {
-            var result = TextUtils.isEmpty(input);
+            var result = TextTools.isEmpty(input);
             assertFalse(result);
         }
 
@@ -246,7 +246,7 @@ class TextUtilsTest {
         @ValueSource(strings = {""})
         @DisplayName("should return true for null or empty strings")
         void shouldReturnTrueForEmptyStrings(String input) {
-            var result = TextUtils.isEmpty(input);
+            var result = TextTools.isEmpty(input);
             assertTrue(result);
         }
     }
@@ -259,7 +259,7 @@ class TextUtilsTest {
         @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return false when all strings are not empty")
         void shouldReturnFalseWhenAllStringsAreNotEmpty(String input) {
-            var result = TextUtils.isEmpty(input, "text", " ");
+            var result = TextTools.isEmpty(input, "text", " ");
             assertFalse(result);
         }
 
@@ -267,7 +267,7 @@ class TextUtilsTest {
         @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return false when at least one string is not empty")
         void shouldReturnFalseWhenAtLeastOneStringIsNotEmpty(String input) {
-            var result = TextUtils.isEmpty("", null, input);
+            var result = TextTools.isEmpty("", null, input);
             assertFalse(result);
         }
 
@@ -276,7 +276,7 @@ class TextUtilsTest {
         @DisplayName("should return true for null array")
         @SuppressWarnings("PMD.UseVarargs")
         void shouldReturnTrueForNullArray(String[] input) {
-            var result = TextUtils.isEmpty(input);
+            var result = TextTools.isEmpty(input);
             assertTrue(result);
         }
 
@@ -284,7 +284,7 @@ class TextUtilsTest {
         @ValueSource(strings = {""})
         @DisplayName("should return true when all strings are empty or null")
         void shouldReturnTrueWhenAllStringsAreEmpty(String input) {
-            var result = TextUtils.isEmpty(input, "", null);
+            var result = TextTools.isEmpty(input, "", null);
             assertTrue(result);
         }
     }
@@ -297,7 +297,7 @@ class TextUtilsTest {
         @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return false for empty or whitespace-only string objects")
         void shouldReturnFalseForBlankStringObjects(String input) {
-            var result = TextUtils.isNotBlank((Object) input);
+            var result = TextTools.isNotBlank((Object) input);
             assertFalse(result);
         }
 
@@ -305,7 +305,7 @@ class TextUtilsTest {
         @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return false when all objects are blank")
         void shouldReturnFalseWhenAllObjectsAreBlank(String input) {
-            var result = TextUtils.isNotBlank(input, "", "  ", "\t");
+            var result = TextTools.isNotBlank(input, "", "  ", "\t");
             assertFalse(result);
         }
 
@@ -313,7 +313,7 @@ class TextUtilsTest {
         @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return false when at least one object is blank")
         void shouldReturnFalseWhenAtLeastOneObjectIsBlank(String input) {
-            var result = TextUtils.isNotBlank(123, "text", input, "data");
+            var result = TextTools.isNotBlank(123, "text", input, "data");
             assertFalse(result);
         }
 
@@ -322,7 +322,7 @@ class TextUtilsTest {
         @DisplayName("should return false for null array")
         @SuppressWarnings("PMD.UseVarargs")
         void shouldReturnFalseForNullArray(Object[] input) {
-            var result = TextUtils.isNotBlank(input);
+            var result = TextTools.isNotBlank(input);
             assertFalse(result);
         }
 
@@ -330,7 +330,7 @@ class TextUtilsTest {
         @NullSource
         @DisplayName("should return false for null object")
         void shouldReturnFalseForNullObject(Object input) {
-            var result = TextUtils.isNotBlank(input);
+            var result = TextTools.isNotBlank(input);
             assertFalse(result);
         }
 
@@ -338,7 +338,7 @@ class TextUtilsTest {
         @ValueSource(ints = {0, 1, 42, -1})
         @DisplayName("should return true for non-null non-blank objects")
         void shouldReturnTrueForNonBlankObjects(Integer input) {
-            var result = TextUtils.isNotBlank(input);
+            var result = TextTools.isNotBlank(input);
             assertTrue(result);
         }
 
@@ -346,7 +346,7 @@ class TextUtilsTest {
         @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
         @DisplayName("should return true for non-blank string objects")
         void shouldReturnTrueForNonBlankStringObjects(String input) {
-            var result = TextUtils.isNotBlank((Object) input);
+            var result = TextTools.isNotBlank((Object) input);
             assertTrue(result);
         }
 
@@ -354,7 +354,7 @@ class TextUtilsTest {
         @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
         @DisplayName("should return true when all objects are not blank")
         void shouldReturnTrueWhenAllObjectsAreNotBlank(String input) {
-            var result = TextUtils.isNotBlank(input, "text", 42);
+            var result = TextTools.isNotBlank(input, "text", 42);
             assertTrue(result);
         }
     }
@@ -368,7 +368,7 @@ class TextUtilsTest {
         @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return false for null, empty, or whitespace-only strings")
         void shouldReturnFalseForBlankStrings(String input) {
-            var result = TextUtils.isNotBlank(input);
+            var result = TextTools.isNotBlank(input);
             assertFalse(result);
         }
 
@@ -376,7 +376,7 @@ class TextUtilsTest {
         @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
         @DisplayName("should return true for non-blank strings")
         void shouldReturnTrueForNonBlankStrings(String input) {
-            var result = TextUtils.isNotBlank(input);
+            var result = TextTools.isNotBlank(input);
             assertTrue(result);
         }
     }
@@ -390,7 +390,7 @@ class TextUtilsTest {
         @DisplayName("should return false for null array")
         @SuppressWarnings("PMD.UseVarargs")
         void shouldReturnFalseForNullArray(String[] input) {
-            var result = TextUtils.isNotBlank(input);
+            var result = TextTools.isNotBlank(input);
             assertFalse(result);
         }
 
@@ -398,7 +398,7 @@ class TextUtilsTest {
         @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return false when all strings are blank")
         void shouldReturnFalseWhenAllStringsAreBlank(String input) {
-            var result = TextUtils.isNotBlank(input, "", "  ", "\t");
+            var result = TextTools.isNotBlank(input, "", "  ", "\t");
             assertFalse(result);
         }
 
@@ -406,7 +406,7 @@ class TextUtilsTest {
         @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return false when at least one string is blank")
         void shouldReturnFalseWhenAtLeastOneStringIsBlank(String input) {
-            var result = TextUtils.isNotBlank("text", "more", input, "data");
+            var result = TextTools.isNotBlank("text", "more", input, "data");
             assertFalse(result);
         }
 
@@ -414,7 +414,7 @@ class TextUtilsTest {
         @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
         @DisplayName("should return true when all strings are not blank")
         void shouldReturnTrueWhenAllStringsAreNotBlank(String input) {
-            var result = TextUtils.isNotBlank(input, "text", "more");
+            var result = TextTools.isNotBlank(input, "text", "more");
             assertTrue(result);
         }
     }
@@ -427,7 +427,7 @@ class TextUtilsTest {
         @ValueSource(strings = {""})
         @DisplayName("should return false for empty string object")
         void shouldReturnFalseForEmptyStringObject(String input) {
-            var result = TextUtils.isNotEmpty((Object) input);
+            var result = TextTools.isNotEmpty((Object) input);
             assertFalse(result);
         }
 
@@ -435,7 +435,7 @@ class TextUtilsTest {
         @ValueSource(strings = {""})
         @DisplayName("should return false when all objects are empty or null")
         void shouldReturnFalseWhenAllObjectsAreEmpty(String input) {
-            var result = TextUtils.isNotEmpty(input, "", null);
+            var result = TextTools.isNotEmpty(input, "", null);
             assertFalse(result);
         }
 
@@ -443,7 +443,7 @@ class TextUtilsTest {
         @ValueSource(strings = {""})
         @DisplayName("should return false when at least one object is empty or null")
         void shouldReturnFalseWhenAtLeastOneObjectIsEmpty(String input) {
-            var result = TextUtils.isNotEmpty("text", " ", input, "data");
+            var result = TextTools.isNotEmpty("text", " ", input, "data");
             assertFalse(result);
         }
 
@@ -452,7 +452,7 @@ class TextUtilsTest {
         @DisplayName("should return false for null array")
         @SuppressWarnings("PMD.UseVarargs")
         void shouldReturnFalseForNullArray(Object[] input) {
-            var result = TextUtils.isNotEmpty(input);
+            var result = TextTools.isNotEmpty(input);
             assertFalse(result);
         }
 
@@ -460,7 +460,7 @@ class TextUtilsTest {
         @NullSource
         @DisplayName("should return false for null object")
         void shouldReturnFalseForNullObject(Object input) {
-            var result = TextUtils.isNotEmpty(input);
+            var result = TextTools.isNotEmpty(input);
             assertFalse(result);
         }
 
@@ -468,7 +468,7 @@ class TextUtilsTest {
         @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return true for non-empty string objects")
         void shouldReturnTrueForNonEmptyStringObjects(String input) {
-            var result = TextUtils.isNotEmpty((Object) input);
+            var result = TextTools.isNotEmpty((Object) input);
             assertTrue(result);
         }
 
@@ -476,7 +476,7 @@ class TextUtilsTest {
         @ValueSource(ints = {0, 1, 42, -1})
         @DisplayName("should return true for non-null objects")
         void shouldReturnTrueForNonNullObjects(Integer input) {
-            var result = TextUtils.isNotEmpty(input);
+            var result = TextTools.isNotEmpty(input);
             assertTrue(result);
         }
 
@@ -484,7 +484,7 @@ class TextUtilsTest {
         @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return true when all objects are not empty")
         void shouldReturnTrueWhenAllObjectsAreNotEmpty(String input) {
-            var result = TextUtils.isNotEmpty(input, "text", " ");
+            var result = TextTools.isNotEmpty(input, "text", " ");
             assertTrue(result);
         }
     }
@@ -498,7 +498,7 @@ class TextUtilsTest {
         @ValueSource(strings = {""})
         @DisplayName("should return false for null or empty strings")
         void shouldReturnFalseForEmptyStrings(String input) {
-            var result = TextUtils.isNotEmpty(input);
+            var result = TextTools.isNotEmpty(input);
             assertFalse(result);
         }
 
@@ -506,7 +506,7 @@ class TextUtilsTest {
         @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return true for non-empty strings")
         void shouldReturnTrueForNonEmptyStrings(String input) {
-            var result = TextUtils.isNotEmpty(input);
+            var result = TextTools.isNotEmpty(input);
             assertTrue(result);
         }
     }
@@ -520,7 +520,7 @@ class TextUtilsTest {
         @DisplayName("should return false for null array")
         @SuppressWarnings("PMD.UseVarargs")
         void shouldReturnFalseForNullArray(String[] input) {
-            var result = TextUtils.isNotEmpty(input);
+            var result = TextTools.isNotEmpty(input);
             assertFalse(result);
         }
 
@@ -528,7 +528,7 @@ class TextUtilsTest {
         @ValueSource(strings = {""})
         @DisplayName("should return false when all strings are empty or null")
         void shouldReturnFalseWhenAllStringsAreEmpty(String input) {
-            var result = TextUtils.isNotEmpty(input, "", null);
+            var result = TextTools.isNotEmpty(input, "", null);
             assertFalse(result);
         }
 
@@ -536,7 +536,7 @@ class TextUtilsTest {
         @ValueSource(strings = {""})
         @DisplayName("should return false when at least one string is empty or null")
         void shouldReturnFalseWhenAtLeastOneStringIsEmpty(String input) {
-            var result = TextUtils.isNotEmpty("text", " ", input, "data");
+            var result = TextTools.isNotEmpty("text", " ", input, "data");
             assertFalse(result);
         }
 
@@ -544,7 +544,7 @@ class TextUtilsTest {
         @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return true when all strings are not empty")
         void shouldReturnTrueWhenAllStringsAreNotEmpty(String input) {
-            var result = TextUtils.isNotEmpty(input, "text", " ");
+            var result = TextTools.isNotEmpty(input, "text", " ");
             assertTrue(result);
         }
     }

@@ -30,9 +30,9 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DisplayName("System Utils Tests")
+@DisplayName("System Tools Tests")
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-class SystemUtilsTest {
+class SystemToolsTest {
 
     private static Function<String, String> createEnvProvider(Map<String, String> env) {
         return env::get;
@@ -46,21 +46,21 @@ class SystemUtilsTest {
         @ValueSource(strings = {"aix", "AIX", "Aix", "AIX 7.1"})
         @DisplayName("Should detect AIX")
         void shouldDetectAix(String osName) {
-            assertTrue(SystemUtils.isAix(osName));
+            assertTrue(SystemTools.isAix(osName));
         }
 
         @ParameterizedTest
         @ValueSource(strings = {"linux", "windows", "mac os x", "darwin"})
         @DisplayName("Should reject non-AIX systems")
         void shouldRejectNonAix(String osName) {
-            assertFalse(SystemUtils.isAix(osName));
+            assertFalse(SystemTools.isAix(osName));
         }
 
         @Test
         @EnabledOnOs(OS.AIX)
         @DisplayName("Should verify current system is AIX")
         void shouldVerifyCurrentSystemIsAix() {
-            assertTrue(SystemUtils.isAix());
+            assertTrue(SystemTools.isAix());
         }
     }
 
@@ -100,7 +100,7 @@ class SystemUtilsTest {
         @MethodSource("provideCygwinEnvironments")
         @DisplayName("Should detect valid Cygwin environments")
         void shouldDetectCygwinEnvironments(String description, Map<String, String> env) {
-            assertTrue(SystemUtils.isCygwin("Windows 10", createEnvProvider(env)),
+            assertTrue(SystemTools.isCygwin("Windows 10", createEnvProvider(env)),
                     "Failed to detect Cygwin: " + description);
         }
 
@@ -108,7 +108,7 @@ class SystemUtilsTest {
         @MethodSource("provideNonCygwinEnvironments")
         @DisplayName("Should reject non-Cygwin environments")
         void shouldRejectNonCygwinEnvironments(String description, Map<String, String> env) {
-            assertFalse(SystemUtils.isCygwin("Windows 10", createEnvProvider(env)),
+            assertFalse(SystemTools.isCygwin("Windows 10", createEnvProvider(env)),
                     "Incorrectly detected Cygwin: " + description);
         }
 
@@ -117,7 +117,7 @@ class SystemUtilsTest {
         @DisplayName("Should reject non-Windows systems even with Cygwin indicators")
         void shouldRejectNonWindowsSystems(String osName) {
             var env = Map.of("TERM", "xterm", "SHELL", "/bin/bash", "PATH", "/usr/bin:/cygdrive/c");
-            assertFalse(SystemUtils.isCygwin(osName, createEnvProvider(env)));
+            assertFalse(SystemTools.isCygwin(osName, createEnvProvider(env)));
         }
 
         @ParameterizedTest
@@ -126,13 +126,13 @@ class SystemUtilsTest {
         @DisplayName("Should require Windows OS for Cygwin detection")
         void shouldRequireWindowsForCygwin(String osName, boolean expected) {
             var env = Map.of("SHELL", "/bin/bash");
-            assertEquals(expected, SystemUtils.isCygwin(osName, createEnvProvider(env)));
+            assertEquals(expected, SystemTools.isCygwin(osName, createEnvProvider(env)));
         }
 
         @Test
         @DisplayName("Should use system environment")
         void shouldUseSystemEnvironment() {
-            assertDoesNotThrow(() -> SystemUtils.isCygwin());
+            assertDoesNotThrow(() -> SystemTools.isCygwin());
         }
     }
 
@@ -146,8 +146,8 @@ class SystemUtilsTest {
             var emptyEnv = Map.<String, String>of();
             var provider = createEnvProvider(emptyEnv);
 
-            assertFalse(SystemUtils.isCygwin("Windows 10", provider));
-            assertFalse(SystemUtils.isMingw("Windows 10", provider));
+            assertFalse(SystemTools.isCygwin("Windows 10", provider));
+            assertFalse(SystemTools.isMingw("Windows 10", provider));
         }
 
         @Test
@@ -157,11 +157,11 @@ class SystemUtilsTest {
             var provider = createEnvProvider(mixedEnv);
 
             // PATH with /usr/bin is a Cygwin indicator, so this will be detected as Cygwin
-            assertTrue(SystemUtils.isCygwin("Windows 10", provider));
+            assertTrue(SystemTools.isCygwin("Windows 10", provider));
 
             // PATH without Cygwin indicators should not detect Cygwin
             var nonCygwinEnv = Map.of("PATH", "C:\\Windows\\System32");
-            assertFalse(SystemUtils.isCygwin("Windows 10", createEnvProvider(nonCygwinEnv)));
+            assertFalse(SystemTools.isCygwin("Windows 10", createEnvProvider(nonCygwinEnv)));
         }
 
         @Test
@@ -169,8 +169,8 @@ class SystemUtilsTest {
         void shouldHandleNullEnvironmentVariables() {
             Function<String, String> nullProvider = key -> null;
 
-            assertFalse(SystemUtils.isCygwin("Windows 10", nullProvider));
-            assertFalse(SystemUtils.isMingw("Windows 10", nullProvider));
+            assertFalse(SystemTools.isCygwin("Windows 10", nullProvider));
+            assertFalse(SystemTools.isMingw("Windows 10", nullProvider));
         }
     }
 
@@ -182,20 +182,20 @@ class SystemUtilsTest {
         @ValueSource(strings = {"freebsd", "FreeBSD", "FREEBSD", "FreeBSD 13.0"})
         @DisplayName("Should detect FreeBSD")
         void shouldDetectFreeBsd(String osName) {
-            assertTrue(SystemUtils.isFreeBsd(osName));
+            assertTrue(SystemTools.isFreeBsd(osName));
         }
 
         @ParameterizedTest
         @ValueSource(strings = {"linux", "windows", "mac os x", "openbsd"})
         @DisplayName("Should reject non-FreeBSD systems")
         void shouldRejectNonFreeBsd(String osName) {
-            assertFalse(SystemUtils.isFreeBsd(osName));
+            assertFalse(SystemTools.isFreeBsd(osName));
         }
 
         @Test
         @DisplayName("Should verify current system")
         void shouldVerifyCurrentSystem() {
-            assertDoesNotThrow(() -> SystemUtils.isFreeBsd());
+            assertDoesNotThrow(() -> SystemTools.isFreeBsd());
         }
     }
 
@@ -207,70 +207,70 @@ class SystemUtilsTest {
         @EnabledOnOs(OS.AIX)
         @DisplayName("Should detect only AIX on AIX system")
         void shouldDetectOnlyAixOnAixSystem() {
-            assertTrue(SystemUtils.isAix());
-            assertFalse(SystemUtils.isFreeBsd());
-            assertFalse(SystemUtils.isLinux());
-            assertFalse(SystemUtils.isMacOS());
-            assertFalse(SystemUtils.isOpenVms());
-            assertFalse(SystemUtils.isSolaris());
-            assertFalse(SystemUtils.isWindows());
-            assertFalse(SystemUtils.isOtherOS());
+            assertTrue(SystemTools.isAix());
+            assertFalse(SystemTools.isFreeBsd());
+            assertFalse(SystemTools.isLinux());
+            assertFalse(SystemTools.isMacOS());
+            assertFalse(SystemTools.isOpenVms());
+            assertFalse(SystemTools.isSolaris());
+            assertFalse(SystemTools.isWindows());
+            assertFalse(SystemTools.isOtherOS());
         }
 
         @Test
         @EnabledOnOs(OS.LINUX)
         @DisplayName("Should detect only Linux on Linux system")
         void shouldDetectOnlyLinuxOnLinuxSystem() {
-            assertTrue(SystemUtils.isLinux());
-            assertFalse(SystemUtils.isAix());
-            assertFalse(SystemUtils.isFreeBsd());
-            assertFalse(SystemUtils.isMacOS());
-            assertFalse(SystemUtils.isOpenVms());
-            assertFalse(SystemUtils.isSolaris());
-            assertFalse(SystemUtils.isWindows());
-            assertFalse(SystemUtils.isOtherOS());
+            assertTrue(SystemTools.isLinux());
+            assertFalse(SystemTools.isAix());
+            assertFalse(SystemTools.isFreeBsd());
+            assertFalse(SystemTools.isMacOS());
+            assertFalse(SystemTools.isOpenVms());
+            assertFalse(SystemTools.isSolaris());
+            assertFalse(SystemTools.isWindows());
+            assertFalse(SystemTools.isOtherOS());
         }
 
         @Test
         @EnabledOnOs(OS.MAC)
         @DisplayName("Should detect only macOS on macOS system")
         void shouldDetectOnlyMacOsOnMacOsSystem() {
-            assertTrue(SystemUtils.isMacOS());
-            assertFalse(SystemUtils.isAix());
-            assertFalse(SystemUtils.isFreeBsd());
-            assertFalse(SystemUtils.isLinux());
-            assertFalse(SystemUtils.isOpenVms());
-            assertFalse(SystemUtils.isSolaris());
-            assertFalse(SystemUtils.isWindows());
-            assertFalse(SystemUtils.isOtherOS());
+            assertTrue(SystemTools.isMacOS());
+            assertFalse(SystemTools.isAix());
+            assertFalse(SystemTools.isFreeBsd());
+            assertFalse(SystemTools.isLinux());
+            assertFalse(SystemTools.isOpenVms());
+            assertFalse(SystemTools.isSolaris());
+            assertFalse(SystemTools.isWindows());
+            assertFalse(SystemTools.isOtherOS());
         }
 
         @Test
         @EnabledOnOs(OS.SOLARIS)
         @DisplayName("Should detect only Solaris on Solaris system")
         void shouldDetectOnlySolarisOnSolarisSystem() {
-            assertTrue(SystemUtils.isSolaris());
-            assertFalse(SystemUtils.isAix());
-            assertFalse(SystemUtils.isFreeBsd());
-            assertFalse(SystemUtils.isLinux());
-            assertFalse(SystemUtils.isMacOS());
-            assertFalse(SystemUtils.isOpenVms());
-            assertFalse(SystemUtils.isWindows());
-            assertFalse(SystemUtils.isOtherOS());
+            assertTrue(SystemTools.isSolaris());
+            assertFalse(SystemTools.isAix());
+            assertFalse(SystemTools.isFreeBsd());
+            assertFalse(SystemTools.isLinux());
+            assertFalse(SystemTools.isMacOS());
+            assertFalse(SystemTools.isOpenVms());
+            assertFalse(SystemTools.isWindows());
+            assertFalse(SystemTools.isOtherOS());
         }
 
         @Test
         @EnabledOnOs(OS.WINDOWS)
         @DisplayName("Should detect only Windows on Windows system")
         void shouldDetectOnlyWindowsOnWindowsSystem() {
-            assertTrue(SystemUtils.isWindows());
-            assertFalse(SystemUtils.isAix());
-            assertFalse(SystemUtils.isFreeBsd());
-            assertFalse(SystemUtils.isLinux());
-            assertFalse(SystemUtils.isMacOS());
-            assertFalse(SystemUtils.isOpenVms());
-            assertFalse(SystemUtils.isSolaris());
-            assertFalse(SystemUtils.isOtherOS());
+            assertTrue(SystemTools.isWindows());
+            assertFalse(SystemTools.isAix());
+            assertFalse(SystemTools.isFreeBsd());
+            assertFalse(SystemTools.isLinux());
+            assertFalse(SystemTools.isMacOS());
+            assertFalse(SystemTools.isOpenVms());
+            assertFalse(SystemTools.isSolaris());
+            assertFalse(SystemTools.isOtherOS());
         }
     }
 
@@ -282,21 +282,21 @@ class SystemUtilsTest {
         @ValueSource(strings = {"linux", "Linux", "LINUX", "linux 5.15", "unix", "UNIX", "freebsd unix"})
         @DisplayName("Should detect Linux and Unix systems")
         void shouldDetectLinuxAndUnix(String osName) {
-            assertTrue(SystemUtils.isLinux(osName));
+            assertTrue(SystemTools.isLinux(osName));
         }
 
         @ParameterizedTest
         @ValueSource(strings = {"windows", "mac os x", "darwin"})
         @DisplayName("Should reject non-Linux systems")
         void shouldRejectNonLinux(String osName) {
-            assertFalse(SystemUtils.isLinux(osName));
+            assertFalse(SystemTools.isLinux(osName));
         }
 
         @Test
         @EnabledOnOs(OS.LINUX)
         @DisplayName("Should verify current system is Linux")
         void shouldVerifyCurrentSystemIsLinux() {
-            assertTrue(SystemUtils.isLinux());
+            assertTrue(SystemTools.isLinux());
         }
     }
 
@@ -309,21 +309,21 @@ class SystemUtilsTest {
                 "darwin", "Darwin", "DARWIN", "osx", "OSX"})
         @DisplayName("Should detect macOS variants")
         void shouldDetectMacOsVariants(String osName) {
-            assertTrue(SystemUtils.isMacOS(osName));
+            assertTrue(SystemTools.isMacOS(osName));
         }
 
         @ParameterizedTest
         @ValueSource(strings = {"windows", "linux", "freebsd"})
         @DisplayName("Should reject non-macOS systems")
         void shouldRejectNonMacOs(String osName) {
-            assertFalse(SystemUtils.isMacOS(osName));
+            assertFalse(SystemTools.isMacOS(osName));
         }
 
         @Test
         @EnabledOnOs(OS.MAC)
         @DisplayName("Should verify current system is macOS")
         void shouldVerifyCurrentSystemIsMacOs() {
-            assertTrue(SystemUtils.isMacOS());
+            assertTrue(SystemTools.isMacOS());
         }
     }
 
@@ -375,7 +375,7 @@ class SystemUtilsTest {
         @MethodSource("provideMingwEnvironments")
         @DisplayName("Should detect valid MinGW environments")
         void shouldDetectMingwEnvironments(String description, Map<String, String> env) {
-            assertTrue(SystemUtils.isMingw("Windows 10", createEnvProvider(env)),
+            assertTrue(SystemTools.isMingw("Windows 10", createEnvProvider(env)),
                     "Failed to detect MinGW: " + description);
         }
 
@@ -388,10 +388,10 @@ class SystemUtilsTest {
             var cygwinEnv = Map.of("TERM", "xterm", "SHELL", "/bin/bash");
             var cygwinProvider = createEnvProvider(cygwinEnv);
 
-            assertTrue(SystemUtils.isMingw("Windows 10", mingwProvider));
-            assertTrue(SystemUtils.isCygwin("Windows 10", mingwProvider));
-            assertFalse(SystemUtils.isMingw("Windows 10", cygwinProvider));
-            assertTrue(SystemUtils.isCygwin("Windows 10", cygwinProvider));
+            assertTrue(SystemTools.isMingw("Windows 10", mingwProvider));
+            assertTrue(SystemTools.isCygwin("Windows 10", mingwProvider));
+            assertFalse(SystemTools.isMingw("Windows 10", cygwinProvider));
+            assertTrue(SystemTools.isCygwin("Windows 10", cygwinProvider));
         }
 
         @Test
@@ -409,7 +409,7 @@ class SystemUtilsTest {
 
             testCases.forEach((msystem, expected) -> {
                 var env = Map.of("MSYSTEM", msystem);
-                assertEquals(expected, SystemUtils.isMingw("Windows 10", createEnvProvider(env)),
+                assertEquals(expected, SystemTools.isMingw("Windows 10", createEnvProvider(env)),
                         "MSYSTEM=" + msystem);
             });
         }
@@ -418,7 +418,7 @@ class SystemUtilsTest {
         @MethodSource("provideNonMingwEnvironments")
         @DisplayName("Should reject non-MinGW environments")
         void shouldRejectNonMingwEnvironments(String description, Map<String, String> env) {
-            assertFalse(SystemUtils.isMingw("Windows 10", createEnvProvider(env)),
+            assertFalse(SystemTools.isMingw("Windows 10", createEnvProvider(env)),
                     "Incorrectly detected MinGW: " + description);
         }
 
@@ -427,7 +427,7 @@ class SystemUtilsTest {
         @DisplayName("Should reject non-Windows systems even with MinGW indicators")
         void shouldRejectNonWindowsSystems(String osName) {
             var env = Map.of("MSYSTEM", "MINGW64", "MINGW_PREFIX", "/mingw64", "SHELL", "/bin/bash");
-            assertFalse(SystemUtils.isMingw(osName, createEnvProvider(env)));
+            assertFalse(SystemTools.isMingw(osName, createEnvProvider(env)));
         }
 
         @ParameterizedTest
@@ -436,13 +436,13 @@ class SystemUtilsTest {
         @DisplayName("Should require Windows OS for MinGW detection")
         void shouldRequireWindowsForMingw(String osName, boolean expected) {
             var env = Map.of("MSYSTEM", "MINGW64");
-            assertEquals(expected, SystemUtils.isMingw(osName, createEnvProvider(env)));
+            assertEquals(expected, SystemTools.isMingw(osName, createEnvProvider(env)));
         }
 
         @Test
         @DisplayName("Should use system environment")
         void shouldUseSystemEnvironment() {
-            assertDoesNotThrow(() -> SystemUtils.isMingw());
+            assertDoesNotThrow(() -> SystemTools.isMingw());
         }
     }
 
@@ -454,43 +454,43 @@ class SystemUtilsTest {
         @NullAndEmptySource
         @DisplayName("Should handle null or empty OS names")
         void shouldHandleNullOrEmpty(String osName) {
-            assertFalse(SystemUtils.isAix(osName));
-            assertFalse(SystemUtils.isFreeBsd(osName));
-            assertFalse(SystemUtils.isLinux(osName));
-            assertFalse(SystemUtils.isMacOS(osName));
-            assertFalse(SystemUtils.isOpenVms(osName));
-            assertFalse(SystemUtils.isSolaris(osName));
-            assertFalse(SystemUtils.isWindows(osName));
-            assertTrue(SystemUtils.isOtherOs(osName));
+            assertFalse(SystemTools.isAix(osName));
+            assertFalse(SystemTools.isFreeBsd(osName));
+            assertFalse(SystemTools.isLinux(osName));
+            assertFalse(SystemTools.isMacOS(osName));
+            assertFalse(SystemTools.isOpenVms(osName));
+            assertFalse(SystemTools.isSolaris(osName));
+            assertFalse(SystemTools.isWindows(osName));
+            assertTrue(SystemTools.isOtherOs(osName));
         }
 
         @ParameterizedTest
         @ValueSource(strings = {"", "someunknownos", "foo"})
         @DisplayName("Should handle unknown OS names")
         void shouldHandleUnknownOs(String osName) {
-            assertFalse(SystemUtils.isLinux(osName));
-            assertFalse(SystemUtils.isMacOS(osName));
-            assertFalse(SystemUtils.isWindows(osName));
+            assertFalse(SystemTools.isLinux(osName));
+            assertFalse(SystemTools.isMacOS(osName));
+            assertFalse(SystemTools.isWindows(osName));
         }
 
         @Test
         @DisplayName("Should normalize to lowercase")
         void shouldNormalizeToLowercase() {
-            assertTrue(SystemUtils.isLinux("LINUX"));
-            assertTrue(SystemUtils.isMacOS("MACOS"));
-            assertTrue(SystemUtils.isWindows("WINDOWS"));
-            assertTrue(SystemUtils.isAix("AIX"));
-            assertTrue(SystemUtils.isFreeBsd("FREEBSD"));
-            assertTrue(SystemUtils.isOpenVms("OPENVMS"));
-            assertTrue(SystemUtils.isSolaris("SOLARIS"));
+            assertTrue(SystemTools.isLinux("LINUX"));
+            assertTrue(SystemTools.isMacOS("MACOS"));
+            assertTrue(SystemTools.isWindows("WINDOWS"));
+            assertTrue(SystemTools.isAix("AIX"));
+            assertTrue(SystemTools.isFreeBsd("FREEBSD"));
+            assertTrue(SystemTools.isOpenVms("OPENVMS"));
+            assertTrue(SystemTools.isSolaris("SOLARIS"));
         }
 
         @Test
         @DisplayName("Should not match partial OS names")
         void shouldNotMatchPartialOsNames() {
-            assertFalse(SystemUtils.isWindows("darwin"));
-            assertFalse(SystemUtils.isMacOS("linux"));
-            assertFalse(SystemUtils.isLinux("windows"));
+            assertFalse(SystemTools.isWindows("darwin"));
+            assertFalse(SystemTools.isMacOS("linux"));
+            assertFalse(SystemTools.isLinux("windows"));
         }
     }
 
@@ -502,20 +502,20 @@ class SystemUtilsTest {
         @ValueSource(strings = {"openvms", "OpenVMS", "OPENVMS", "OpenVMS 8.4"})
         @DisplayName("Should detect OpenVMS")
         void shouldDetectOpenVms(String osName) {
-            assertTrue(SystemUtils.isOpenVms(osName));
+            assertTrue(SystemTools.isOpenVms(osName));
         }
 
         @ParameterizedTest
         @ValueSource(strings = {"linux", "windows", "vms"})
         @DisplayName("Should reject non-OpenVMS systems")
         void shouldRejectNonOpenVms(String osName) {
-            assertFalse(SystemUtils.isOpenVms(osName));
+            assertFalse(SystemTools.isOpenVms(osName));
         }
 
         @Test
         @DisplayName("Should verify current system")
         void shouldVerifyCurrentSystem() {
-            assertDoesNotThrow(() -> SystemUtils.isOpenVms());
+            assertDoesNotThrow(() -> SystemTools.isOpenVms());
         }
     }
 
@@ -527,21 +527,21 @@ class SystemUtilsTest {
         @EnabledOnOs(OS.OTHER)
         @DisplayName("Should detect current system as other OS")
         void shouldDetectCurrentSystemAsOther() {
-            assertTrue(SystemUtils.isOtherOS());
+            assertTrue(SystemTools.isOtherOS());
         }
 
         @ParameterizedTest
         @ValueSource(strings = {"foo", "bar", "unknown", "custom-os"})
         @DisplayName("Should detect unknown operating systems")
         void shouldDetectUnknownOs(String osName) {
-            assertTrue(SystemUtils.isOtherOs(osName));
+            assertTrue(SystemTools.isOtherOs(osName));
         }
 
         @Test
         @EnabledOnOs({OS.LINUX, OS.MAC, OS.WINDOWS})
         @DisplayName("Should not detect current system as other OS")
         void shouldNotDetectCurrentSystemAsOther() {
-            assertFalse(SystemUtils.isOtherOS());
+            assertFalse(SystemTools.isOtherOS());
         }
 
         @ParameterizedTest
@@ -549,7 +549,7 @@ class SystemUtilsTest {
                 "osx", "solaris", "sunos", "windows"})
         @DisplayName("Should reject known operating systems")
         void shouldRejectKnownOs(String osName) {
-            assertFalse(SystemUtils.isOtherOs(osName));
+            assertFalse(SystemTools.isOtherOs(osName));
         }
     }
 
@@ -561,21 +561,21 @@ class SystemUtilsTest {
         @ValueSource(strings = {"solaris", "Solaris", "SOLARIS", "Solaris 11", "sunos", "SunOS", "SUNOS"})
         @DisplayName("Should detect Solaris and SunOS")
         void shouldDetectSolarisAndSunOs(String osName) {
-            assertTrue(SystemUtils.isSolaris(osName));
+            assertTrue(SystemTools.isSolaris(osName));
         }
 
         @ParameterizedTest
         @ValueSource(strings = {"linux", "windows", "mac os x"})
         @DisplayName("Should reject non-Solaris systems")
         void shouldRejectNonSolaris(String osName) {
-            assertFalse(SystemUtils.isSolaris(osName));
+            assertFalse(SystemTools.isSolaris(osName));
         }
 
         @Test
         @EnabledOnOs(OS.SOLARIS)
         @DisplayName("Should verify current system is Solaris")
         void shouldVerifyCurrentSystemIsSolaris() {
-            assertTrue(SystemUtils.isSolaris());
+            assertTrue(SystemTools.isSolaris());
         }
     }
 
@@ -588,21 +588,21 @@ class SystemUtilsTest {
                 "Windows Server 2022", "win", "Win", "WIN"})
         @DisplayName("Should detect Windows variants")
         void shouldDetectWindowsVariants(String osName) {
-            assertTrue(SystemUtils.isWindows(osName));
+            assertTrue(SystemTools.isWindows(osName));
         }
 
         @ParameterizedTest
         @ValueSource(strings = {"mac os x", "linux", "darwin"})
         @DisplayName("Should reject non-Windows systems")
         void shouldRejectNonWindows(String osName) {
-            assertFalse(SystemUtils.isWindows(osName));
+            assertFalse(SystemTools.isWindows(osName));
         }
 
         @Test
         @EnabledOnOs(OS.WINDOWS)
         @DisplayName("Should verify current system is Windows")
         void shouldVerifyCurrentSystemIsWindows() {
-            assertTrue(SystemUtils.isWindows());
+            assertTrue(SystemTools.isWindows());
         }
     }
 }

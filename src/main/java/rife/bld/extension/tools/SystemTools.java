@@ -20,13 +20,13 @@ import java.util.Locale;
 import java.util.function.Function;
 
 /**
- * System Utilities and Tools.
+ * System Tools.
  */
-public final class SystemUtils {
+public final class SystemTools {
 
     private static final String OS_NAME = getOSName(); // cached
 
-    private SystemUtils() {
+    private SystemTools() {
         // no-op
     }
 
