@@ -29,8 +29,8 @@ The following static methods are provided:
 
 | Method                                                                                                                                                                           | Description                            |
 |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------------------------|
-| [`joinClasspath(String... paths)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathUtils.html#joinClasspath(java.lang.String...))                 | Join string paths into a classpath.    |
 | [`joinClasspath(Collection<String>... files)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathUtils.html#joinClasspath(java.util.Collection...)) | Joins lists of files into a classpath. |
+| [`joinClasspath(String... paths)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathUtils.html#joinClasspath(java.lang.String...))                 | Join string paths into a classpath.    |
 
 ## I/O Tools
 
@@ -63,22 +63,22 @@ The following static methods are provided:
 
 | Method                                                                                                                                                        | Description                                           |
 |:--------------------------------------------------------------------------------------------------------------------------------------------------------------|:------------------------------------------------------|
-| [`isAnyNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isAnyNull(java.lang.Object...))      | Checks if any of the provided objects are `null`.     |
 | [`isAnyNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isAnyNull(java.util.Collection)) | Checks if any of the provided objects are `null`.     |
+| [`isAnyNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isAnyNull(java.lang.Object...))      | Checks if any of the provided objects are `null`.     |
 | [`isEmpty(Collection<?> collection)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isEmpty(java.util.Collection))       | Checks if a collection is empty.     |
-| [`isNotEmpty(Collection<?> collection)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNotEmpty(java.util.Collection)) | Checks if a collection is not empty. |
-| [`isEmpty(Map map)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isEmpty(java.util.Map))                       | Checks if a  map is empty.                            |
-| [`isNotEmpty(Map map)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNotEmpty(java.util.Map))                 | Checks if a map is not empty.                         |
 | [`isEmpty(Hashtable table)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isEmpty(java.util.Hashtable))         | Checks if a hashtable is empty.                       |
-| [`isNotEmpty(Hashtable table)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNotEmpty(java.util.Hashtable))   | Checks if a hashtable is not empty.                   |
+| [`isEmpty(Map map)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isEmpty(java.util.Map))                       | Checks if a  map is empty.                            |
 | [`isEmpty(Object[] array)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isEmpty(java.lang.Object[]))                | Checks if an array is empty.                          |
-| [`isNotEmpty(Object[] array)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNotEmpty(java.lang.Object[]))          | Checks if an array is not empty.                      |
 | [`isEmpty(Object[]... arrays)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isEmpty(java.lang.Object[]...))         | Checks if any of the provided arrays are empty.       |
+| [`isNotEmpty(Collection<?> collection)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNotEmpty(java.util.Collection)) | Checks if a collection is not empty. |
+| [`isNotEmpty(Hashtable table)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNotEmpty(java.util.Hashtable))   | Checks if a hashtable is not empty.                   |
+| [`isNotEmpty(Map map)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNotEmpty(java.util.Map))                 | Checks if a map is not empty.                         |
+| [`isNotEmpty(Object[] array)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNotEmpty(java.lang.Object[]))          | Checks if an array is not empty.                      |
 | [`isNotEmpty(Object[]... arrays)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNotEmpty(java.lang.Object[]...))   | Checks if any of the provided arrays are not empty.   |
-| [`isNotNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNotNull(java.lang.Object...))      | Checks if any of the provided objects are not `null`. |
 | [`isNotNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNotNull(java.util.Collection)) | Checks if any of the provided objects are not `null`. |
-| [`isNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNull(java.lang.Object...))            | Checks if the provided objects are all `null`.        |
+| [`isNotNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNotNull(java.lang.Object...))      | Checks if any of the provided objects are not `null`. |
 | [`isNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNull(java.util.Collection))       | Checks if the provided objects are all `null`.        |
+| [`isNull(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectUtils.html#isNull(java.lang.Object...))            | Checks if the provided objects are all `null`.        |
 
 *NOTE:* All methods properly handle `null` objects
 
@@ -106,12 +106,12 @@ The following static methods are provided:
 | Method                                                                                                                                                      | Description                      |
 |:------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------------------|
 | [`isBlank(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isBlank(java.lang.String))                     | Checks if a string is blank.     |
-| [`isEmpty(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isEmpty(java.lang.String))                     | Checks if a string is empty.     |
 | [`isBlank(String... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isBlank(java.lang.String...))           | Checks if strings are blank.     |
+| [`isEmpty(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isEmpty(java.lang.String))                     | Checks if a string is empty.     |
 | [`isEmpty(String... strings str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isEmpty(java.lang.String...))       | Checks if strings are empty.     |
 | [`isNotBlank(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotBlank(java.lang.String))               | Checks if a string is not blank. |
-| [`isNotEmpty(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotEmpty(java.lang.String))               | Checks if a string is not empty. |
 | [`isNotBlank(String... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotBlank(java.lang.String...))     | Checks if strings are not blank. |
+| [`isNotEmpty(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotEmpty(java.lang.String))               | Checks if a string is not empty. |
 | [`isNotEmpty(String... strings str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextUtils.html#isNotEmpty(java.lang.String...)) | Checks if strings are not empty. |
 
 *NOTE:* All methods properly handle `null` strings.
