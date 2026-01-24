@@ -103,15 +103,19 @@ The following static methods are provided:
 
 The following static methods are provided:
 
-| Method                                                                                                                                                      | Description                      |
-|:------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------------------|
-| [`isBlank(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isBlank(java.lang.String))                     | Checks if a string is blank.     |
-| [`isBlank(String... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isBlank(java.lang.String...))           | Checks if strings are blank.     |
-| [`isEmpty(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isEmpty(java.lang.String))                     | Checks if a string is empty.     |
-| [`isEmpty(String... strings str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isEmpty(java.lang.String...))       | Checks if strings are empty.     |
-| [`isNotBlank(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotBlank(java.lang.String))               | Checks if a string is not blank. |
-| [`isNotBlank(String... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotBlank(java.lang.String...))     | Checks if strings are not blank. |
-| [`isNotEmpty(String str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotEmpty(java.lang.String))               | Checks if a string is not empty. |
-| [`isNotEmpty(String... strings str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotEmpty(java.lang.String...)) | Checks if strings are not empty. |
+| Method                                                                                                                                                              | Description                             |
+|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------|:----------------------------------------|
+| [`isBlank(CharSequence str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isBlank(java.lang.CharSequence))                 | Checks if a string is blank.            |
+| [`isBlank(CharSequence... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isBlank(java.lang.CharSequence...))       | Checks if strings are blank.            |
+| [`isBlank(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isBlank(java.lang.Object...))                   | Checks if string objects are blank.     |
+| [`isEmpty(CharSequence str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isEmpty(java.lang.CharSequence))                 | Checks if a string is empty.            |
+| [`isEmpty(CharSequence... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isEmpty(java.lang.CharSequence...))       | Checks if strings are empty.            |
+| [`isEmpty(Object... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isEmpty(java.lang.Object...))                   | Checks if string objects are empty.     |
+| [`isNotBlank(CharSequence str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotBlank(java.lang.CharSequence))           | Checks if a string is not blank.        |
+| [`isNotBlank(CharSequence... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotBlank(java.lang.CharSequence...)) | Checks if strings are not blank.        |
+| [`isNotBlank(Objects... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotBlank(java.lang.Object...))            | Checks if string objects are not blank. |
+| [`isNotEmpty(CharSequence str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotEmpty(java.lang.CharSequence))           | Checks if a string is not empty.        |
+| [`isNotEmpty(CharSequence... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotEmpty(java.lang.CharSequence...)) | Checks if strings are not empty.        |
+| [`isNotEmpty(Objects... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotEmpty(java.lang.Object...))            | Checks if string objects are not empty. |
 
 *NOTE:* All methods properly handle `null` strings.

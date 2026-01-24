@@ -26,18 +26,26 @@ public final class TextTools {
     }
 
     /**
-     * Checks if a string is {@code null}, empty, or contains only whitespace characters.
+     * Checks if a character sequence is {@code null}, empty, or contains only whitespace characters.
      *
-     * @param str The string to check
-     * @return {@code true} if the string is {@code null}, empty, or whitespace-only;
+     * @param str The character sequence to check
+     * @return {@code true} if the character sequence is {@code null}, empty, or whitespace-only;
      * {@code false} otherwise.
      * @since 1.0
      */
-    public static boolean isBlank(String str) {
-        if (str == null || str.isEmpty()) {
+    public static boolean isBlank(CharSequence str) {
+        if (str == null) {
             return true;
         }
-        for (int i = 0; i < str.length(); i++) {
+        // Optimize for String instances
+        if (str instanceof String s) {
+            return s.isBlank();
+        }
+        int len = str.length();
+        if (len == 0) {
+            return true;
+        }
+        for (int i = 0; i < len; i++) {
             if (!Character.isWhitespace(str.charAt(i))) {
                 return false;
             }
@@ -46,14 +54,14 @@ public final class TextTools {
     }
 
     /**
-     * Checks if all strings are {@code null}, empty, or contain only whitespace characters.
+     * Checks if all character sequences are {@code null}, empty, or contain only whitespace characters.
      *
-     * @param strings The strings to check
-     * @return {@code true} if all strings are {@code null}, empty, or whitespace-only;
+     * @param strings The character sequences to check
+     * @return {@code true} if all character sequences are {@code null}, empty, or whitespace-only;
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isBlank(String... strings) {
+    public static boolean isBlank(CharSequence... strings) {
         if (strings == null) {
             return true;
         }
@@ -81,7 +89,15 @@ public final class TextTools {
             return true;
         }
         for (var obj : objects) {
-            if (obj != null && !isBlank(obj.toString())) {
+            if (obj == null) {
+                continue;
+            }
+            // Avoid toString() call for CharSequence instances
+            if (obj instanceof CharSequence cs) {
+                if (!isBlank(cs)) {
+                    return false;
+                }
+            } else if (!isBlank(obj.toString())) {
                 return false;
             }
         }
@@ -101,7 +117,15 @@ public final class TextTools {
             return true;
         }
         for (var obj : objects) {
-            if (obj != null && !isEmpty(obj.toString())) {
+            if (obj == null) {
+                continue;
+            }
+            // Avoid toString() call for CharSequence instances
+            if (obj instanceof CharSequence cs) {
+                if (!isEmpty(cs)) {
+                    return false;
+                }
+            } else if (!isEmpty(obj.toString())) {
                 return false;
             }
         }
@@ -109,24 +133,31 @@ public final class TextTools {
     }
 
     /**
-     * Checks if a string is {@code null} or empty.
+     * Checks if a character sequence is {@code null} or empty.
      *
-     * @param str The string to check
-     * @return {@code true} if the string is {@code null} or empty; {@code false} otherwise
+     * @param str The character sequence to check
+     * @return {@code true} if the character sequence is {@code null} or empty; {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isEmpty(String str) {
-        return str == null || str.isEmpty();
+    public static boolean isEmpty(CharSequence str) {
+        if (str == null) {
+            return true;
+        }
+        // Optimize for String instances
+        if (str instanceof String s) {
+            return s.isEmpty();
+        }
+        return str.isEmpty();
     }
 
     /**
-     * Checks if all strings are {@code null} or empty.
+     * Checks if all character sequences are {@code null} or empty.
      *
-     * @param strings The strings to check
-     * @return {@code true} if all strings are {@code null} or empty; {@code false} otherwise
+     * @param strings The character sequences to check
+     * @return {@code true} if all character sequences are {@code null} or empty; {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isEmpty(String... strings) {
+    public static boolean isEmpty(CharSequence... strings) {
         if (strings == null) {
             return true;
         }
@@ -139,15 +170,15 @@ public final class TextTools {
     }
 
     /**
-     * Checks if all strings are not {@code null}, not empty, and not whitespace-only.
+     * Checks if all character sequences are not {@code null}, not empty, and not whitespace-only.
      *
-     * @param strings The strings to check
-     * @return {@code true} if all strings are not {@code null}, not empty, and not whitespace-only;
+     * @param strings The character sequences to check
+     * @return {@code true} if all character sequences are not {@code null}, not empty, and not whitespace-only;
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isNotBlank(String... strings) {
-        if (strings == null) {
+    public static boolean isNotBlank(CharSequence... strings) {
+        if (strings == null || strings.length == 0) {
             return false;
         }
         for (var str : strings) {
@@ -171,11 +202,19 @@ public final class TextTools {
      * @since 1.0
      */
     public static boolean isNotBlank(Object... objects) {
-        if (objects == null) {
+        if (objects == null || objects.length == 0) {
             return false;
         }
         for (var obj : objects) {
-            if (obj == null || isBlank(obj.toString())) {
+            if (obj == null) {
+                return false;
+            }
+            // Avoid toString() call for CharSequence instances
+            if (obj instanceof CharSequence cs) {
+                if (isBlank(cs)) {
+                    return false;
+                }
+            } else if (isBlank(obj.toString())) {
                 return false;
             }
         }
@@ -183,26 +222,26 @@ public final class TextTools {
     }
 
     /**
-     * Checks if a string is not {@code null}, not empty, and not whitespace-only.
+     * Checks if a character sequence is not {@code null}, not empty, and not whitespace-only.
      *
-     * @param str The string to check
-     * @return {@code true} if the string is not {@code null}, not empty, and not whitespace-only;
+     * @param str The character sequence to check
+     * @return {@code true} if the character sequence is not {@code null}, not empty, and not whitespace-only;
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isNotBlank(String str) {
+    public static boolean isNotBlank(CharSequence str) {
         return !isBlank(str);
     }
 
     /**
-     * Checks if all strings are not {@code null} and not empty.
+     * Checks if all character sequences are not {@code null} and not empty.
      *
-     * @param strings The strings to check
-     * @return {@code true} if all strings are not {@code null} and not empty; {@code false} otherwise
+     * @param strings The character sequences to check
+     * @return {@code true} if all character sequences are not {@code null} and not empty; {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isNotEmpty(String... strings) {
-        if (strings == null) {
+    public static boolean isNotEmpty(CharSequence... strings) {
+        if (strings == null || strings.length == 0) {
             return false;
         }
         for (var str : strings) {
@@ -214,13 +253,13 @@ public final class TextTools {
     }
 
     /**
-     * Checks if a string is not {@code null} and not empty.
+     * Checks if a character sequence is not {@code null} and not empty.
      *
-     * @param str The string to check
-     * @return {@code true} if the string is not {@code null} and not empty; {@code false} otherwise
+     * @param str The character sequence to check
+     * @return {@code true} if the character sequence is not {@code null} and not empty; {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isNotEmpty(String str) {
+    public static boolean isNotEmpty(CharSequence str) {
         return !isEmpty(str);
     }
 
@@ -233,11 +272,19 @@ public final class TextTools {
      * @since 1.0
      */
     public static boolean isNotEmpty(Object... objects) {
-        if (objects == null) {
+        if (objects == null || objects.length == 0) {
             return false;
         }
         for (var obj : objects) {
-            if (obj == null || isEmpty(obj.toString())) {
+            if (obj == null) {
+                return false;
+            }
+            // Avoid toString() call for CharSequence instances
+            if (obj instanceof CharSequence cs) {
+                if (isEmpty(cs)) {
+                    return false;
+                }
+            } else if (isEmpty(obj.toString())) {
                 return false;
             }
         }
