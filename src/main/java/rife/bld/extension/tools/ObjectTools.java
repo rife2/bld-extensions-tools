@@ -17,13 +17,11 @@
 package rife.bld.extension.tools;
 
 import java.util.Collection;
-import java.util.Hashtable;
 import java.util.Map;
 
 /**
  * Object Tools.
  */
-@SuppressWarnings({"PMD.LooseCoupling", "PMD.ReplaceHashtableWithMap"})
 public final class ObjectTools {
 
     private ObjectTools() {
@@ -37,11 +35,12 @@ public final class ObjectTools {
      * @return {@code true} if any object is {@code null}, {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isAnyNull(Object... objects) {
+    @SafeVarargs
+    public static <T> boolean isAnyNull(T... objects) {
         if (objects == null) {
             return true;
         }
-        for (var obj : objects) {
+        for (T obj : objects) {
             if (obj == null) {
                 return true;
             }
@@ -60,7 +59,7 @@ public final class ObjectTools {
         if (collection == null) {
             return true;
         }
-        for (var obj : collection) {
+        for (Object obj : collection) {
             if (obj == null) {
                 return true;
             }
@@ -75,8 +74,7 @@ public final class ObjectTools {
      * @return {@code true} if the array is {@code null} or empty; {@code false} otherwise
      * @since 1.0
      */
-    @SuppressWarnings("PMD.UseVarargs")
-    public static boolean isEmpty(Object[] array) {
+    public static <T> boolean isEmpty(T[] array) {
         return array == null || array.length == 0;
     }
 
@@ -92,28 +90,18 @@ public final class ObjectTools {
     }
 
     /**
-     * Checks if the provided {@link Hashtable} is empty or {@code null}.
-     *
-     * @param table The hashtable to check; can be {@code null}
-     * @return {@code true} if the hashtable is {@code null} or empty; {@code false} otherwise
-     * @since 1.0
-     */
-    public static boolean isEmpty(Hashtable<?, ?> table) {
-        return table == null || table.isEmpty();
-    }
-
-    /**
      * Checks if all provided arrays are empty or {@code null}.
      *
      * @param arrays The arrays to check; can be {@code null} or contain {@code null} elements
      * @return {@code true} if all arrays are {@code null} or empty; {@code false} if any array is not empty
      * @since 1.0
      */
-    public static boolean isEmpty(Object[]... arrays) {
+    @SafeVarargs
+    public static <T> boolean isEmpty(T[]... arrays) {
         if (arrays == null) {
             return true;
         }
-        for (Object[] array : arrays) {
+        for (T[] array : arrays) {
             if (array != null && array.length > 0) {
                 return false;
             }
@@ -139,11 +127,12 @@ public final class ObjectTools {
      * @return {@code true} if all collections are {@code null} or empty; {@code false} if any collection is not empty
      * @since 1.0
      */
-    public static boolean isEmpty(Collection<?>... collections) {
+    @SafeVarargs
+    public static <T extends Collection<?>> boolean isEmpty(T... collections) {
         if (collections == null) {
             return true;
         }
-        for (Collection<?> collection : collections) {
+        for (T collection : collections) {
             if (collection != null && !collection.isEmpty()) {
                 return false;
             }
@@ -158,8 +147,7 @@ public final class ObjectTools {
      * @return {@code true} if the array is not {@code null} and not empty; {@code false} otherwise
      * @since 1.0
      */
-    @SuppressWarnings("PMD.UseVarargs")
-    public static boolean isNotEmpty(Object[] array) {
+    public static <T> boolean isNotEmpty(T[] array) {
         return array != null && array.length > 0;
     }
 
@@ -175,28 +163,18 @@ public final class ObjectTools {
     }
 
     /**
-     * Checks if the provided {@link Hashtable} is not {@code null} and not empty.
-     *
-     * @param table The hashtable to check; can be {@code null}
-     * @return {@code true} if the hashtable is not {@code null} and not empty; {@code false} otherwise
-     * @since 1.0
-     */
-    public static boolean isNotEmpty(Hashtable<?, ?> table) {
-        return table != null && !table.isEmpty();
-    }
-
-    /**
      * Checks if any of the provided arrays are not {@code null} and not empty.
      *
      * @param arrays The arrays to check; can be {@code null} or contain {@code null} elements
      * @return {@code true} if any array is not {@code null} and not empty; {@code false} if all are {@code null} or empty
      * @since 1.0
      */
-    public static boolean isNotEmpty(Object[]... arrays) {
+    @SafeVarargs
+    public static <T> boolean isNotEmpty(T[]... arrays) {
         if (arrays == null) {
             return false;
         }
-        for (Object[] array : arrays) {
+        for (T[] array : arrays) {
             if (array != null && array.length > 0) {
                 return true;
             }
@@ -222,11 +200,12 @@ public final class ObjectTools {
      * @return {@code true} if any collection is not {@code null} and not empty; {@code false} if all are {@code null} or empty
      * @since 1.0
      */
-    public static boolean isNotEmpty(Collection<?>... collections) {
+    @SafeVarargs
+    public static <T extends Collection<?>> boolean isNotEmpty(T... collections) {
         if (collections == null) {
             return false;
         }
-        for (Collection<?> collection : collections) {
+        for (T collection : collections) {
             if (collection != null && !collection.isEmpty()) {
                 return true;
             }
@@ -241,11 +220,12 @@ public final class ObjectTools {
      * @return {@code true} if all objects are non-{@code null}, {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isNotNull(Object... objects) {
+    @SafeVarargs
+    public static <T> boolean isNotNull(T... objects) {
         if (objects == null) {
             return false;
         }
-        for (var obj : objects) {
+        for (T obj : objects) {
             if (obj == null) {
                 return false;
             }
@@ -264,7 +244,7 @@ public final class ObjectTools {
         if (collection == null) {
             return false;
         }
-        for (var obj : collection) {
+        for (Object obj : collection) {
             if (obj == null) {
                 return false;
             }
@@ -279,11 +259,12 @@ public final class ObjectTools {
      * @return {@code true} if all objects are {@code null}, {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isNull(Object... objects) {
+    @SafeVarargs
+    public static <T> boolean isNull(T... objects) {
         if (objects == null) {
             return true;
         }
-        for (var obj : objects) {
+        for (T obj : objects) {
             if (obj != null) {
                 return false;
             }
@@ -302,7 +283,7 @@ public final class ObjectTools {
         if (collection == null) {
             return true;
         }
-        for (var obj : collection) {
+        for (Object obj : collection) {
             if (obj != null) {
                 return false;
             }
