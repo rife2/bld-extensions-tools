@@ -74,21 +74,21 @@ public final class TextTools {
     }
 
     /**
-     * Checks if all objects are {@code null}, empty, or contain only whitespace characters.
+     * Checks if all string objects are {@code null}, empty, or contain only whitespace characters.
      * <p>
      * If an object is not {@code null}, it will be converted to its string representation
      * for the check.
      *
-     * @param objects The objects to check
-     * @return {@code true} if all objects are {@code null}, their string representations are empty,
+     * @param strings The string objects to check
+     * @return {@code true} if all string objects are {@code null}, their string representations are empty,
      * or their string representations are whitespace-only; {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isBlank(Object... objects) {
-        if (objects == null) {
+    public static boolean isBlank(Object... strings) {
+        if (strings == null) {
             return true;
         }
-        for (var obj : objects) {
+        for (var obj : strings) {
             if (obj == null) {
                 continue;
             }
@@ -105,18 +105,18 @@ public final class TextTools {
     }
 
     /**
-     * Checks if all objects are {@code null} or their string representations are empty.
+     * Checks if all string objects are {@code null} or their string representations are empty.
      *
-     * @param objects The objects to check
+     * @param strings The string objects to check
      * @return {@code true} if all objects are {@code null} or their string representations are empty;
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isEmpty(Object... objects) {
-        if (objects == null) {
+    public static boolean isEmpty(Object... strings) {
+        if (strings == null) {
             return true;
         }
-        for (var obj : objects) {
+        for (var obj : strings) {
             if (obj == null) {
                 continue;
             }
@@ -190,22 +190,22 @@ public final class TextTools {
     }
 
     /**
-     * Checks if all objects are not {@code null}, not empty, and not whitespace-only.
+     * Checks if all string objects are not {@code null}, not empty, and not whitespace-only.
      * <p>
      * If an object is not {@code null}, it will be converted to its string representation
      * for the check.
      *
-     * @param objects The objects to check
+     * @param strings The string objects to check
      * @return {@code true} if all objects are not {@code null}, their string representations
      * are not empty, and their string representations are not whitespace-only;
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isNotBlank(Object... objects) {
-        if (objects == null || objects.length == 0) {
+    public static boolean isNotBlank(Object... strings) {
+        if (strings == null || strings.length == 0) {
             return false;
         }
-        for (var obj : objects) {
+        for (var obj : strings) {
             if (obj == null) {
                 return false;
             }
@@ -264,18 +264,18 @@ public final class TextTools {
     }
 
     /**
-     * Checks if all objects are not {@code null} and their string representations are not empty.
+     * Checks if all string objects are not {@code null} and their string representations are not empty.
      *
-     * @param objects The objects to check
-     * @return {@code true} if all objects are not {@code null} and their string representations are not empty;
+     * @param strings The string objects to check
+     * @return {@code true} if all string objects are not {@code null} and their string representations are not empty;
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isNotEmpty(Object... objects) {
-        if (objects == null || objects.length == 0) {
+    public static boolean isNotEmpty(Object... strings) {
+        if (strings == null || strings.length == 0) {
             return false;
         }
-        for (var obj : objects) {
+        for (var obj : strings) {
             if (obj == null) {
                 return false;
             }
