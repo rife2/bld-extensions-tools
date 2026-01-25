@@ -74,6 +74,7 @@ public final class ObjectTools {
      * @return {@code true} if the array is {@code null} or empty; {@code false} otherwise
      * @since 1.0
      */
+    @SuppressWarnings("PMD.UseVarargs")
     public static <T> boolean isEmpty(T[] array) {
         return array == null || array.length == 0;
     }
@@ -147,6 +148,7 @@ public final class ObjectTools {
      * @return {@code true} if the array is not {@code null} and not empty; {@code false} otherwise
      * @since 1.0
      */
+    @SuppressWarnings("PMD.UseVarargs")
     public static <T> boolean isNotEmpty(T[] array) {
         return array != null && array.length > 0;
     }

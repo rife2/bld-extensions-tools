@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DisplayName("Objects Tools Tests")
-@SuppressWarnings({"ConstantValue", "PMD.AvoidDuplicateLiterals"})
+@SuppressWarnings({"ConstantValue", "PMD.AvoidDuplicateLiterals", "PMD.UseVarargs"})
 class ObjectToolsTest {
 
     @Nested
@@ -45,7 +45,7 @@ class ObjectToolsTest {
             @Test
             @DisplayName("should handle array containing only null elements as non-empty")
             void shouldHandleArrayContainingOnlyNullElements() {
-                String[] array = new String[]{null, null, null};
+                var array = new String[]{null, null, null};
                 assertTrue(ObjectTools.isNotEmpty(array));
                 assertFalse(ObjectTools.isEmpty(array));
             }
@@ -53,9 +53,9 @@ class ObjectToolsTest {
             @Test
             @DisplayName("should handle arrays of different types")
             void shouldHandleArraysOfDifferentTypes() {
-                String[] stringArray = new String[]{"test"};
-                Integer[] integerArray = new Integer[]{1, 2};
-                Object[] objectArray = new Object[]{new Object()};
+                var stringArray = new String[]{"test"};
+                var integerArray = new Integer[]{1, 2};
+                var objectArray = new Object[]{new Object()};
 
                 assertTrue(ObjectTools.isNotEmpty(stringArray));
                 assertTrue(ObjectTools.isNotEmpty(integerArray));
@@ -65,7 +65,7 @@ class ObjectToolsTest {
             @Test
             @DisplayName("should handle large arrays efficiently")
             void shouldHandleLargeArraysEfficiently() {
-                Object[] largeArray = new Object[10000];
+                var largeArray = new Object[10000];
                 for (int i = 0; i < largeArray.length; i++) {
                     largeArray[i] = i;
                 }
@@ -162,7 +162,7 @@ class ObjectToolsTest {
             @Test
             @DisplayName("should return true for empty array")
             void shouldReturnTrueForEmptyArray() {
-                Object[] array = new Object[]{};
+                var array = new Object[]{};
                 boolean result = ObjectTools.isEmpty(array);
                 assertTrue(result);
             }
@@ -244,7 +244,7 @@ class ObjectToolsTest {
             @Test
             @DisplayName("should return false for empty array")
             void shouldReturnFalseForEmptyArray() {
-                Object[] array = new Object[]{};
+                var array = new Object[]{};
                 boolean result = ObjectTools.isNotEmpty(array);
                 assertFalse(result);
             }
@@ -285,9 +285,9 @@ class ObjectToolsTest {
             @Test
             @DisplayName("should handle collections of different types")
             void shouldHandleCollectionsOfDifferentTypes() {
-                List<String> arrayList = new ArrayList<>(List.of("test"));
-                Set<Integer> hashSet = new HashSet<>(Set.of(1, 2));
-                LinkedList<Object> linkedList = new LinkedList<>(List.of(new Object()));
+                var arrayList = new ArrayList<>(List.of("test"));
+                var hashSet = new HashSet<>(Set.of(1, 2));
+                var linkedList = new LinkedList<>(List.of(new Object()));
 
                 assertTrue(ObjectTools.isNotEmpty(arrayList));
                 assertTrue(ObjectTools.isNotEmpty(hashSet));
@@ -510,12 +510,13 @@ class ObjectToolsTest {
 
             @Test
             @DisplayName("should handle different Map implementations")
+            @SuppressWarnings("PMD.ReplaceHashtableWithMap")
             void shouldHandleDifferentMapImplementations() {
-                Map<String, String> hashMap = new HashMap<>(Map.of("key", "value"));
-                Map<String, String> treeMap = new TreeMap<>(Map.of("key", "value"));
-                Map<String, String> linkedHashMap = new LinkedHashMap<>(Map.of("key", "value"));
-                Map<String, String> concurrentHashMap = new ConcurrentHashMap<>(Map.of("key", "value"));
-                Hashtable<String, String> hashtable = new Hashtable<>(Map.of("key", "value"));
+                var hashMap = new HashMap<>(Map.of("key", "value"));
+                var treeMap = new TreeMap<>(Map.of("key", "value"));
+                var linkedHashMap = new LinkedHashMap<>(Map.of("key", "value"));
+                var concurrentHashMap = new ConcurrentHashMap<>(Map.of("key", "value"));
+                var hashtable = new Hashtable<>(Map.of("key", "value"));
 
                 assertTrue(ObjectTools.isNotEmpty(hashMap));
                 assertTrue(ObjectTools.isNotEmpty(treeMap));
@@ -531,8 +532,9 @@ class ObjectToolsTest {
 
             @Test
             @DisplayName("should handle hashtables with multiple entries")
+            @SuppressWarnings("PMD.ReplaceHashtableWithMap")
             void shouldHandleHashtablesWithMultipleEntries() {
-                Hashtable<String, Integer> table = new Hashtable<>();
+                var table = new Hashtable<String, Integer>();
                 table.put("one", 1);
                 table.put("two", 2);
                 table.put("three", 3);
@@ -543,8 +545,9 @@ class ObjectToolsTest {
 
             @Test
             @DisplayName("should handle large hashtables efficiently")
+            @SuppressWarnings("PMD.ReplaceHashtableWithMap")
             void shouldHandleLargeHashtablesEfficiently() {
-                Hashtable<Integer, String> largeTable = new Hashtable<>();
+                var largeTable = new Hashtable<Integer, String>();
                 for (int i = 0; i < 10000; i++) {
                     largeTable.put(i, "value" + i);
                 }
@@ -556,7 +559,7 @@ class ObjectToolsTest {
             @Test
             @DisplayName("should handle large maps efficiently")
             void shouldHandleLargeMapsEfficiently() {
-                Map<Integer, String> largeMap = new HashMap<>();
+                var largeMap = new HashMap<Integer, String>();
                 for (int i = 0; i < 10000; i++) {
                     largeMap.put(i, "value" + i);
                 }
@@ -568,7 +571,7 @@ class ObjectToolsTest {
             @Test
             @DisplayName("should handle maps with null values as non-empty")
             void shouldHandleMapsWithNullValuesAsNonEmpty() {
-                Map<String, String> map = new HashMap<>();
+                var map = new HashMap<String, String>();
                 map.put("key1", null);
                 map.put("key2", null);
 
@@ -579,17 +582,18 @@ class ObjectToolsTest {
 
         @Nested
         @DisplayName("isEmpty(Map<?, ?>) Tests")
+        @SuppressWarnings("PMD.ReplaceHashtableWithMap")
         class IsEmptyMapTests {
 
             static Stream<Arguments> nonEmptyMaps() {
-                Map<Integer, String> mapWithNull1 = new HashMap<>();
+                var mapWithNull1 = new HashMap<Integer, String>();
                 mapWithNull1.put(1, null);
 
-                Map<String, String> mapWithNull2 = new HashMap<>();
+                var mapWithNull2 = new HashMap<String, String>();
                 mapWithNull2.put("key", "value");
                 mapWithNull2.put("key2", null);
 
-                Hashtable<String, String> hashtable = new Hashtable<>();
+                var hashtable = new Hashtable<String, String>();
                 hashtable.put("key1", "value1");
 
                 return Stream.of(
@@ -614,7 +618,7 @@ class ObjectToolsTest {
 
             @Test
             @DisplayName("should return true for empty map")
-            @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+            @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection", "PMD.UseConcurrentHashMap"})
             void shouldReturnTrueForEmptyMap() {
                 Map<?, ?> map = new HashMap<>();
                 boolean result = ObjectTools.isEmpty(map);
@@ -631,20 +635,22 @@ class ObjectToolsTest {
 
         @Nested
         @DisplayName("isNotEmpty(Map<?, ?>) Tests")
+        @SuppressWarnings("PMD.ReplaceHashtableWithMap")
         class IsNotEmptyMapTests {
 
             static Stream<Arguments> nonEmptyMaps() {
-                Map<Integer, String> mapWithNull1 = new HashMap<>();
+                var mapWithNull1 = new HashMap<Integer, String>();
                 mapWithNull1.put(1, null);
 
-                Map<String, String> mapWithNull2 = new HashMap<>();
+                var mapWithNull2 = new HashMap<String, String>();
                 mapWithNull2.put("key", "value");
                 mapWithNull2.put("key2", null);
 
-                Hashtable<String, String> hashtable = new Hashtable<>();
+                var hashtable = new Hashtable<String, String>();
                 hashtable.put("key1", "value1");
 
                 return Stream.of(
+
                         Arguments.of(new HashMap<>(Map.of("key1", "value1"))),
                         Arguments.of(new HashMap<>(Map.of("a", 1, "b", 2, "c", 3))),
                         Arguments.of(new TreeMap<>(Map.of("x", "y"))),
@@ -658,7 +664,7 @@ class ObjectToolsTest {
 
             @Test
             @DisplayName("should return false for empty map")
-            @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+            @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection", "PMD.UseConcurrentHashMap"})
             void shouldReturnFalseForEmptyMap() {
                 Map<?, ?> map = new HashMap<>();
                 boolean result = ObjectTools.isNotEmpty(map);

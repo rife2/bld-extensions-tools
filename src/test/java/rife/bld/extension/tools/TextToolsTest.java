@@ -283,6 +283,19 @@ class TextToolsTest {
         }
 
         @Test
+        @DisplayName("isEmpty(Object...) should continue when toString is empty")
+        void isEmptyObjectArrayShouldContinueWhenToStringIsEmpty() {
+            var obj = new Object() {
+                @Override
+                public String toString() {
+                    return "";
+                }
+            };
+            var result = TextTools.isEmpty(obj, null);
+            assertTrue(result);
+        }
+
+        @Test
         @DisplayName("should avoid toString for CharSequence objects")
         void shouldAvoidToStringForCharSequenceObjects() {
             var sb = new StringBuilder("text");
