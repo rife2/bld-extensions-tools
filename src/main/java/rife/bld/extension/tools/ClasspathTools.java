@@ -39,7 +39,7 @@ public final class ClasspathTools {
      * Blank or {@code null} paths are ignored.
      *
      * @param paths An array of strings representing individual classpath entries.
-     *             {@code null} or blank strings are skipped in the final classpath
+     *              {@code null} or blank strings are skipped in the final classpath
      * @return A string representing the concatenated classpath entries, separated by
      * the system's path separator. If no valid paths are provided, an empty
      * string is returned

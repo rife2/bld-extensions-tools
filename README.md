@@ -114,6 +114,6 @@ The following static methods are provided:
 | [`isNotBlank(Objects... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotBlank(java.lang.Object...))            | Checks if string objects are not blank. |
 | [`isNotEmpty(CharSequence str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotEmpty(java.lang.CharSequence))           | Checks if a string is not empty.        |
 | [`isNotEmpty(CharSequence... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotEmpty(java.lang.CharSequence...)) | Checks if strings are not empty.        |
-| [`isNotEmpty(Objects... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotEmpty(java.lang.Object...))            | Checks if string objects are not empty. |
+| [`isNotEmpty(Objects... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotEmpty(java.lang.Object...))            | Checks if string objects are not empty. |
 
 *NOTE:* All methods properly handle `null` strings.
