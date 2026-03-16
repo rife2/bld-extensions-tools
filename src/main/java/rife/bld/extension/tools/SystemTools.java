@@ -24,44 +24,39 @@ import java.util.function.Function;
  */
 public final class SystemTools {
 
-    private static final String OS_NAME = getOSName(); // cached
+    private static final String OS_NAME = System.getProperty("os.name", "").toLowerCase(Locale.ENGLISH);
 
     private SystemTools() {
         // no-op
     }
 
-    private static String getOSName() {
-        var osName = System.getProperty("os.name");
-        return normalizeOSName(osName);
-    }
-
     /**
      * Determines if the given operating system name corresponds to AIX.
      *
-     * @param osName The name of the operating system to evaluate
+     * @param osName the name of the operating system to evaluate
      * @return {@code true} if the operating system name contains "aix" (case-insensitive),
      * {@code false} otherwise
      * @since 1.0
      */
     static boolean isAix(String osName) {
-        var normalized = normalizeOSName(osName);
-        return normalized.contains("aix");
+        return normalize(osName).contains("aix");
     }
 
     /**
      * Determines if the current operating system is AIX.
      *
-     * @return {@code true} if the operating system is identified as AIX, {@code false} otherwise
+     * @return {@code true} if the operating system is AIX, {@code false} otherwise
      * @since 1.0
      */
     public static boolean isAix() {
-        return isAix(OS_NAME);
+        return OS_NAME.contains("aix");
     }
 
     /**
      * Determines if the current environment is running in a Cygwin environment.
      *
      * @return {@code true} if the environment is detected as Cygwin, {@code false} otherwise
+     * @since 1.0
      */
     public static boolean isCygwin() {
         return isCygwin(OS_NAME, System::getenv);
@@ -71,80 +66,65 @@ public final class SystemTools {
      * Determines if the environment is running in a Cygwin environment based on
      * the provided OS name and environment variables.
      *
-     * @param osName      The name of the operating system
-     * @param envProvider A function to retrieve environment variables
+     * @param osName      the name of the operating system
+     * @param envProvider a function to retrieve environment variables
      * @return {@code true} if the environment is detected as Cygwin, {@code false} otherwise
      * @since 1.0
      */
     static boolean isCygwin(String osName, Function<String, String> envProvider) {
-        // Check if OS is Windows first
         if (!isWindows(osName)) {
             return false;
         }
-
-        // Check for Cygwin-specific environment variables
         var term = envProvider.apply("TERM");
         var shell = envProvider.apply("SHELL");
         var path = envProvider.apply("PATH");
-
-        // Cygwin typically sets TERM to something like "xterm" or "cygwin"
-        boolean hasCygwinTerm = term != null &&
-                (term.contains("xterm") || term.contains("cygwin"));
-
-        // Cygwin sets SHELL to a Unix-style path like /bin/bash
-        boolean hasCygwinShell = shell != null && shell.startsWith("/");
-
-        // PATH in Cygwin contains Unix-style paths with /cygdrive/ or /usr/bin
-        boolean hasCygwinPath = path != null &&
-                (path.contains("/cygdrive/") || path.contains("/usr/bin"));
-
-        // If any strong Cygwin indicators are present, return true
-        return hasCygwinShell || hasCygwinPath || hasCygwinTerm;
+        return (shell != null && shell.startsWith("/"))
+                || (path != null && (path.contains("/cygdrive/") || path.contains("/usr/bin")))
+                || (term != null && (term.contains("xterm") || term.contains("cygwin")));
     }
 
     /**
      * Determines if the given operating system name corresponds to FreeBSD.
      *
-     * @param osName The name of the operating system to evaluate.
-     * @return {@code true} if the operating system is FreeBSD, {@code false} otherwise\
+     * @param osName the name of the operating system to evaluate
+     * @return {@code true} if the operating system is FreeBSD, {@code false} otherwise
      * @since 1.0
      */
     static boolean isFreeBsd(String osName) {
-        var normalized = normalizeOSName(osName);
-        return normalized.contains("freebsd");
+        return normalize(osName).contains("freebsd");
     }
 
     /**
      * Determines if the current operating system is FreeBSD.
      *
-     * @return {@code true} if the operating system is FreeBSD, {@code false} otherwise\
+     * @return {@code true} if the operating system is FreeBSD, {@code false} otherwise
      * @since 1.0
      */
     public static boolean isFreeBsd() {
-        return isFreeBsd(OS_NAME);
+        return OS_NAME.contains("freebsd");
     }
 
     /**
-     * Determines if the operating system is Linux.
+     * Determines if the current operating system is Linux.
      *
      * @return {@code true} if the operating system is Linux, {@code false} otherwise
      * @since 1.0
      */
     public static boolean isLinux() {
-        return isLinux(OS_NAME);
+        return OS_NAME.contains("linux") || OS_NAME.contains("unix");
     }
 
     /**
      * Determines if the given operating system name corresponds to Linux or a similar Unix-based system.
      *
-     * @param osName The name of the operating system to evaluate
+     * @param osName the name of the operating system to evaluate
      * @return {@code true} if the operating system name contains "linux" or "unix" (case-insensitive),
      * {@code false} otherwise
      * @since 1.0
      */
     static boolean isLinux(String osName) {
-        var normalized = normalizeOSName(osName);
-        return normalized.contains("linux") || normalized.contains("unix");
+        var n = normalize(osName);
+        return n.contains("linux") || n.contains("unix");
     }
 
     /**
@@ -154,24 +134,24 @@ public final class SystemTools {
      * @since 1.0
      */
     public static boolean isMacOS() {
-        return isMacOS(OS_NAME);
+        return OS_NAME.contains("mac") || OS_NAME.contains("darwin") || OS_NAME.contains("osx");
     }
 
     /**
      * Determines if the given operating system name corresponds to macOS.
      *
-     * @param osName The name of the operating system to evaluate
+     * @param osName the name of the operating system to evaluate
      * @return {@code true} if the operating system name contains "mac", "darwin", or "osx" (case-insensitive),
      * {@code false} otherwise
      * @since 1.0
      */
     static boolean isMacOS(String osName) {
-        var normalized = normalizeOSName(osName);
-        return normalized.contains("mac") || normalized.contains("darwin") || normalized.contains("osx");
+        var n = normalize(osName);
+        return n.contains("mac") || n.contains("darwin") || n.contains("osx");
     }
 
     /**
-     * Determines if the current environment is running in a Mingw environment.
+     * Determines if the current environment is running in a MinGW environment.
      *
      * @return {@code true} if the environment is detected as MinGW/MSYS2, {@code false} otherwise
      * @since 1.0
@@ -184,46 +164,28 @@ public final class SystemTools {
      * Determines if the environment is running in a MinGW environment based on
      * the provided OS name and environment variables.
      *
-     * @param osName      The name of the operating system
-     * @param envProvider A function to retrieve environment variables
+     * @param osName      the name of the operating system
+     * @param envProvider a function to retrieve environment variables
      * @return {@code true} if the environment is detected as MinGW/MSYS2, {@code false} otherwise
      * @since 1.0
      */
     static boolean isMingw(String osName, Function<String, String> envProvider) {
-        // Check if OS is Windows first
         if (!isWindows(osName)) {
             return false;
         }
-
-        // Check for MinGW-specific environment variables
         var msystem = envProvider.apply("MSYSTEM");
         var mingwPrefix = envProvider.apply("MINGW_PREFIX");
         var mingwChost = envProvider.apply("MINGW_CHOST");
         var shell = envProvider.apply("SHELL");
         var path = envProvider.apply("PATH");
 
-        // MSYSTEM is a strong indicator of MinGW/MSYS2
-        // Common values: MINGW64, MINGW32, MSYS, UCRT64, CLANG64, etc.
-        boolean hasMsystem = msystem != null &&
-                (msystem.contains("MINGW") || msystem.contains("MSYS"));
-
-        // MINGW_PREFIX and MINGW_CHOST are set in MinGW environments
+        boolean hasMsystem = msystem != null && (msystem.contains("MINGW") || msystem.contains("MSYS"));
         boolean hasMingwVars = mingwPrefix != null || mingwChost != null;
+        boolean hasMingwPath = path != null && (path.contains("/mingw") || path.contains("\\mingw")
+                || path.contains("/msys") || path.contains("\\msys"));
+        boolean hasMingwShell = shell != null && (shell.contains("/bin/bash") || shell.contains("/bin/sh"));
 
-        // Check for MinGW-specific paths
-        boolean hasMingwPaths = path != null &&
-                (path.contains("/mingw") ||
-                        path.contains("\\mingw") ||
-                        path.contains("/msys") ||
-                        path.contains("\\msys"));
-
-        // MinGW sets SHELL to a Unix-style path
-        boolean hasMingwShell = shell != null &&
-                (shell.contains("/bin/bash") || shell.contains("/bin/sh"));
-
-        // Strong indicators: MSYSTEM or MINGW-specific variables
-        // Weak indicators: paths and shell (could be other environments)
-        return hasMsystem || hasMingwVars || (hasMingwPaths && hasMingwShell);
+        return hasMsystem || hasMingwVars || (hasMingwPath && hasMingwShell);
     }
 
     /**
@@ -233,27 +195,26 @@ public final class SystemTools {
      * @since 1.0
      */
     public static boolean isOpenVms() {
-        return isOpenVms(OS_NAME);
+        return OS_NAME.contains("openvms");
     }
 
     /**
      * Determines if the given operating system name corresponds to OpenVMS.
      *
-     * @param osName The name of the operating system to evaluate
-     * @return {@code true} if the operating system name contains "openvms" (case-insensitive), {@code false} otherwise
+     * @param osName the name of the operating system to evaluate
+     * @return {@code true} if the operating system name contains "openvms" (case-insensitive),
+     * {@code false} otherwise
      * @since 1.0
      */
     static boolean isOpenVms(String osName) {
-        var normalized = normalizeOSName(osName);
-        return normalized.contains("openvms");
+        return normalize(osName).contains("openvms");
     }
 
     /**
-     * Determines if the current operating system is other than AIX, FreeBSD, Linux, macOS, OpenVMS,
-     * Solaris, or Windows.
+     * Determines if the current operating system is other than AIX, FreeBSD, Linux, macOS,
+     * OpenVMS, Solaris, or Windows.
      *
-     * @return {@code true} if the operating system is other than AIX, FreeBSD, Linux, macOS,
-     * OpenVMS, Solaris, or Windows, {@code false} otherwise
+     * @return {@code true} if the operating system is none of the above, {@code false} otherwise
      * @since 1.0
      */
     public static boolean isOtherOS() {
@@ -261,16 +222,16 @@ public final class SystemTools {
     }
 
     /**
-     * Determines if the current operating system is other than AIX, FreeBSD, Linux, macOS, OpenVMS, Solaris,
-     * or Windows.
+     * Determines if the given operating system name is other than AIX, FreeBSD, Linux, macOS,
+     * OpenVMS, Solaris, or Windows.
      *
-     * @return {@code true} if the operating system is other than AIX, FreeBSD, Linux, macOS, OpenVMS, Solaris,
-     * or Windows, {@code false} otherwise
+     * @param osName the name of the operating system to evaluate
+     * @return {@code true} if the operating system is none of the above, {@code false} otherwise
      * @since 1.0
      */
     static boolean isOtherOs(String osName) {
-        return !isAix(osName) && !isFreeBsd(osName) && !isLinux(osName) && !isMacOS(osName) && !isOpenVms(osName)
-                && !isSolaris(osName) && !isWindows(osName);
+        return !isAix(osName) && !isFreeBsd(osName) && !isLinux(osName) && !isMacOS(osName)
+                && !isOpenVms(osName) && !isSolaris(osName) && !isWindows(osName);
     }
 
     /**
@@ -280,20 +241,20 @@ public final class SystemTools {
      * @since 1.0
      */
     public static boolean isSolaris() {
-        return isSolaris(OS_NAME);
+        return OS_NAME.contains("solaris") || OS_NAME.contains("sunos");
     }
 
     /**
      * Determines if the given operating system name corresponds to Solaris.
      *
-     * @param osName The name of the operating system to evaluate
+     * @param osName the name of the operating system to evaluate
      * @return {@code true} if the operating system name contains "solaris" or "sunos" (case-insensitive),
      * {@code false} otherwise
      * @since 1.0
      */
     static boolean isSolaris(String osName) {
-        var normalized = normalizeOSName(osName);
-        return normalized.contains("solaris") || normalized.contains("sunos");
+        var n = normalize(osName);
+        return n.contains("solaris") || n.contains("sunos");
     }
 
     /**
@@ -303,30 +264,23 @@ public final class SystemTools {
      * @since 1.0
      */
     public static boolean isWindows() {
-        return isWindows(OS_NAME);
+        return OS_NAME.contains("windows") || OS_NAME.startsWith("win");
     }
 
     /**
      * Determines if the given operating system name corresponds to Windows.
      *
-     * @param osName The name of the operating system to evaluate
+     * @param osName the name of the operating system to evaluate
+     * @return {@code true} if the operating system name contains "windows" or starts with "win"
+     * (case-insensitive), {@code false} otherwise
      * @since 1.0
      */
     static boolean isWindows(String osName) {
-        var normalized = normalizeOSName(osName);
-        return normalized.contains("windows") || normalized.startsWith("win");
+        var n = normalize(osName);
+        return n.contains("windows") || n.startsWith("win");
     }
 
-    /**
-     * Normalizes the given operating system name by converting it to lowercase
-     * using the English locale. If the input is {@code null}, an empty string is returned.
-     *
-     * @param osName The name of the operating system to normalize
-     * @return A normalized, lowercase version of the operating system name, or an
-     * empty string if the input is {@code null}
-     * @since 1.0
-     */
-    static String normalizeOSName(String osName) {
+    private static String normalize(String osName) {
         return osName != null ? osName.toLowerCase(Locale.ENGLISH) : "";
     }
 }
