@@ -16,6 +16,7 @@
 
 package rife.bld.extension.tools;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -59,7 +60,7 @@ public final class ObjectTools {
         if (collection == null) {
             return true;
         }
-        for (Object obj : collection) {
+        for (var obj : collection) {
             if (obj == null) {
                 return true;
             }
@@ -99,15 +100,7 @@ public final class ObjectTools {
      */
     @SafeVarargs
     public static <T> boolean isEmpty(T[]... arrays) {
-        if (arrays == null) {
-            return true;
-        }
-        for (T[] array : arrays) {
-            if (array != null && array.length > 0) {
-                return false;
-            }
-        }
-        return true;
+        return arrays == null || Arrays.stream(arrays).allMatch(a -> a == null || a.length == 0);
     }
 
     /**
@@ -130,15 +123,7 @@ public final class ObjectTools {
      */
     @SafeVarargs
     public static <T extends Collection<?>> boolean isEmpty(T... collections) {
-        if (collections == null) {
-            return true;
-        }
-        for (T collection : collections) {
-            if (collection != null && !collection.isEmpty()) {
-                return false;
-            }
-        }
-        return true;
+        return collections == null || Arrays.stream(collections).allMatch(c -> c == null || c.isEmpty());
     }
 
     /**
@@ -150,7 +135,7 @@ public final class ObjectTools {
      */
     @SuppressWarnings("PMD.UseVarargs")
     public static <T> boolean isNotEmpty(T[] array) {
-        return array != null && array.length > 0;
+        return !isEmpty(array);
     }
 
     /**
@@ -161,27 +146,20 @@ public final class ObjectTools {
      * @since 1.0
      */
     public static boolean isNotEmpty(Map<?, ?> map) {
-        return map != null && !map.isEmpty();
+        return !isEmpty(map);
     }
 
     /**
      * Checks if any of the provided arrays are not {@code null} and not empty.
      *
      * @param arrays The arrays to check; can be {@code null} or contain {@code null} elements
-     * @return {@code true} if any array is not {@code null} and not empty; {@code false} if all are {@code null} or empty
+     * @return {@code true} if any array is not {@code null} and not empty; {@code false} if all are {@code null}
+     * or empty
      * @since 1.0
      */
     @SafeVarargs
     public static <T> boolean isNotEmpty(T[]... arrays) {
-        if (arrays == null) {
-            return false;
-        }
-        for (T[] array : arrays) {
-            if (array != null && array.length > 0) {
-                return true;
-            }
-        }
-        return false;
+        return !isEmpty(arrays);
     }
 
     /**
@@ -192,27 +170,20 @@ public final class ObjectTools {
      * @since 1.0
      */
     public static boolean isNotEmpty(Collection<?> collection) {
-        return collection != null && !collection.isEmpty();
+        return !isEmpty(collection);
     }
 
     /**
      * Checks if any of the provided collections are not {@code null} and not empty.
      *
      * @param collections The collections to check; can be {@code null} or contain {@code null} elements
-     * @return {@code true} if any collection is not {@code null} and not empty; {@code false} if all are {@code null} or empty
+     * @return {@code true} if any collection is not {@code null} and not empty; {@code false} if all are {@code null}
+     * or empty
      * @since 1.0
      */
     @SafeVarargs
     public static <T extends Collection<?>> boolean isNotEmpty(T... collections) {
-        if (collections == null) {
-            return false;
-        }
-        for (T collection : collections) {
-            if (collection != null && !collection.isEmpty()) {
-                return true;
-            }
-        }
-        return false;
+        return !isEmpty(collections);
     }
 
     /**
@@ -246,7 +217,7 @@ public final class ObjectTools {
         if (collection == null) {
             return false;
         }
-        for (Object obj : collection) {
+        for (var obj : collection) {
             if (obj == null) {
                 return false;
             }
@@ -285,7 +256,7 @@ public final class ObjectTools {
         if (collection == null) {
             return true;
         }
-        for (Object obj : collection) {
+        for (var obj : collection) {
             if (obj != null) {
                 return false;
             }

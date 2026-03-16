@@ -19,9 +19,9 @@ package rife.bld.extension.tools;
 import java.io.File;
 import java.util.Collection;
 import java.util.Objects;
-import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.Arrays;
 
 /**
  * Classpath Tools.
@@ -46,13 +46,9 @@ public final class ClasspathTools {
      * @since 1.0
      */
     public static String joinClasspath(String... paths) {
-        var joiner = new StringJoiner(File.pathSeparator);
-        for (var p : paths) {
-            if (TextTools.isNotBlank(p)) {
-                joiner.add(p);
-            }
-        }
-        return joiner.toString();
+        return Arrays.stream(paths)
+                .filter(TextTools::isNotBlank)
+                .collect(Collectors.joining(File.pathSeparator));
     }
 
     /**
