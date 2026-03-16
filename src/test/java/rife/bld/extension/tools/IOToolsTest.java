@@ -1294,13 +1294,22 @@ class IOToolsTest {
                 assertEquals(new File("foo"), IOTools.resolveFile(null, "foo"));
             }
 
-            @ParameterizedTest
-            @NullSource
-            @DisplayName("should throw NullPointerException when segments array is null")
-            void shouldThrowWhenSegmentsIsNull(String... segments) {
+            @Test
+            @DisplayName("should handle null segment in array")
+            void shouldHandleNullSegment() {
                 var base = new File("home", "user");
 
-                assertThrows(NullPointerException.class, () -> IOTools.resolveFile(base, segments));
+                assertEquals(new File(base, "bin"),
+                        IOTools.resolveFile(new File("home"), "user", null, "bin"));
+            }
+
+            @ParameterizedTest
+            @NullSource
+            @DisplayName("should handle null segments array")
+            void shouldHandleNullSegments(String... segments) {
+                var base = new File("home", "user");
+
+                assertEquals(base, IOTools.resolveFile(base, segments));
             }
         }
 

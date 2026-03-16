@@ -224,19 +224,7 @@ public final class IOTools {
      * @since 1.0
      */
     public static boolean notExists(String path) {
-        return TextTools.isBlank(path) || !new File(path).exists();
-    }
-
-    /**
-     * Checks if the specified file does not exist.
-     *
-     * @param file The file to check for non-existence
-     * @return {@code true} if the file is {@code null} or does not exist;
-     * {@code false} otherwise
-     * @since 1.0
-     */
-    public static boolean notExists(File file) {
-        return file == null || !file.exists();
+        return !exists(path);
     }
 
     /**
@@ -248,7 +236,19 @@ public final class IOTools {
      * @since 1.0
      */
     public static boolean notExists(Path path) {
-        return path == null || !Files.exists(path);
+        return !exists(path);
+    }
+
+    /**
+     * Checks if the specified file does not exist.
+     *
+     * @param file The file to check for non-existence
+     * @return {@code true} if the file is {@code null} or does not exist;
+     * {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean notExists(File file) {
+        return !exists(file);
     }
 
     /**
@@ -265,6 +265,14 @@ public final class IOTools {
      * @since 1.0
      */
     public static File resolveFile(File base, String... segments) {
-        return new File(base, String.join(File.separator, segments));
+        var path = new File(base, "").toPath(); // handle null file
+        if (segments != null) {
+            for (var segment : segments) {
+                if (segment != null) {
+                    path = path.resolve(segment);
+                }
+            }
+        }
+        return path.toFile();
     }
 }
