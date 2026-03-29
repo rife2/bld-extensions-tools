@@ -234,12 +234,12 @@ public final class CollectionTools {
      * @param collections the collections of paths to combine; may be {@code null}
      * @return a new list of path strings for all non-null paths from all
      * non-null collections, or an empty list if {@code collections} is {@code null}
-     * @see Path#toString()
+     * @see Path#toAbsolutePath()
      * @since 1.0
      */
     @SafeVarargs
     public static List<String> combinePathsToStrings(@Nullable Collection<Path>... collections) {
-        return combineAndMap(collections, p -> Objects.requireNonNull(p).toString());
+        return combineAndMap(collections, p -> Objects.requireNonNull(p).toAbsolutePath().toString());
     }
 
     /**
@@ -250,11 +250,11 @@ public final class CollectionTools {
      *              may also be {@code null} (they are silently dropped)
      * @return a new list of path strings for all non-null paths,
      * or an empty list if {@code paths} is {@code null}
-     * @see Path#toString()
+     * @see Path#toAbsolutePath()
      * @since 1.0
      */
     public static List<String> combinePathsToStrings(@Nullable Path... paths) {
-        return combineAndMapVarargs(paths, p -> Objects.requireNonNull(p).toString());
+        return combineAndMapVarargs(paths, p -> Objects.requireNonNull(p).toAbsolutePath().toString());
     }
 
     /**

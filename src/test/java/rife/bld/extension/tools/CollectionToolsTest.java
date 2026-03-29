@@ -198,7 +198,7 @@ class CollectionToolsTest {
         @Test
         @DisplayName("returns Path objects for each file")
         void filesToPaths() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var file2 = new File("/tmp/b.txt");
             var result = CollectionTools.combineFilesToPaths(List.of(file1, file2));
             assertEquals(List.of(file1.toPath(), file2.toPath()), result);
@@ -207,9 +207,9 @@ class CollectionToolsTest {
         @Test
         @DisplayName("merges multiple File collections in order")
         void multipleCollections() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var file2 = new File("/tmp/b.txt");
-            var file3 = new File("/tmp/c.txt");
+            var file3 = new File("tmp/c.txt");
             var result = CollectionTools.combineFilesToPaths(
                     List.of(file1, file2), List.of(file3));
             assertEquals(List.of(file1.toPath(), file2.toPath(), file3.toPath()), result);
@@ -225,7 +225,7 @@ class CollectionToolsTest {
         @Test
         @DisplayName("skips null collections")
         void nullCollectionSkipped() {
-            var file = new File("/tmp/a.txt");
+            var file = new File("tmp/a.txt");
             var result = CollectionTools.combineFilesToPaths(List.of(file), null);
             assertEquals(List.of(file.toPath()), result);
         }
@@ -234,7 +234,7 @@ class CollectionToolsTest {
         @DisplayName("skips null elements within a collection")
         void nullElementsSkipped() {
             var list = new ArrayList<File>();
-            list.add(new File("/tmp/a.txt"));
+            list.add(new File("tmp/a.txt"));
             list.add(null);
             list.add(new File("/tmp/b.txt"));
             var result = CollectionTools.combineFilesToPaths(list);
@@ -244,7 +244,7 @@ class CollectionToolsTest {
         @Test
         @DisplayName("round-trips with combinePathsToFiles")
         void roundTrip() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var file2 = new File("/tmp/b.txt");
             var files = List.of(file1, file2);
             var paths = CollectionTools.combineFilesToPaths(files);
@@ -267,7 +267,7 @@ class CollectionToolsTest {
         @Test
         @DisplayName("returns Path objects for each file")
         void filesToPaths() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var file2 = new File("/tmp/b.txt");
             var result = CollectionTools.combineFilesToPaths(file1, file2);
             assertEquals(List.of(file1.toPath(), file2.toPath()), result);
@@ -290,7 +290,7 @@ class CollectionToolsTest {
         @Test
         @DisplayName("skips null elements")
         void nullElementsSkipped() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var file2 = new File("/tmp/b.txt");
             var result = CollectionTools.combineFilesToPaths(file1, null, file2);
             assertEquals(List.of(file1.toPath(), file2.toPath()), result);
@@ -299,7 +299,7 @@ class CollectionToolsTest {
         @Test
         @DisplayName("round-trips with combinePathsToFiles varargs")
         void roundTrip() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var file2 = new File("/tmp/b.txt");
             var paths = CollectionTools.combineFilesToPaths(file1, file2);
             var result = CollectionTools.combinePathsToFiles(paths.toArray(new Path[0]));
@@ -309,7 +309,7 @@ class CollectionToolsTest {
         @Test
         @DisplayName("works with a single file")
         void singleFile() {
-            var file = new File("/tmp/a.txt");
+            var file = new File("tmp/a.txt");
             var result = CollectionTools.combineFilesToPaths(file);
             assertEquals(List.of(file.toPath()), result);
         }
@@ -338,9 +338,9 @@ class CollectionToolsTest {
         @Test
         @DisplayName("merges multiple File collections in order")
         void multipleCollections() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var file2 = new File("/tmp/b.txt");
-            var file3 = new File("/tmp/c.txt");
+            var file3 = new File("tmp/c.txt");
             var result = CollectionTools.combineFilesToStrings(
                     List.of(file1, file2), List.of(file3));
             assertEquals(List.of(
@@ -359,7 +359,7 @@ class CollectionToolsTest {
         @Test
         @DisplayName("skips null collections")
         void nullCollectionSkipped() {
-            var file = new File("/tmp/a.txt");
+            var file = new File("tmp/a.txt");
             var result = CollectionTools.combineFilesToStrings(List.of(file), null);
             assertEquals(List.of(file.getAbsolutePath()), result);
         }
@@ -368,7 +368,7 @@ class CollectionToolsTest {
         @DisplayName("skips null elements within a collection")
         void nullElementsSkipped() {
             var list = new ArrayList<File>();
-            list.add(new File("/tmp/a.txt"));
+            list.add(new File("tmp/a.txt"));
             list.add(null);
             list.add(new File("/tmp/b.txt"));
             var result = CollectionTools.combineFilesToStrings(list);
@@ -391,7 +391,7 @@ class CollectionToolsTest {
         @Test
         @DisplayName("returns absolute paths for all files")
         void absolutePaths() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var file2 = new File("/tmp/b.txt");
             var result = CollectionTools.combineFilesToStrings(file1, file2);
             assertEquals(List.of(file1.getAbsolutePath(), file2.getAbsolutePath()), result);
@@ -421,7 +421,7 @@ class CollectionToolsTest {
         @Test
         @DisplayName("skips null elements")
         void nullElementsSkipped() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var file2 = new File("/tmp/b.txt");
             var result = CollectionTools.combineFilesToStrings(file1, null, file2);
             assertEquals(List.of(file1.getAbsolutePath(), file2.getAbsolutePath()), result);
@@ -438,7 +438,7 @@ class CollectionToolsTest {
         @Test
         @DisplayName("works with a single file")
         void singleFile() {
-            var file = new File("/tmp/a.txt");
+            var file = new File("tmp/a.txt");
             var result = CollectionTools.combineFilesToStrings(file);
             assertEquals(List.of(file.getAbsolutePath()), result);
         }
@@ -458,9 +458,9 @@ class CollectionToolsTest {
         @Test
         @DisplayName("merges multiple Path collections in order")
         void multipleCollections() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var file2 = new File("/tmp/b.txt");
-            var file3 = new File("/tmp/c.txt");
+            var file3 = new File("tmp/c.txt");
             var result = CollectionTools.combinePathsToFiles(
                     List.of(file1.toPath()), List.of(file2.toPath(), file3.toPath()));
             assertEquals(List.of(file1, file2, file3), result);
@@ -476,7 +476,7 @@ class CollectionToolsTest {
         @Test
         @DisplayName("skips null collections")
         void nullCollectionSkipped() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var result = CollectionTools.combinePathsToFiles(
                     List.of(file1.toPath()), null);
             assertEquals(List.of(file1), result);
@@ -486,7 +486,7 @@ class CollectionToolsTest {
         @DisplayName("skips null elements within a collection")
         void nullElementsSkipped() {
             var list = new ArrayList<Path>();
-            list.add(Path.of("/tmp/a.txt"));
+            list.add(Path.of("tmp/a.txt"));
             list.add(null);
             list.add(Path.of("/tmp/b.txt"));
             var result = CollectionTools.combinePathsToFiles(list);
@@ -496,7 +496,7 @@ class CollectionToolsTest {
         @Test
         @DisplayName("returns File objects for each path")
         void pathsToFiles() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var file2 = new File("/tmp/b.txt");
             var result = CollectionTools.combinePathsToFiles(List.of(file1.toPath(), file2.toPath()));
             assertEquals(List.of(file1, file2), result);
@@ -505,7 +505,7 @@ class CollectionToolsTest {
         @Test
         @DisplayName("round-trips with combineFilesToStrings")
         void roundTrip() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var file2 = new File("/tmp/b.txt");
             var paths = List.of(file1.toPath(), file2.toPath());
             var files = CollectionTools.combinePathsToFiles(paths);
@@ -544,7 +544,7 @@ class CollectionToolsTest {
         @Test
         @DisplayName("skips null elements")
         void nullElementsSkipped() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var file2 = new File("/tmp/b.txt");
             var result = CollectionTools.combinePathsToFiles(file1.toPath(), null, file2.toPath());
             assertEquals(List.of(file1, file2), result);
@@ -553,7 +553,7 @@ class CollectionToolsTest {
         @Test
         @DisplayName("returns File objects for each path")
         void pathsToFiles() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var file2 = new File("/tmp/b.txt");
             var result = CollectionTools.combinePathsToFiles(file1.toPath(), file2.toPath());
             assertEquals(List.of(file1, file2), result);
@@ -562,7 +562,7 @@ class CollectionToolsTest {
         @Test
         @DisplayName("round-trips with combineFilesToStrings varargs")
         void roundTrip() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var file2 = new File("/tmp/b.txt");
             var files = CollectionTools.combinePathsToFiles(file1.toPath(), file2.toPath());
             var strings = CollectionTools.combineFilesToStrings(files.toArray(new File[0]));
@@ -574,9 +574,9 @@ class CollectionToolsTest {
         @Test
         @DisplayName("works with a single path")
         void singlePath() {
-            var path = Path.of("/tmp/a.txt");
+            var path = Path.of("tmp/a.txt");
             var result = CollectionTools.combinePathsToFiles(path);
-            assertEquals(List.of(new File("/tmp/a.txt")), result);
+            assertEquals(List.of(new File("tmp/a.txt")), result);
         }
     }
 
@@ -594,9 +594,12 @@ class CollectionToolsTest {
         @Test
         @DisplayName("merges multiple Path collections in order")
         void multipleCollections() {
+            var file1 = new File("tmp/a.txt");
+            var file2 = new File("/tmp/b.txt");
+            var file3 = new File("tmp/c.txt");
             var result = CollectionTools.combinePathsToStrings(
-                    List.of(Path.of("/a")), List.of(Path.of("/b"), Path.of("/c")));
-            assertEquals(List.of("/a", "/b", "/c"), result);
+                    List.of(file1.toPath()), List.of(file2.toPath(), file3.toPath()));
+            assertEquals(List.of(file1.getAbsolutePath(), file2.getAbsolutePath(), file3.getAbsolutePath()), result);
         }
 
         @Test
@@ -609,37 +612,31 @@ class CollectionToolsTest {
         @Test
         @DisplayName("skips null collections")
         void nullCollectionSkipped() {
-            var result = CollectionTools.combinePathsToStrings(
-                    List.of(Path.of("/a")), null);
-            assertEquals(List.of("/a"), result);
+            var file1 = new File("tmp/a.txt");
+            var result = CollectionTools.combinePathsToStrings(file1.toPath(), null);
+            assertEquals(List.of(file1.getAbsolutePath()), result);
         }
 
         @Test
         @DisplayName("skips null elements within a collection")
         void nullElementsSkipped() {
+            var file1 = new File("tmp/a.txt");
+            var file2 = new File("/tmp/b.txt");
             var list = new ArrayList<Path>();
-            list.add(Path.of("/a"));
+            list.add(file1.toPath());
             list.add(null);
-            list.add(Path.of("/b"));
+            list.add(file2.toPath());
             var result = CollectionTools.combinePathsToStrings(list);
-            assertEquals(List.of("/a", "/b"), result);
+            assertEquals(List.of(file1.getAbsolutePath(), file2.getAbsolutePath()), result);
         }
 
         @Test
         @DisplayName("returns string representation of each path")
         void pathToString() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var file2 = new File("/tmp/b.txt");
             var result = CollectionTools.combinePathsToStrings(List.of(file1.toPath(), file2.toPath()));
-            assertEquals(List.of("/tmp/a.txt", "/tmp/b.txt"), result);
-        }
-
-        @Test
-        @DisplayName("preserves relative path strings without resolving them")
-        void relativePathPreserved() {
-            var result = CollectionTools.combinePathsToStrings(
-                    List.of(Path.of("relative/path.txt")));
-            assertEquals("relative/path.txt", result.get(0));
+            assertEquals(List.of(file1.getAbsolutePath(), file2.getAbsolutePath()), result);
         }
     }
 
@@ -671,35 +668,27 @@ class CollectionToolsTest {
         @Test
         @DisplayName("skips null elements")
         void nullElementsSkipped() {
-            var file1 = Path.of("/a");
-            var file2 = Path.of("/b");
-            var result = CollectionTools.combinePathsToStrings(file1, null, file2);
-            assertEquals(List.of("/a", "/b"), result);
+            var file1 = new File("tmp/a.txt");
+            var file2 = new File("/tmp/b.txt");
+            var result = CollectionTools.combinePathsToStrings(file1.toPath(), null, file2.toPath());
+            assertEquals(List.of(file1.getAbsolutePath(), file2.getAbsolutePath()), result);
         }
 
         @Test
         @DisplayName("returns string representation of each path")
         void pathToString() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var file2 = new File("/tmp/b.txt");
             var result = CollectionTools.combinePathsToStrings(file1.toPath(), file2.toPath());
             assertEquals(List.of(file1.getAbsolutePath(), file2.getAbsolutePath()), result);
         }
 
         @Test
-        @DisplayName("preserves relative path strings without resolving them")
-        void relativePathPreserved() {
-            var path = Path.of("relative/path.txt");
-            var result = CollectionTools.combinePathsToStrings(path);
-            assertEquals("relative/path.txt", result.get(0));
-        }
-
-        @Test
         @DisplayName("works with a single path")
         void singlePath() {
-            var path = Path.of("/tmp/a.txt");
+            var path = Path.of("tmp/a.txt");
             var result = CollectionTools.combinePathsToStrings(path);
-            assertEquals(List.of("/tmp/a.txt"), result);
+            assertEquals(List.of(path.toAbsolutePath().toString()), result);
         }
     }
 
@@ -718,11 +707,11 @@ class CollectionToolsTest {
         @DisplayName("merges multiple string collections in order")
         void multipleCollections() {
             var result = CollectionTools.combineStringsToFiles(
-                    List.of("/tmp/a.txt"), List.of("/tmp/b.txt", "/tmp/c.txt"));
+                    List.of("tmp/a.txt"), List.of("/tmp/b.txt", "tmp/c.txt"));
             assertEquals(List.of(
-                    new File("/tmp/a.txt"),
+                    new File("tmp/a.txt"),
                     new File("/tmp/b.txt"),
-                    new File("/tmp/c.txt")), result);
+                    new File("tmp/c.txt")), result);
         }
 
         @Test
@@ -736,15 +725,15 @@ class CollectionToolsTest {
         @DisplayName("skips null collections")
         void nullCollectionSkipped() {
             var result = CollectionTools.combineStringsToFiles(
-                    List.of("/tmp/a.txt"), null);
-            assertEquals(List.of(new File("/tmp/a.txt")), result);
+                    List.of("tmp/a.txt"), null);
+            assertEquals(List.of(new File("tmp/a.txt")), result);
         }
 
         @Test
         @DisplayName("skips null elements within a collection")
         void nullElementsSkipped() {
             var list = new ArrayList<String>();
-            list.add("/tmp/a.txt");
+            list.add("tmp/a.txt");
             list.add(null);
             list.add("/tmp/b.txt");
             var result = CollectionTools.combineStringsToFiles(list);
@@ -754,7 +743,7 @@ class CollectionToolsTest {
         @Test
         @DisplayName("round-trips with combineFilesToStrings")
         void roundTrip() {
-            var paths = List.of("/tmp/a.txt", "/tmp/b.txt");
+            var paths = List.of("tmp/a.txt", "/tmp/b.txt");
             var files = CollectionTools.combineStringsToFiles(paths);
             var strings = CollectionTools.combineFilesToStrings(files);
             assertEquals(
@@ -765,10 +754,9 @@ class CollectionToolsTest {
         @Test
         @DisplayName("returns File objects for each string")
         void stringsToFiles() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var file2 = new File("/tmp/b.txt");
-            var result = CollectionTools.combineStringsToFiles(
-                    List.of(file1.getAbsolutePath(), file2.getAbsolutePath()));
+            var result = CollectionTools.combineStringsToFiles(List.of(file1.getPath(), file2.getPath()));
             assertEquals(List.of(file1, file2), result);
         }
     }
@@ -801,17 +789,16 @@ class CollectionToolsTest {
         @Test
         @DisplayName("skips null elements")
         void nullElementsSkipped() {
-            var file1 = new File("/tmp/a.txt");
-            var file2 = new File("/tmp/b.txt");
-            var result = CollectionTools.combineStringsToFiles(file1.getAbsolutePath(), null,
-                    file2.getAbsolutePath());
-            assertEquals(List.of(file1, file2), result);
+            var file1 = new File("tmp/a.txt").getAbsolutePath();
+            var file2 = new File("/tmp/b.txt").getAbsolutePath();
+            var result = CollectionTools.combineStringsToFiles(file1, null, file2);
+            assertEquals(List.of(new File(file1), new File(file2)), result);
         }
 
         @Test
         @DisplayName("round-trips with combineFilesToStrings varargs")
         void roundTrip() {
-            var file1 = new File("/tmp/a.txt");
+            var file1 = new File("tmp/a.txt");
             var file2 = new File("/tmp/b.txt");
             var files = CollectionTools.combineStringsToFiles(
                     file1.getAbsolutePath(), file2.getAbsolutePath());
@@ -822,18 +809,17 @@ class CollectionToolsTest {
         @Test
         @DisplayName("works with a single string")
         void singleString() {
-            var result = CollectionTools.combineStringsToFiles("/tmp/a.txt");
-            assertEquals(List.of(new File("/tmp/a.txt")), result);
+            var result = CollectionTools.combineStringsToFiles("tmp/a.txt");
+            assertEquals(List.of(new File("tmp/a.txt")), result);
         }
 
         @Test
         @DisplayName("returns File objects for each string")
         void stringsToFiles() {
-            var file1 = new File("/tmp/a.txt");
-            var file2 = new File("/tmp/b.txt");
-            var result = CollectionTools.combineStringsToFiles(file1.getAbsolutePath(),
-                    file2.getAbsolutePath());
-            assertEquals(List.of(file1, file2), result);
+            var file1 = new File("tmp/a.txt").getAbsolutePath();
+            var file2 = new File("/tmp/b.txt").getAbsolutePath();
+            var result = CollectionTools.combineStringsToFiles(file1, file2);
+            assertEquals(List.of(new File(file1), new File(file2)), result);
         }
     }
 
@@ -852,11 +838,11 @@ class CollectionToolsTest {
         @DisplayName("merges multiple string collections in order")
         void multipleCollections() {
             var result = CollectionTools.combineStringsToPaths(
-                    List.of("/tmp/a.txt"), List.of("/tmp/b.txt", "/tmp/c.txt"));
+                    List.of("tmp/a.txt"), List.of("/tmp/b.txt", "tmp/c.txt"));
             assertEquals(List.of(
-                    Path.of("/tmp/a.txt"),
+                    Path.of("tmp/a.txt"),
                     Path.of("/tmp/b.txt"),
-                    Path.of("/tmp/c.txt")), result);
+                    Path.of("tmp/c.txt")), result);
         }
 
         @Test
@@ -870,15 +856,15 @@ class CollectionToolsTest {
         @DisplayName("skips null collections")
         void nullCollectionSkipped() {
             var result = CollectionTools.combineStringsToPaths(
-                    List.of("/tmp/a.txt"), null);
-            assertEquals(List.of(Path.of("/tmp/a.txt")), result);
+                    List.of("tmp/a.txt"), null);
+            assertEquals(List.of(Path.of("tmp/a.txt")), result);
         }
 
         @Test
         @DisplayName("skips null elements within a collection")
         void nullElementsSkipped() {
             var list = new ArrayList<String>();
-            list.add("/tmp/a.txt");
+            list.add("tmp/a.txt");
             list.add(null);
             list.add("/tmp/b.txt");
             var result = CollectionTools.combineStringsToPaths(list);
@@ -896,18 +882,23 @@ class CollectionToolsTest {
         @Test
         @DisplayName("round-trips with combinePathsToStrings")
         void roundTrip() {
-            var strings = List.of("/tmp/a.txt", "/tmp/b.txt");
+            var strings = List.of("tmp/a.txt", "/tmp/b.txt");
             var paths = CollectionTools.combineStringsToPaths(strings);
             var result = CollectionTools.combinePathsToStrings(paths);
-            assertEquals(strings, result);
+            assertEquals(
+                    List.of(
+                            Path.of(strings.get(0)).toAbsolutePath().toString(),
+                            Path.of(strings.get(1)).toAbsolutePath().toString()
+                    )
+                    , result);
         }
 
         @Test
         @DisplayName("returns Path objects for each string")
         void stringsToPaths() {
             var result = CollectionTools.combineStringsToPaths(
-                    List.of("/tmp/a.txt", "/tmp/b.txt"));
-            assertEquals(List.of(Path.of("/tmp/a.txt"), Path.of("/tmp/b.txt")), result);
+                    List.of("tmp/a.txt", "/tmp/b.txt"));
+            assertEquals(List.of(Path.of("tmp/a.txt"), Path.of("/tmp/b.txt")), result);
         }
     }
 
@@ -939,8 +930,8 @@ class CollectionToolsTest {
         @Test
         @DisplayName("skips null elements")
         void nullElementsSkipped() {
-            var result = CollectionTools.combineStringsToPaths("/tmp/a.txt", null, "/tmp/b.txt");
-            assertEquals(List.of(Path.of("/tmp/a.txt"), Path.of("/tmp/b.txt")), result);
+            var result = CollectionTools.combineStringsToPaths("tmp/a.txt", null, "/tmp/b.txt");
+            assertEquals(List.of(Path.of("tmp/a.txt"), Path.of("/tmp/b.txt")), result);
         }
 
         @Test
@@ -953,23 +944,25 @@ class CollectionToolsTest {
         @Test
         @DisplayName("round-trips with combinePathsToStrings varargs")
         void roundTrip() {
-            var paths = CollectionTools.combineStringsToPaths("/tmp/a.txt", "/tmp/b.txt");
+            var file1 = new File("tmp/a.txt");
+            var file2 = new File("/tmp/b.txt");
+            var paths = CollectionTools.combineStringsToPaths("tmp/a.txt", "/tmp/b.txt");
             var result = CollectionTools.combinePathsToStrings(paths.toArray(new Path[0]));
-            assertEquals(List.of("/tmp/a.txt", "/tmp/b.txt"), result);
+            assertEquals(List.of(file1.getAbsolutePath(), file2.getAbsolutePath()), result);
         }
 
         @Test
         @DisplayName("works with a single string")
         void singleString() {
-            var result = CollectionTools.combineStringsToPaths("/tmp/a.txt");
-            assertEquals(List.of(Path.of("/tmp/a.txt")), result);
+            var result = CollectionTools.combineStringsToPaths("tmp/a.txt");
+            assertEquals(List.of(Path.of("tmp/a.txt")), result);
         }
 
         @Test
         @DisplayName("returns Path objects for each string")
         void stringsToPaths() {
-            var result = CollectionTools.combineStringsToPaths("/tmp/a.txt", "/tmp/b.txt");
-            assertEquals(List.of(Path.of("/tmp/a.txt"), Path.of("/tmp/b.txt")), result);
+            var result = CollectionTools.combineStringsToPaths("tmp/a.txt", "/tmp/b.txt");
+            assertEquals(List.of(Path.of("tmp/a.txt"), Path.of("/tmp/b.txt")), result);
         }
     }
 
