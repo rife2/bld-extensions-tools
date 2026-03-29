@@ -24,6 +24,13 @@ import java.nio.file.Path;
 
 /**
  * I/O Tools.
+ *
+ * <p>Utility methods for common file system operations including existence checks,
+ * executability checks, directory creation, and path resolution. All methods
+ * accept {@code null} inputs and return {@code false} (or an appropriate default)
+ * rather than throwing {@link NullPointerException}.</p>
+ *
+ * @since 1.0
  */
 public final class IOTools {
 
@@ -34,7 +41,7 @@ public final class IOTools {
     /**
      * Determines if the specified file exists, is a file, and is executable.
      *
-     * @param file The file to be checked
+     * @param file the file to be checked
      * @return {@code true} if the file exists, is a file, and can be executed;
      * {@code false} otherwise
      * @since 1.0
@@ -46,7 +53,7 @@ public final class IOTools {
     /**
      * Determines if the specified path exists, is a regular file, and is executable.
      *
-     * @param path The path to be checked
+     * @param path the path to be checked
      * @return {@code true} if the path exists, is a regular file, and can be executed;
      * {@code false} otherwise
      * @since 1.0
@@ -58,7 +65,7 @@ public final class IOTools {
     /**
      * Determines if the file at the specified path string exists, is a regular file, and is executable.
      *
-     * @param path The path string to be checked
+     * @param path the path string to be checked
      * @return {@code true} if the path exists, is a regular file, and can be executed;
      * {@code false} otherwise
      * @since 1.0
@@ -74,7 +81,7 @@ public final class IOTools {
     /**
      * Checks if the specified file exists.
      *
-     * @param file The file to check for existence
+     * @param file the file to check for existence
      * @return {@code true} if the file is not {@code null} and exists;
      * {@code false} otherwise
      * @since 1.0
@@ -86,7 +93,7 @@ public final class IOTools {
     /**
      * Checks if the specified path exists.
      *
-     * @param path The path to check for existence
+     * @param path the path to check for existence
      * @return {@code true} if the path is not {@code null} and exists;
      * {@code false} otherwise
      * @since 1.0
@@ -98,7 +105,7 @@ public final class IOTools {
     /**
      * Checks whether a file or directory exists at the specified path.
      *
-     * @param path The file system path to check for existence.
+     * @param path the file system path to check for existence
      * @return {@code true} if the path is not {@code null} and a file or directory
      * exists at the specified path; {@code false} otherwise
      * @since 1.0
@@ -114,8 +121,7 @@ public final class IOTools {
     /**
      * Determines if the specified {@code File} is a directory.
      *
-     * @param file The {@code File} object to be checked. If {@code null}, this method
-     *             will return {@code false}
+     * @param file the {@code File} object to be checked; if {@code null}, returns {@code false}
      * @return {@code true} if the file exists and is a directory; {@code false} otherwise
      * @since 1.0
      */
@@ -126,8 +132,7 @@ public final class IOTools {
     /**
      * Determines if the specified {@code Path} represents an existing directory.
      *
-     * @param path The {@code Path} object to be checked. If {@code null}, this method
-     *             returns {@code false}
+     * @param path the {@code Path} object to be checked; if {@code null}, returns {@code false}
      * @return {@code true} if the path exists and is a directory; {@code false} otherwise
      * @since 1.0
      */
@@ -138,8 +143,7 @@ public final class IOTools {
     /**
      * Determines if the specified path string represents an existing directory.
      *
-     * @param path The path string to be checked. If {@code null} or empty, this method
-     *             will return {@code false}
+     * @param path the path string to be checked; if {@code null} or blank, returns {@code false}
      * @return {@code true} if the specified path exists and is a directory;
      * {@code false} otherwise (including when the path string is invalid)
      * @since 1.0
@@ -159,31 +163,27 @@ public final class IOTools {
      * Creates the directory named by the specified {@code File}, including any
      * necessary but nonexistent parent directories.
      *
-     * @param file The {@code File} object representing the directory to be created.
-     *             If {@code null}, this method returns {@code false}
-     * @return {@code true} if the directory was created successfully, or if it
-     * already exists; {@code false} if the directory could not be created
-     * or if the provided {@code file} is {@code null}
+     * <p>Delegates to {@link #mkdirs(Path)} for consistent, race-condition-free behavior.</p>
+     *
+     * @param file the {@code File} object representing the directory to be created;
+     *             if {@code null}, this method returns {@code false}
+     * @return {@code true} if the directory was created successfully or already exists;
+     * {@code false} if the directory could not be created or {@code file} is {@code null}
+     * @since 1.0
      */
     public static boolean mkdirs(File file) {
-        if (file == null) {
-            return false;
-        }
-        if (file.exists() && !file.isDirectory()) {
-            return false;
-        }
-        return file.exists() || file.mkdirs();
+        return file != null && mkdirs(file.toPath());
     }
 
     /**
      * Creates the directory specified by the given {@code Path}, including any
      * nonexistent parent directories as necessary.
      *
-     * @param path The {@code Path} object representing the directory to be created.
-     *             If {@code null}, this method will return {@code false}
-     * @return {@code true} if the directory was created successfully or already
-     * exists; {@code false} if the directory could not be created, or if
-     * the provided {@code path} is {@code null}
+     * @param path the {@code Path} object representing the directory to be created;
+     *             if {@code null}, this method returns {@code false}
+     * @return {@code true} if the directory was created successfully or already exists;
+     * {@code false} if the directory could not be created or {@code path} is {@code null}
+     * @since 1.0
      */
     public static boolean mkdirs(Path path) {
         if (path == null) {
@@ -201,11 +201,11 @@ public final class IOTools {
      * Creates the directory specified by the given path string, including any
      * nonexistent parent directories as necessary.
      *
-     * @param path The path string representing the directory to be created.
-     *             If {@code null} or blank, this method will return {@code false}
-     * @return {@code true} if the directory was created successfully or already
-     * exists; {@code false} if the directory could not be created, or if
-     * the provided {@code path} is {@code null} or blank
+     * @param path the path string representing the directory to be created;
+     *             if {@code null} or blank, this method returns {@code false}
+     * @return {@code true} if the directory was created successfully or already exists;
+     * {@code false} if the directory could not be created or {@code path} is {@code null} or blank
+     * @since 1.0
      */
     public static boolean mkdirs(String path) {
         try {
@@ -216,33 +216,9 @@ public final class IOTools {
     }
 
     /**
-     * Checks whether a file or directory does not exist at the specified path.
-     *
-     * @param path The file system path to check for non-existence.
-     * @return {@code true} if the path is {@code null} or no file or directory
-     * exists at the specified path; {@code false} otherwise
-     * @since 1.0
-     */
-    public static boolean notExists(String path) {
-        return !exists(path);
-    }
-
-    /**
-     * Checks if the specified path does not exist.
-     *
-     * @param path The path to check for non-existence
-     * @return {@code true} if the path is {@code null} or does not exist;
-     * {@code false} otherwise
-     * @since 1.0
-     */
-    public static boolean notExists(Path path) {
-        return !exists(path);
-    }
-
-    /**
      * Checks if the specified file does not exist.
      *
-     * @param file The file to check for non-existence
+     * @param file the file to check for non-existence
      * @return {@code true} if the file is {@code null} or does not exist;
      * {@code false} otherwise
      * @since 1.0
@@ -252,16 +228,41 @@ public final class IOTools {
     }
 
     /**
-     * Resolves a file path by joining a base file with additional path segments.
-     * <p>
-     * This method constructs a file path by appending one or more path segments to a base file,
-     * using the platform-specific file separator. The resulting {@link File} object represents the
-     * complete path but does not create an actual file on the filesystem.
-     * </p>
+     * Checks if the specified path does not exist.
      *
-     * @param base     the base file path to start from
-     * @param segments additional path segments to append, in order.
-     * @throws NullPointerException if {@code base} is {@code null} or if {@code segments} is {@code null}
+     * @param path the path to check for non-existence
+     * @return {@code true} if the path is {@code null} or does not exist;
+     * {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean notExists(Path path) {
+        return !exists(path);
+    }
+
+    /**
+     * Checks whether a file or directory does not exist at the specified path.
+     *
+     * @param path the file system path to check for non-existence
+     * @return {@code true} if the path is {@code null} or no file or directory
+     * exists at the specified path; {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean notExists(String path) {
+        return !exists(path);
+    }
+
+    /**
+     * Resolves a file path by joining a base file with additional path segments.
+     *
+     * <p>This method constructs a file path by appending one or more path segments
+     * to a base file. {@code null} segments are silently skipped. The resulting
+     * {@link File} object represents the complete path but does not create an actual
+     * file on the filesystem.</p>
+     *
+     * @param base     the base file path to start from; mayne be {@code null}
+     * @param segments additional path segments to append, in order; may be {@code null},
+     *                 and individual {@code null} segments are silently skipped
+     * @return a {@link File} representing the resolved path
      * @since 1.0
      */
     public static File resolveFile(File base, String... segments) {

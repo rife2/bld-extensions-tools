@@ -1307,6 +1307,11 @@ class IOToolsTest {
             }
 
             @Test
+            void shouldHandleNullBaseAndEmptySegment() {
+                assertEquals(new File(""), IOTools.resolveFile(null, ""));
+            }
+
+            @Test
             @DisplayName("should handle null segment in array")
             void shouldHandleNullSegment() {
                 var base = new File("home", "user");
@@ -1322,6 +1327,11 @@ class IOToolsTest {
                 var base = new File("home", "user");
 
                 assertEquals(base, IOTools.resolveFile(base, segments));
+            }
+
+            @Test
+            void shouldHandleNulls() {
+                assertEquals(new File(""), IOTools.resolveFile(null, (String) null));
             }
         }
 
