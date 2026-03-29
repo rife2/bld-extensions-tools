@@ -214,7 +214,7 @@ class SystemToolsTest {
             assertFalse(SystemTools.isOpenVms());
             assertFalse(SystemTools.isSolaris());
             assertFalse(SystemTools.isWindows());
-            assertFalse(SystemTools.isOtherOS());
+            assertFalse(SystemTools.isOtherOs());
         }
 
         @Test
@@ -228,7 +228,7 @@ class SystemToolsTest {
             assertFalse(SystemTools.isOpenVms());
             assertFalse(SystemTools.isSolaris());
             assertFalse(SystemTools.isWindows());
-            assertFalse(SystemTools.isOtherOS());
+            assertFalse(SystemTools.isOtherOs());
         }
 
         @Test
@@ -242,7 +242,7 @@ class SystemToolsTest {
             assertFalse(SystemTools.isOpenVms());
             assertFalse(SystemTools.isSolaris());
             assertFalse(SystemTools.isWindows());
-            assertFalse(SystemTools.isOtherOS());
+            assertFalse(SystemTools.isOtherOs());
         }
 
         @Test
@@ -256,7 +256,7 @@ class SystemToolsTest {
             assertFalse(SystemTools.isMacOS());
             assertFalse(SystemTools.isOpenVms());
             assertFalse(SystemTools.isWindows());
-            assertFalse(SystemTools.isOtherOS());
+            assertFalse(SystemTools.isOtherOs());
         }
 
         @Test
@@ -270,7 +270,7 @@ class SystemToolsTest {
             assertFalse(SystemTools.isMacOS());
             assertFalse(SystemTools.isOpenVms());
             assertFalse(SystemTools.isSolaris());
-            assertFalse(SystemTools.isOtherOS());
+            assertFalse(SystemTools.isOtherOs());
         }
     }
 
@@ -527,7 +527,7 @@ class SystemToolsTest {
         @EnabledOnOs(OS.OTHER)
         @DisplayName("Should detect current system as other OS")
         void shouldDetectCurrentSystemAsOther() {
-            assertTrue(SystemTools.isOtherOS());
+            assertTrue(SystemTools.isOtherOs());
         }
 
         @ParameterizedTest
@@ -541,7 +541,7 @@ class SystemToolsTest {
         @EnabledOnOs({OS.LINUX, OS.MAC, OS.WINDOWS})
         @DisplayName("Should not detect current system as other OS")
         void shouldNotDetectCurrentSystemAsOther() {
-            assertFalse(SystemTools.isOtherOS());
+            assertFalse(SystemTools.isOtherOs());
         }
 
         @ParameterizedTest

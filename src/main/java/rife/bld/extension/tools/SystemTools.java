@@ -49,11 +49,15 @@ public final class SystemTools {
      * @since 1.0
      */
     public static boolean isAix() {
-        return OS_NAME.contains("aix");
+        return isAix(OS_NAME);
     }
 
     /**
      * Determines if the current environment is running in a Cygwin environment.
+     *
+     * <p>This method delegates to {@link #isCygwin(String, Function)} using the current
+     * OS name and {@link System#getenv} as the environment provider. For testing, use
+     * {@link #isCygwin(String, Function)} directly with a custom environment provider.
      *
      * @return {@code true} if the environment is detected as Cygwin, {@code false} otherwise
      * @since 1.0
@@ -101,7 +105,7 @@ public final class SystemTools {
      * @since 1.0
      */
     public static boolean isFreeBsd() {
-        return OS_NAME.contains("freebsd");
+        return isFreeBsd(OS_NAME);
     }
 
     /**
@@ -111,7 +115,7 @@ public final class SystemTools {
      * @since 1.0
      */
     public static boolean isLinux() {
-        return OS_NAME.contains("linux") || OS_NAME.contains("unix");
+        return isLinux(OS_NAME);
     }
 
     /**
@@ -134,7 +138,7 @@ public final class SystemTools {
      * @since 1.0
      */
     public static boolean isMacOS() {
-        return OS_NAME.contains("mac") || OS_NAME.contains("darwin") || OS_NAME.contains("osx");
+        return isMacOS(OS_NAME);
     }
 
     /**
@@ -152,6 +156,10 @@ public final class SystemTools {
 
     /**
      * Determines if the current environment is running in a MinGW environment.
+     *
+     * <p>This method delegates to {@link #isMingw(String, Function)} using the current
+     * OS name and {@link System#getenv} as the environment provider. For testing, use
+     * {@link #isMingw(String, Function)} directly with a custom environment provider.
      *
      * @return {@code true} if the environment is detected as MinGW/MSYS2, {@code false} otherwise
      * @since 1.0
@@ -173,14 +181,19 @@ public final class SystemTools {
         if (!isWindows(osName)) {
             return false;
         }
+
+        // Strategy 1: MSYSTEM variable (set by MSYS2/MinGW terminals)
         var msystem = envProvider.apply("MSYSTEM");
+        boolean hasMsystem = msystem != null && (msystem.contains("MINGW") || msystem.contains("MSYS"));
+
+        // Strategy 2: Explicit MinGW environment variables
         var mingwPrefix = envProvider.apply("MINGW_PREFIX");
         var mingwChost = envProvider.apply("MINGW_CHOST");
-        var shell = envProvider.apply("SHELL");
-        var path = envProvider.apply("PATH");
-
-        boolean hasMsystem = msystem != null && (msystem.contains("MINGW") || msystem.contains("MSYS"));
         boolean hasMingwVars = mingwPrefix != null || mingwChost != null;
+
+        // Strategy 3: PATH heuristic combined with shell check
+        var path = envProvider.apply("PATH");
+        var shell = envProvider.apply("SHELL");
         boolean hasMingwPath = path != null && (path.contains("/mingw") || path.contains("\\mingw")
                 || path.contains("/msys") || path.contains("\\msys"));
         boolean hasMingwShell = shell != null && (shell.contains("/bin/bash") || shell.contains("/bin/sh"));
@@ -195,7 +208,7 @@ public final class SystemTools {
      * @since 1.0
      */
     public static boolean isOpenVms() {
-        return OS_NAME.contains("openvms");
+        return isOpenVms(OS_NAME);
     }
 
     /**
@@ -217,7 +230,7 @@ public final class SystemTools {
      * @return {@code true} if the operating system is none of the above, {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isOtherOS() {
+    public static boolean isOtherOs() {
         return isOtherOs(OS_NAME);
     }
 
@@ -241,7 +254,7 @@ public final class SystemTools {
      * @since 1.0
      */
     public static boolean isSolaris() {
-        return OS_NAME.contains("solaris") || OS_NAME.contains("sunos");
+        return isSolaris(OS_NAME);
     }
 
     /**
@@ -264,7 +277,7 @@ public final class SystemTools {
      * @since 1.0
      */
     public static boolean isWindows() {
-        return OS_NAME.contains("windows") || OS_NAME.startsWith("win");
+        return isWindows(OS_NAME);
     }
 
     /**
@@ -280,6 +293,12 @@ public final class SystemTools {
         return n.contains("windows") || n.startsWith("win");
     }
 
+    /**
+     * Normalize the given OS name.
+     *
+     * @param osName the OS name string to normalize
+     * @return the normalized name or empty if {@code null}
+     */
     private static String normalize(String osName) {
         return osName != null ? osName.toLowerCase(Locale.ENGLISH) : "";
     }
