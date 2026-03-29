@@ -13,18 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package rife.bld.extension.tools;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.Arrays;
 
 /**
  * Classpath Tools.
+ *
+ * <p>Utility methods for assembling classpath strings from file and string
+ * path entries. {@code null} arrays, {@code null} collections, and {@code null}
+ * or blank individual entries are silently ignored in all methods.</p>
+ *
+ * @since 1.0
  */
 public final class ClasspathTools {
 
@@ -33,44 +40,57 @@ public final class ClasspathTools {
     }
 
     /**
-     * Join string paths into a single classpath by concatenating non-blank
+     * Joins string paths into a single classpath by concatenating non-blank
      * paths using the system's path separator.
-     * <p>
-     * Blank or {@code null} paths are ignored.
      *
-     * @param paths An array of strings representing individual classpath entries.
-     *              {@code null} or blank strings are skipped in the final classpath
-     * @return A string representing the concatenated classpath entries, separated by
-     * the system's path separator. If no valid paths are provided, an empty
-     * string is returned
+     * <p>Blank or {@code null} paths are ignored.</p>
+     *
+     * @param paths an array of strings representing individual classpath entries;
+     *              may be {@code null}, and individual {@code null} or blank strings
+     *              are silently skipped
+     * @return a string representing the concatenated classpath entries, separated by
+     * the system's path separator; an empty string if no valid paths are provided
      * @since 1.0
      */
-    public static String joinClasspath(String... paths) {
+    public static String joinClasspath(@Nullable String... paths) {
+        if (paths == null) {
+            return "";
+        }
         return Arrays.stream(paths)
                 .filter(TextTools::isNotBlank)
                 .collect(Collectors.joining(File.pathSeparator));
     }
 
     /**
-     * Joins multiple collections of file paths into a single classpath string
+     * Joins multiple collections of files into a single classpath string
      * using the system's path separator.
-     * <p>
-     * Each file's absolute path from all provided collections is included in the resulting
-     * classpath string. {@code null} collections are safely ignored.
      *
-     * @param files Variable number of {@link Collection}s of {@link File} objects representing the
-     *              files to include in the classpath. {@code null} collections are skipped. If all
-     *              collections are empty or {@code null}, an empty string is returned
-     * @return A classpath string where the absolute paths of all provided files are joined by the
-     * system's path separator. If no valid files are provided, an empty string is returned
+     * <p>Each file's normalized absolute path from all provided collections is included
+     * in the resulting classpath string. {@code null} collections and {@code null}
+     * individual file elements are silently ignored.</p>
+     *
+     * <p>Uses {@link java.nio.file.Path#toAbsolutePath()} followed by
+     * {@link java.nio.file.Path#normalize()} to resolve relative paths and eliminate
+     * redundant {@code ..} and {@code .} segments.</p>
+     *
+     * @param files variable number of {@link Collection}s of {@link File} objects
+     *              representing the files to include in the classpath; may be
+     *              {@code null}, and {@code null} collections or elements are skipped
+     * @return a classpath string where the normalized absolute paths of all provided
+     * files are joined by the system's path separator; an empty string if no valid
+     * files are provided
      * @since 1.0
      */
     @SafeVarargs
-    public static String joinClasspath(Collection<File>... files) {
+    public static String joinClasspath(@Nullable Collection<File>... files) {
+        if (files == null) {
+            return "";
+        }
         return Stream.of(files)
                 .filter(Objects::nonNull)
                 .flatMap(Collection::stream)
-                .map(File::getAbsolutePath)
+                .filter(Objects::nonNull)
+                .map(f -> Objects.requireNonNull(f).toPath().toAbsolutePath().normalize().toString())
                 .collect(Collectors.joining(File.pathSeparator));
     }
 }
