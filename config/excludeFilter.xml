@@ -5,4 +5,13 @@
         <Method name="resolveFile"/>
         <Bug pattern="UAC_UNNECESSARY_API_CONVERSION_FILE_TO_PATH"/>
     </Match>
+    <Match>
+        <Class name="rife.bld.extension.tools.CollectionTools"/>7
+        <Or>
+        <Method name="combineStringsToFiles$0"/>
+        <Method name="combineStringsToFiles$1"/>
+        <Bug pattern="PATH_TRAVERSAL_IN"/>
+        </Or>
+    </Match>
+
 </FindBugsFilter>

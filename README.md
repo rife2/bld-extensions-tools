@@ -32,6 +32,18 @@ The following static methods are provided:
 | [`joinClasspath(Collection<String>... files)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathTools.html#joinClasspath(java.util.Collection...)) | Joins lists of files into a classpath. |
 | [`joinClasspath(String... paths)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathTools.html#joinClasspath(java.lang.String...))                 | Join string paths into a classpath.    |
 
+## Collection Tools
+
+The following static methods are provided:
+
+| Method                                                                                                                                                                                                 | Description                                             |
+|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------|
+| [`combine(Collection<T>... collections)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combile(java.util.Collection...))                                 | Combine collections into a single list.                 |
+| [`combineFilesToStrings(Collection<File>... collections)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineFilesToStrings(java.util.Collection...))  | Combine `File` collections into a single `String` list. |
+| [`combinePathsToFiles(Collection<String>... collections)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combilePathsToFiles(java.util.Collection..))     | Combine `Path` collections into a single `File` list.   |
+| [`combinePathsToStrings(Collection<Path>... collections)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combinePathToStrings(java.util.Collection...))   | Combine `Path` collections into a single `String` list. |
+| [`combineStringsToFiles(Collection<String>... collections)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combileStringsToFiles(java.util.Collection..)) | Combine `String` collections into a single `File` list. |
+
 ## I/O Tools
 
 The following static methods are provided:
@@ -101,19 +113,20 @@ The following static methods are provided:
 
 The following static methods are provided:
 
-| Method                                                                                                                                                              | Description                             |
-|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------|:----------------------------------------|
-| [`isBlank(CharSequence str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isBlank(java.lang.CharSequence))                 | Checks if a string is blank.            |
-| [`isBlank(CharSequence... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isBlank(java.lang.CharSequence...))       | Checks if strings are blank.            |
-| [`isBlank(Object... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isBlank(java.lang.Object...))                   | Checks if string objects are blank.     |
-| [`isEmpty(CharSequence str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isEmpty(java.lang.CharSequence))                 | Checks if a string is empty.            |
-| [`isEmpty(CharSequence... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isEmpty(java.lang.CharSequence...))       | Checks if strings are empty.            |
-| [`isEmpty(Object... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isEmpty(java.lang.Object...))                   | Checks if string objects are empty.     |
-| [`isNotBlank(CharSequence str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotBlank(java.lang.CharSequence))           | Checks if a string is not blank.        |
-| [`isNotBlank(CharSequence... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotBlank(java.lang.CharSequence...)) | Checks if strings are not blank.        |
-| [`isNotBlank(Objects... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotBlank(java.lang.Object...))            | Checks if string objects are not blank. |
-| [`isNotEmpty(CharSequence str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotEmpty(java.lang.CharSequence))           | Checks if a string is not empty.        |
-| [`isNotEmpty(CharSequence... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotEmpty(java.lang.CharSequence...)) | Checks if strings are not empty.        |
-| [`isNotEmpty(Objects... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotEmpty(java.lang.Object...))            | Checks if string objects are not empty. |
+| Method                                                                                                                                                                            | Description                                      |
+|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------------------------|
+| [`equalsIgnoreWhitespace(CharSequence str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#equalsIgnoreWhitespace(java.lang.CharSequence)) | Check if strings ae equals, ignoring whitespace. |
+| [`isBlank(CharSequence str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isBlank(java.lang.CharSequence))                               | Checks if a string is blank.                     |
+| [`isBlank(CharSequence... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isBlank(java.lang.CharSequence...))                     | Checks if strings are blank.                     |
+| [`isBlank(Object... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isBlank(java.lang.Object...))                                 | Checks if string objects are blank.              |
+| [`isEmpty(CharSequence str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isEmpty(java.lang.CharSequence))                               | Checks if a string is empty.                     |
+| [`isEmpty(CharSequence... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isEmpty(java.lang.CharSequence...))                     | Checks if strings are empty.                     |
+| [`isEmpty(Object... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isEmpty(java.lang.Object...))                                 | Checks if string objects are empty.              |
+| [`isNotBlank(CharSequence str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotBlank(java.lang.CharSequence))                         | Checks if a string is not blank.                 |
+| [`isNotBlank(CharSequence... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotBlank(java.lang.CharSequence...))               | Checks if strings are not blank.                 |
+| [`isNotBlank(Objects... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotBlank(java.lang.Object...))                          | Checks if string objects are not blank.          |
+| [`isNotEmpty(CharSequence str)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotEmpty(java.lang.CharSequence))                         | Checks if a string is not empty.                 |
+| [`isNotEmpty(CharSequence... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotEmpty(java.lang.CharSequence...))               | Checks if strings are not empty.                 |
+| [`isNotEmpty(Objects... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/TextTools.html#isNotEmpty(java.lang.Object...))                          | Checks if string objects are not empty.          |
 
 *NOTE:* All methods properly handle `null` strings.
