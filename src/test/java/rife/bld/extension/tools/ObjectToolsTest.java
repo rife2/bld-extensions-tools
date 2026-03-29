@@ -808,7 +808,8 @@ class ObjectToolsTest {
                         Arguments.of(Arrays.asList(null, null)),
                         Arguments.of(Arrays.asList(null, "test")),
                         Arguments.of(Arrays.asList("test", null)),
-                        Arguments.of(Arrays.asList(null, "test", null))
+                        Arguments.of(Arrays.asList(null, "test", null)),
+                        Arguments.of((List<String>) null)
                 );
             }
 
@@ -857,8 +858,8 @@ class ObjectToolsTest {
                         Arguments.arguments((Object) new Object[]{null, null}),
                         Arguments.arguments((Object) new Object[]{null, "test"}),
                         Arguments.arguments((Object) new Object[]{"test", null}),
-                        Arguments.arguments((Object) new Object[]{null, "test", null})
-                );
+                        Arguments.arguments((Object) new Object[]{null, "test", null}),
+                        Arguments.arguments((Object) null));
             }
 
             @ParameterizedTest
@@ -906,7 +907,8 @@ class ObjectToolsTest {
                 return Stream.of(
                         Arguments.of(Collections.singletonList(null)),
                         Arguments.of(Arrays.asList(null, null)),
-                        Arguments.of(Arrays.asList(null, null, null))
+                        Arguments.of(Arrays.asList(null, null, null)),
+                        Arguments.of((List<String>) null)
                 );
             }
 
@@ -955,7 +957,8 @@ class ObjectToolsTest {
                 return Stream.of(
                         Arguments.arguments((Object) new Object[]{null}),
                         Arguments.arguments((Object) new Object[]{null, null}),
-                        Arguments.arguments((Object) new Object[]{null, null, null})
+                        Arguments.arguments((Object) new Object[]{null, null, null}),
+                        Arguments.of((Object) null)
                 );
             }
 
