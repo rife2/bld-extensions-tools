@@ -892,7 +892,7 @@ class IOToolsTest {
                 @Test
                 @DisplayName("Should return false when file exists at target path")
                 void shouldReturnFalseWhenFileExists(@TempDir Path tempDir) throws IOException {
-                    var filePath = tempDir.resolve("existingfile");
+                    var filePath = tempDir.resolve("existingFile");
                     Files.createFile(filePath);
 
                     assertFalse(IOTools.mkdirs(filePath.toString()));
@@ -947,7 +947,7 @@ class IOToolsTest {
                 @Test
                 @DisplayName("Should create directory and return true")
                 void shouldCreateDirectory(@TempDir Path tempDir) {
-                    var newDir = tempDir.resolve("newdir").toString();
+                    var newDir = tempDir.resolve("newDir").toString();
 
                     assertTrue(IOTools.mkdirs(newDir));
                     var newDirPath = Path.of(newDir);

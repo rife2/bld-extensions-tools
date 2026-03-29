@@ -259,7 +259,7 @@ public final class IOTools {
      * {@link File} object represents the complete path but does not create an actual
      * file on the filesystem.</p>
      *
-     * @param base     the base file path to start from; mayne be {@code null}
+     * @param base     the base file path to start from; may be {@code null}
      * @param segments additional path segments to append, in order; may be {@code null},
      *                 and individual {@code null} segments are silently skipped
      * @return a {@link File} representing the resolved path

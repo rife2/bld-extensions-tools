@@ -465,7 +465,7 @@ class SystemToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"", "someunknownos", "foo"})
+        @ValueSource(strings = {"", "UnknownOS", "foo"})
         @DisplayName("Should handle unknown OS names")
         void shouldHandleUnknownOs(String osName) {
             assertFalse(SystemTools.isLinux(osName));

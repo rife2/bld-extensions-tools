@@ -16,7 +16,7 @@ To use, include the following in your `bld` build file:
 repositories = List.of(RIFE2_SNAPSHOTS, RIFE2_RELEASES);
 
 scope(compile).include(
-    dependency("com.uwyn.rife2", "bld-extensions-tools", version(0, 9,0,"SNAPSHOT"))
+    dependency("com.uwyn.rife2", "bld-extensions-tools", version(1, 0, 0))
 );
 ```
 
