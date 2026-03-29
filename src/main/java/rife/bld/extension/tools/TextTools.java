@@ -17,14 +17,39 @@
 package rife.bld.extension.tools;
 
 import java.util.Arrays;
+import java.util.regex.Pattern;
 
 /**
  * Text Tools.
  */
 public final class TextTools {
 
+    private static final Pattern WHITESPACE = Pattern.compile("\\s");
+
     private TextTools() {
         // no-op
+    }
+
+    /**
+     * Compares two or more character sequences by removing all whitespace.
+     *
+     * @param strings the character sequences to compare
+     * @return {@code true} if all character sequences are equivalent when whitespace is ignored,
+     * {@code false} otherwise
+     * @since 1.0
+     */
+    public static boolean equalsIgnoreWhitespace(CharSequence... strings) {
+        if (strings == null || strings.length < 2) {
+            return false;
+        }
+        var first = WHITESPACE.matcher(strings[0] == null ? "" : strings[0]).replaceAll("");
+        for (var i = 1; i < strings.length; i++) {
+            var next = WHITESPACE.matcher(strings[i] == null ? "" : strings[i]).replaceAll("");
+            if (!first.equals(next)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

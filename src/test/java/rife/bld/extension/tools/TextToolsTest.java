@@ -31,6 +31,147 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TextToolsTest {
 
     @Nested
+    @DisplayName("equalsIgnoreWhitespace Tests")
+    class EqualsIgnoreWhitespaceTests {
+
+        @Test
+        @DisplayName("should return false for empty varargs array")
+        void shouldReturnFalseForEmptyVarargsArray() {
+            assertFalse(TextTools.equalsIgnoreWhitespace());
+        }
+
+        @Test
+        @DisplayName("should return false for null array")
+        void shouldReturnFalseForNullArray() {
+            assertFalse(TextTools.equalsIgnoreWhitespace((CharSequence[]) null));
+        }
+
+        @Test
+        @DisplayName("should return false for single argument")
+        void shouldReturnFalseForSingleArgument() {
+            assertFalse(TextTools.equalsIgnoreWhitespace("text"));
+        }
+
+        @Test
+        @DisplayName("should return false when strings differ in content")
+        void shouldReturnFalseWhenContentDiffers() {
+            var result = TextTools.equalsIgnoreWhitespace("hello", "world");
+            assertFalse(result);
+        }
+
+        @Test
+        @DisplayName("should return false when strings differ in content despite same whitespace")
+        void shouldReturnFalseWhenContentDiffersWithSameWhitespace() {
+            var result = TextTools.equalsIgnoreWhitespace("hello world", "hello earth");
+            assertFalse(result);
+        }
+
+        @Test
+        @DisplayName("should return false when first string is null")
+        void shouldReturnFalseWhenFirstIsNull() {
+            assertFalse(TextTools.equalsIgnoreWhitespace(null, "text"));
+        }
+
+        @Test
+        @DisplayName("should return false when one of multiple strings differs")
+        void shouldReturnFalseWhenOneOfMultipleDiffers() {
+            assertFalse(TextTools.equalsIgnoreWhitespace("hello world", "helloworld", "hello earth"));
+        }
+
+        @Test
+        @DisplayName("should return false when second string is null")
+        void shouldReturnFalseWhenSecondIsNull() {
+            assertFalse(TextTools.equalsIgnoreWhitespace("text", null));
+        }
+
+        @Test
+        @DisplayName("should return true for empty and whitespace-only strings")
+        void shouldReturnTrueForEmptyAndWhitespaceOnly() {
+            var result = TextTools.equalsIgnoreWhitespace("", "   ");
+            assertTrue(result);
+        }
+
+        @Test
+        @DisplayName("should return true when all strings are equal ignoring whitespace")
+        void shouldReturnTrueWhenAllEqualIgnoringWhitespace() {
+            assertTrue(TextTools.equalsIgnoreWhitespace("hello world", "hello  world", "helloworld"));
+        }
+
+        @Test
+        @DisplayName("should return true when all strings are null or whitespace-only")
+        void shouldReturnTrueWhenAllNullOrWhitespace() {
+            assertTrue(TextTools.equalsIgnoreWhitespace(null, "   ", "\t\n"));
+        }
+
+        @Test
+        @DisplayName("should return true when both strings are empty")
+        void shouldReturnTrueWhenBothEmpty() {
+            var result = TextTools.equalsIgnoreWhitespace("", "");
+            assertTrue(result);
+        }
+
+        @Test
+        @DisplayName("should return true when both strings are null")
+        void shouldReturnTrueWhenBothNull() {
+            assertTrue(TextTools.equalsIgnoreWhitespace(null, null));
+        }
+
+        @Test
+        @DisplayName("should return true when both strings are whitespace-only")
+        void shouldReturnTrueWhenBothWhitespaceOnly() {
+            var result = TextTools.equalsIgnoreWhitespace("   ", "\t\n\r");
+            assertTrue(result);
+        }
+
+        @Test
+        @DisplayName("should return true when strings differ only in line separators")
+        void shouldReturnTrueWhenDifferingOnlyInLineSeparators() {
+            var result = TextTools.equalsIgnoreWhitespace("hello\nworld", "hello\r\nworld");
+            assertTrue(result);
+        }
+
+        @Test
+        @DisplayName("should return true when strings differ only in tabs and spaces")
+        void shouldReturnTrueWhenDifferingOnlyInTabsAndSpaces() {
+            var result = TextTools.equalsIgnoreWhitespace("hello\tworld", "hello world");
+            assertTrue(result);
+        }
+
+        @Test
+        @DisplayName("should return true when strings are equal ignoring whitespace")
+        void shouldReturnTrueWhenEqualIgnoringWhitespace() {
+            var result = TextTools.equalsIgnoreWhitespace("hello world", "helloworld");
+            assertTrue(result);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"abc", "hello world", "foo\tbar", "line1\nline2"})
+        @DisplayName("should return true when strings are identical")
+        void shouldReturnTrueWhenIdentical(String input) {
+            var result = TextTools.equalsIgnoreWhitespace(input, input);
+            assertTrue(result);
+        }
+
+        @Test
+        @DisplayName("should work with mixed CharSequence types")
+        void shouldWorkWithMixedCharSequenceTypes() {
+            var sb = new StringBuilder("hello world");
+            var buff = new StringBuffer("helloworld");
+            var result = TextTools.equalsIgnoreWhitespace(sb, buff);
+            assertTrue(result);
+        }
+
+        @Test
+        @DisplayName("should work with StringBuilder instances")
+        void shouldWorkWithStringBuilder() {
+            var sb1 = new StringBuilder("hello world");
+            var sb2 = new StringBuilder("helloworld");
+            var result = TextTools.equalsIgnoreWhitespace(sb1, sb2);
+            assertTrue(result);
+        }
+    }
+
+    @Nested
     @DisplayName("isBlank(Object...) Tests")
     class IsBlankObjectTests {
 
@@ -897,5 +1038,4 @@ class TextToolsTest {
             assertTrue(result);
         }
     }
-
 }
