@@ -37,12 +37,22 @@ The following static methods are provided:
 The following static methods are provided:
 
 | Method                                                                                                                                                                                                 | Description                                             |
-|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------|
-| [`combine(Collection<T>... collections)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combile(java.util.Collection...))                                 | Combine collections into a single list.                 |
-| [`combineFilesToStrings(Collection<File>... collections)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineFilesToStrings(java.util.Collection...))  | Combine `File` collections into a single `String` list. |
-| [`combinePathsToFiles(Collection<String>... collections)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combilePathsToFiles(java.util.Collection..))     | Combine `Path` collections into a single `File` list.   |
-| [`combinePathsToStrings(Collection<Path>... collections)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combinePathToStrings(java.util.Collection...))   | Combine `Path` collections into a single `String` list. |
-| [`combineStringsToFiles(Collection<String>... collections)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combileStringsToFiles(java.util.Collection..)) | Combine `String` collections into a single `File` list. |
+| :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------|
+| [`combine(Collection<T>... collections)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combine(java.util.Collection...)) | Combine collections into a list. |
+| [`combineFilesToPaths(Collection<File>... collections)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineFilesToPaths(java.util.Collection...)) | Combine `File` collections into a `Path` list. |
+| [`combineFilesToPaths(File... files`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineFilesToPaths(java.io.File...)) | Combine files into a `Path` list. |
+| [`combineFilesToStrings(Collection<File>... collections`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineFilesToStrings(java.util.Collection...)) | Combine `File` collections into a `String` list. |
+| [`combineFilesToStrings(File... files`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineFilesToStrings(java.io.File...)) | Combine files into a `String` list. |
+| [`combinePathsToFiles(Collection<Path>... collections`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combinePathsToFiles(java.util.Collection...)) | Combine `Path` collections into a `String` list. |
+| [`combinePathsToFiles(Path... paths`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combinePathsToFiles(java.nio.file.Path...)) | Combine paths into a `String` list. |
+| [`combinePathsToStrings(Collection<Path>... collections`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combinePathsToStrings(java.util.Collection...)) | Combine `Path` collections into a `String` list. |
+| [`combinePathsToStrings(Path... paths`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combinePathsToStrings(java.nio.file.Path...)) | Combine  paths to a `String` list. |
+| [`combineStringsToFiles(Collection<String>... collections`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineStringsToFiles(java.util.Collection...)) | Combine `String` collections into a `File` list. |
+| [`combineStringsToFiles(String... strings`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineStringsToFiles(java.lang.String...)) | Combine strings into a `File` list. |
+| [`combineStringsToPaths(Collection<String>... collections`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineStringsToPaths(java.util.Collection...)) | Combine `String` collections into a `Path` list. |
+| [`combineStringsToPaths(String... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineStringsToPaths(java.lang.String...)) | Combine strings into a `Path` list. |
+
+NOTE: All methods properly handle null values
 
 ## I/O Tools
 
