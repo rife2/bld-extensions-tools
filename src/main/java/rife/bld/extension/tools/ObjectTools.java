@@ -274,4 +274,62 @@ public final class ObjectTools {
     public static boolean isNull(Collection<?> collection) {
         return collection == null || collection.stream().allMatch(Objects::isNull);
     }
+
+    /**
+     * Requires the provided array to be non-null and contain at least one element.
+     *
+     * <p>Throws an {@link IllegalArgumentException} if the array is {@code null}
+     * or empty.</p>
+     *
+     * @since 1.1
+     */
+    public static <T> void requireAnyNotEmpty(T[] array, String message) {
+        if (isEmpty(array)) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    /**
+     * Requires the provided map to be non-null and contain at least one entry.
+     *
+     * <p>Throws an {@link IllegalArgumentException} if the map is {@code null}
+     * or empty.</p>
+     *
+     * @since 1.1
+     */
+    public static void requireAnyNotEmpty(Map<?, ?> map, String message) {
+        if (isEmpty(map)) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    /**
+     * Requires the provided collection to be non-null and contain at least one element.
+     *
+     * <p>Throws an {@link IllegalArgumentException} if the collection is {@code null}
+     * or empty.</p>
+     *
+     * @since 1.1
+     */
+    public static void requireAnyNotEmpty(Collection<?> collection, String message) {
+        if (isEmpty(collection)) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    /**
+     * Requires at least one of the provided collections to be non-null and contain
+     * at least one element.
+     *
+     * <p>Throws an {@link IllegalArgumentException} if all collections are {@code null}
+     * or empty. See the class-level note on varargs semantics.</p>
+     *
+     * @since 1.1
+     */
+    @SafeVarargs
+    public static <T extends Collection<?>> void requireAnyNotEmpty(String message, T... collections) {
+        if (isEmpty(collections)) {
+            throw new IllegalArgumentException(message);
+        }
+    }
 }
