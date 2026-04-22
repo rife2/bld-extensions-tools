@@ -16,13 +16,23 @@
 
 package rife.bld.extension.tools;
 
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ObjectToolsRequireTest {
+
+    @Test
+    @DisplayName("requireAnyNotEmpty(array) does not throw for non-empty")
+    void requireArrayDoesNotThrow() {
+        assertDoesNotThrow(() -> ObjectTools.requireAnyNotEmpty(new Object[]{"x"}, "msg"));
+    }
 
     @Test
     @DisplayName("requireAnyNotEmpty(array) throws for null or empty")
@@ -34,24 +44,9 @@ class ObjectToolsRequireTest {
     }
 
     @Test
-    @DisplayName("requireAnyNotEmpty(array) does not throw for non-empty")
-    void requireArrayDoesNotThrow() {
-        assertDoesNotThrow(() -> ObjectTools.requireAnyNotEmpty(new Object[]{"x"}, "msg"));
-    }
-
-    @Test
-    @DisplayName("requireAnyNotEmpty(map) throws for null or empty")
-    void requireMapThrows() {
-        assertThrows(IllegalArgumentException.class,
-                () -> ObjectTools.requireAnyNotEmpty((Map<?, ?>) null, "msg"));
-        assertThrows(IllegalArgumentException.class,
-                () -> ObjectTools.requireAnyNotEmpty(Map.of(), "msg"));
-    }
-
-    @Test
-    @DisplayName("requireAnyNotEmpty(map) does not throw for non-empty")
-    void requireMapDoesNotThrow() {
-        assertDoesNotThrow(() -> ObjectTools.requireAnyNotEmpty(Map.of("k", "v"), "msg"));
+    @DisplayName("requireAnyNotEmpty(collection) does not throw for non-empty")
+    void requireCollectionDoesNotThrow() {
+        assertDoesNotThrow(() -> ObjectTools.requireAnyNotEmpty(List.of("x"), "msg"));
     }
 
     @Test
@@ -64,9 +59,25 @@ class ObjectToolsRequireTest {
     }
 
     @Test
-    @DisplayName("requireAnyNotEmpty(collection) does not throw for non-empty")
-    void requireCollectionDoesNotThrow() {
-        assertDoesNotThrow(() -> ObjectTools.requireAnyNotEmpty(List.of("x"), "msg"));
+    @DisplayName("requireAnyNotEmpty(map) does not throw for non-empty")
+    void requireMapDoesNotThrow() {
+        assertDoesNotThrow(() -> ObjectTools.requireAnyNotEmpty(Map.of("k", "v"), "msg"));
+    }
+
+    @Test
+    @DisplayName("requireAnyNotEmpty(map) throws for null or empty")
+    void requireMapThrows() {
+        assertThrows(IllegalArgumentException.class,
+                () -> ObjectTools.requireAnyNotEmpty((Map<?, ?>) null, "msg"));
+        assertThrows(IllegalArgumentException.class,
+                () -> ObjectTools.requireAnyNotEmpty(Map.of(), "msg"));
+    }
+
+    @Test
+    @DisplayName("requireAnyNotEmpty(varargs collections) does not throw when any non-empty")
+    void requireVarargsDoesNotThrow() {
+        assertDoesNotThrow(() -> ObjectTools.requireAnyNotEmpty("msg",
+                List.of(), List.of("x"), null));
     }
 
     @Test
@@ -75,12 +86,5 @@ class ObjectToolsRequireTest {
         assertThrows(IllegalArgumentException.class,
                 () -> ObjectTools.requireAnyNotEmpty("msg",
                         (List<?>) null, List.of(), List.of()));
-    }
-
-    @Test
-    @DisplayName("requireAnyNotEmpty(varargs collections) does not throw when any non-empty")
-    void requireVarargsDoesNotThrow() {
-        assertDoesNotThrow(() -> ObjectTools.requireAnyNotEmpty("msg",
-                List.of(), List.of("x"), null));
     }
 }

@@ -101,6 +101,7 @@ public class ToolsBuild extends Project {
     public void pmd() throws Exception {
         new PmdOperation()
                 .fromProject(this)
+                .inputPaths(srcMainDirectory())
                 .failOnViolation(true)
                 .ruleSets("config/pmd.xml")
                 .execute();

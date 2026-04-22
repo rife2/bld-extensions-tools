@@ -77,13 +77,13 @@ public final class ObjectTools {
      *
      * <p>Note: this overload takes a plain array parameter. PMD's UseVarargs warning
      * is suppressed intentionally as converting to varargs would create an ambiguous
-     * overload conflict with {@link #isEmpty(Object[]...)}.</p>
+     * overload conflict with varargs collection overloads.</p>
      *
      * @param array the array to check; can be {@code null}
      * @return {@code true} if the array is {@code null} or empty; {@code false} otherwise
      * @since 1.0
      */
-    @SuppressWarnings({"PMD.UseVarargs"})
+    @SuppressWarnings("PMD.UseVarargs")
     public static <T> boolean isEmpty(T[] array) {
         return array == null || array.length == 0;
     }
@@ -97,23 +97,6 @@ public final class ObjectTools {
      */
     public static boolean isEmpty(Map<?, ?> map) {
         return map == null || map.isEmpty();
-    }
-
-    /**
-     * Checks if all provided arrays are empty or {@code null}.
-     *
-     * <p>Returns {@code true} if the varargs array itself is {@code null} or if every
-     * individual array is {@code null} or empty. Returns {@code false} as soon as any
-     * array contains at least one element. See the class-level note on varargs semantics.</p>
-     *
-     * @param arrays the arrays to check; can be {@code null} or contain {@code null} elements
-     * @return {@code true} if all arrays are {@code null} or empty;
-     * {@code false} if any array is not empty
-     * @since 1.0
-     */
-    @SafeVarargs
-    public static <T> boolean isEmpty(T[]... arrays) {
-        return arrays == null || Arrays.stream(arrays).allMatch(a -> a == null || a.length == 0);
     }
 
     /**
@@ -142,15 +125,12 @@ public final class ObjectTools {
      */
     @SafeVarargs
     public static <T extends Collection<?>> boolean isEmpty(T... collections) {
-        return collections == null || Arrays.stream(collections).allMatch(c -> c == null || c.isEmpty());
+        return collections == null
+                || Arrays.stream(collections).allMatch(c -> c == null || c.isEmpty());
     }
 
     /**
      * Checks if the provided array is not {@code null} and not empty.
-     *
-     * <p>Note: this overload takes a plain array parameter. PMD's UseVarargs warning
-     * is suppressed intentionally as converting to varargs would create an ambiguous
-     * overload conflict with {@link #isNotEmpty(Object[]...)}.</p>
      *
      * @param array the array to check; can be {@code null}
      * @return {@code true} if the array is not {@code null} and not empty; {@code false} otherwise
@@ -170,23 +150,6 @@ public final class ObjectTools {
      */
     public static boolean isNotEmpty(Map<?, ?> map) {
         return !isEmpty(map);
-    }
-
-    /**
-     * Checks if any of the provided arrays are not {@code null} and not empty.
-     *
-     * <p>Logical negation of {@link #isEmpty(Object[]...)}. Returns {@code true} as soon
-     * as any array contains at least one element. See the class-level note on varargs
-     * semantics.</p>
-     *
-     * @param arrays the arrays to check; can be {@code null} or contain {@code null} elements
-     * @return {@code true} if any array is not {@code null} and not empty;
-     * {@code false} if all are {@code null} or empty
-     * @since 1.0
-     */
-    @SafeVarargs
-    public static <T> boolean isNotEmpty(T[]... arrays) {
-        return !isEmpty(arrays);
     }
 
     /**
