@@ -83,22 +83,27 @@ The following static methods are provided:
 
 The following static methods are provided:
 
-| Method                                                                                                                                                            | Description                                           |
-|:------------------------------------------------------------------------------------------------------------------------------------------------------------------|:------------------------------------------------------|
-| [`isAnyNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isAnyNull(java.util.Collection))      | Checks if any of the provided objects are `null`.     |
-| [`isAnyNull(T... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isAnyNull(T...))                               | Checks if any of the provided objects are `null`.     |
-| [`isEmpty(Collection<?> collection)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isEmpty(java.util.Collection))       | Checks if a collection is empty.                      |
-| [`isEmpty(Map<?,?> map)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isEmpty(java.util.Map))                          | Checks if a  map is empty.                            |
-| [`isEmpty(T[] array)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isEmpty(T[]))                                       | Checks if an array is empty.                          |
-| [`isEmpty(T[]... arrays)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isEmpty(T[]...))                                | Checks if any of the provided arrays are empty.       |
-| [`isNotEmpty(Collection<?> collection)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isNotEmpty(java.util.Collection)) | Checks if a collection is not empty.                  |
-| [`isNotEmpty(Map<?,?> map)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isNotEmpty(java.util.Map))                    | Checks if a map is not empty.                         |
-| [`isNotEmpty(T[] array)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isNotEmpty(T[]))                                 | Checks if an array is not empty.                      |
-| [`isNotEmpty(T[]... arrays)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isNotEmpty(T[]...))                          | Checks if any of the provided arrays are not empty.   |
-| [`isNotNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isNotNull(java.util.Collection))      | Checks if any of the provided objects are not `null`. |
-| [`isNotNull(T... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isNotNull(T...))                               | Checks if any of the provided objects are not `null`. |
-| [`isNull(Collection<?> objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isNull(java.util.Collection))            | Checks if the provided objects are all `null`.        |
-| [`isNull(T... objects)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#isNull(T...))                                     | Checks if the provided objects are all `null`.        |
+| Method                                                         | Description                                                                                                                                                                       |
+|:---------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `isAnyNull(Collection<?> collection)`                          | Returns `true` if the collection itself is `null` or any element in it is `null`.                                                                                                 |
+| `isAnyNull(T... objects)`                                      | Returns `true` if the varargs array itself is `null` or any element is `null`.                                                                                                    |
+| `isEmpty(Collection<?> collection)`                            | Returns `true` if the collection is `null` or contains no elements.                                                                                                               |
+| `isEmpty(Map<?,?> map)`                                        | Returns `true` if the map is `null` or contains no entries.                                                                                                                       |
+| `isEmpty(T[] array)`                                           | Returns `true` if the array is `null` or has length 0.                                                                                                                            |
+| `isEmpty(T... collections)`                                    | Returns `true` if the varargs array itself is `null` or if all provided collections are `null` or empty; returns `false` as soon as any collection contains at least one element. |
+| `isNotEmpty(Collection<?> collection)`                         | Returns `true` if the collection is not `null` and contains at least one element.                                                                                                 |
+| `isNotEmpty(Map<?,?> map)`                                     | Returns `true` if the map is not `null` and contains at least one entry.                                                                                                          |
+| `isNotEmpty(T[] array)`                                        | Returns `true` if the array is not `null` and has length greater than 0.                                                                                                          |
+| `isNotEmpty(T... collections)`                                 | Returns `true` if any provided collection is not `null` and not empty.                                                                                                            |
+| `isNotNull(Collection<?> collection)`                          | Returns `true` if the collection is not `null` and all elements are non‑`null`.                                                                                                   |
+| `isNotNull(T... objects)`                                      | Returns `true` if the varargs array is not `null` and all elements are non‑`null`; vacuously `true` for an empty argument list.                                                   |
+| `isNull(Collection<?> collection)`                             | Returns `true` if the collection is `null` or all elements are `null`.                                                                                                            |
+| `isNull(T... objects)`                                         | Returns `true` if the varargs array is `null` or all elements are `null`; vacuously `true` for an empty argument list.                                                            |
+| `requireAnyNotEmpty(T[] array, String message)`                | Throws `IllegalArgumentException` if the array is `null` or empty.                                                                                                                |
+| `requireAnyNotEmpty(Map<?, ?> map, String message)`            | Throws `IllegalArgumentException` if the map is `null` or empty.                                                                                                                  |
+| `requireAnyNotEmpty(Collection<?> collection, String message)` | Throws `IllegalArgumentException` if the collection is `null` or empty.                                                                                                           |
+| `requireAnyNotEmpty(String message, T... collections)`         | Throws `IllegalArgumentException` if all provided collections are `null` or empty.                                                                                                |
+
 
 *NOTE:* All methods properly handle `null` objects
 
