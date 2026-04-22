@@ -295,4 +295,62 @@ public final class ObjectTools {
             throw new IllegalArgumentException(message);
         }
     }
+
+    /**
+     * Requires the provided array to be non-null and contain at least one element.
+     *
+     * <p>Throws an {@link IllegalArgumentException} if the array is {@code null}
+     * or empty.</p>
+     *
+     * @since 1.1.1
+     */
+    public static <T> void requireNotEmpty(T[] array, String message) {
+        if (isEmpty(array)) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    /**
+     * Requires the provided {@link Map} to be non-null and contain at least one entry.
+     *
+     * <p>Throws an {@link IllegalArgumentException} if the map is {@code null}
+     * or empty.</p>
+     *
+     * @since 1.1.1
+     */
+    public static void requireNotEmpty(Map<?, ?> map, String message) {
+        if (isEmpty(map)) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    /**
+     * Requires the provided collection to be non-null and contain at least one element.
+     *
+     * <p>Throws an {@link IllegalArgumentException} if the collection is {@code null}
+     * or empty.</p>
+     *
+     * @since 1.1.1
+     */
+    public static void requireNotEmpty(Collection<?> collection, String message) {
+        if (isEmpty(collection)) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    /**
+     * Requires all provided collections to be non-null and contain at least one element.
+     *
+     * <p>Throws an {@link IllegalArgumentException} if any collection is {@code null}
+     * or empty. See the class-level note on varargs semantics.</p>
+     *
+     * @since 1.1.1
+     */
+    @SafeVarargs
+    public static <T extends Collection<?>> void requireNotEmpty(String message, T... collections) {
+        if (collections == null
+                || Arrays.stream(collections).anyMatch(c -> c == null || c.isEmpty())) {
+            throw new IllegalArgumentException(message);
+        }
+    }
 }
