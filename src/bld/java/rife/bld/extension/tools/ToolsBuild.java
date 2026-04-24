@@ -52,6 +52,8 @@ public class ToolsBuild extends Project {
                 .include(dependency("org.jetbrains", "annotations",
                         version(26, 1, 0)));
         scope(test)
+                .include(dependency("com.uwyn.rife2", "bld-extensions-testing-helpers",
+                        version(1, 0, 0)))
                 .include(dependency("org.junit.jupiter", "junit-jupiter", junit))
                 .include(dependency("org.junit.platform", "junit-platform-console-standalone", junit));
 

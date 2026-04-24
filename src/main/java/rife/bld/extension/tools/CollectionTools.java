@@ -20,121 +20,155 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
+import java.util.logging.Logger;
 
 /**
  * Collection Tools.
- *
- * <p>All public methods accept {@code null} varargs arrays or {@code null} collection references
- * and will return an empty list in those cases. Individual {@code null} elements within
- * collections or varargs are also silently ignored.</p>
- *
- * <p>{@link #combineAndMap(Collection[], Function)} and
- * {@link #combineAndMapVarargs(Object[], Function)} are intentionally package-private
- * implementation details and are not part of the public API.</p>
+ * <p>
+ * All public methods accept {@code null} varargs arrays or {@code null} collection references
+ * and return an empty list in those cases. Individual {@code null} elements within collections
+ * or varargs are silently ignored.
+ * <p>
+ * The internal methods {@code combineAndMap} and {@code combineAndMapVarargs} are implementation
+ * details and not part of the public API.
  *
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
  */
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class CollectionTools {
+
+    private static final Logger logger = Logger.getLogger(CollectionTools.class.getName());
 
     private CollectionTools() {
         // no-op
     }
 
     /**
-     * Combines multiple collections into a single list, ignoring any
-     * {@code null} collections or {@code null} elements.
+     * Combines multiple collections into a single list, ignoring any {@code null}
+     * collections or {@code null} elements.
+     * <p>
+     * Returns an empty list if the input array is {@code null}.
      *
-     * @param collections the collections to combine; may be {@code null}
-     * @param <T>         the type of elements
-     * @return a new list containing all non-null elements from all non-null collections,
-     * or an empty list if {@code collections} is {@code null}
      * @since 1.0
      */
     @SafeVarargs
     public static <T> List<T> combine(@Nullable Collection<T>... collections) {
-        return combineAndMap(collections, Function.identity());
+        return combineAndMap(collections, t -> t);
     }
 
     /**
      * Combines varargs elements into a single list, ignoring any {@code null} elements.
+     * <p>
+     * Returns an empty list if the input array is {@code null}.
      *
-     * @param elements the elements to combine; may be {@code null}, and individual elements
-     *                 may also be {@code null} (they are silently dropped)
-     * @param <T>      the type of elements
-     * @return a new list containing all non-null elements,
-     * or an empty list if {@code elements} is {@code null}
      * @since 1.0
      */
     @SafeVarargs
     public static <T> List<T> combine(@Nullable T... elements) {
-        return combineAndMapVarargs(elements, Function.identity());
+        return combineAndMapVarargs(elements, t -> t);
     }
 
     /**
-     * Combines multiple collections into a single list by applying the given mapper
-     * function to each element, ignoring any {@code null} collections or {@code null}
-     * elements.
+     * Internal implementation for combining collections and applying a mapper.
+     * <p>
+     * Tracks whether any null collections, null elements, or empty collections were
+     * ignored and logs a single warning summarizing the dropped inputs. The input
+     * array reference itself may also be null, in which case no collections are
+     * processed.
+     * <p>
+     * Returns an unmodifiable list. Returns an empty list if the input array
+     * reference is {@code null}.
      *
-     * <p>This method is an intentionally package-private implementation detail.</p>
-     *
-     * @param collections the collections to combine; may be {@code null}
-     * @param mapper      the function to apply to each element
-     * @param <T>         the type of input elements
-     * @param <R>         the type of output elements
-     * @return a new list containing the mapped results of all non-null elements from
-     * all non-null collections, or an empty list if {@code collections} is {@code null}
      * @since 1.0
      */
-    static <T, R> List<R> combineAndMap(@Nullable Collection<T>[] collections, Function<T, R> mapper) {
-        // collections itself can only be null if called as, e.g., combineStringsToFiles((Collection[]) null);
-        // the guard is intentional, not dead code
+    static <T, R> List<R> combineAndMap(@Nullable Collection<T>[] collections,
+                                        Function<T, R> mapper) {
         if (collections == null) {
-            return Collections.emptyList();
+            logger.warning("Ignored null collections array");
+            return List.of();
         }
-        return Arrays.stream(collections)
-                .filter(Objects::nonNull)
-                .flatMap(Collection::stream)
-                .filter(Objects::nonNull)
-                .map(mapper)
-                .toList();
+
+        List<R> result = new ArrayList<>();
+        boolean droppedNull = false;
+        boolean droppedEmpty = false;
+
+        for (Collection<T> c : collections) {
+            if (c == null) {
+                droppedNull = true;
+                continue;
+            }
+            if (c.isEmpty()) {
+                droppedEmpty = true;
+                continue;
+            }
+            for (T e : c) {
+                if (e == null) {
+                    droppedNull = true;
+                    continue;
+                }
+                result.add(mapper.apply(e));
+            }
+        }
+
+        if (droppedNull && droppedEmpty) {
+            logger.warning("Dropped one or more null elements or collections and one or more empty collections");
+        } else if (droppedNull) {
+            logger.warning("Dropped one or more null elements or collections");
+        } else if (droppedEmpty) {
+            logger.warning("Dropped one or more empty collections");
+        }
+
+        return List.copyOf(result);
     }
 
     /**
-     * Combines varargs elements into a single list by applying the given mapper
-     * function to each element, ignoring any {@code null} elements.
+     * Internal implementation for combining varargs and applying a mapper.
+     * <p>
+     * Tracks whether the varargs array reference was null or any null elements were
+     * ignored and logs a single warning summarizing the dropped inputs. The input
+     * array reference itself may be null, in which case no elements are processed.
+     * <p>
+     * Returns an unmodifiable list. Returns an empty list if the input array
+     * reference is {@code null}.
      *
-     * <p>This method is an intentionally package-private implementation detail.</p>
-     *
-     * @param elements the elements to combine; may be {@code null}, and individual elements
-     *                 may also be {@code null} (they are silently dropped)
-     * @param mapper   the function to apply to each element
-     * @param <T>      the type of input elements
-     * @param <R>      the type of output elements
-     * @return a new list containing the mapped results of all non-null elements,
-     * or an empty list if {@code elements} is {@code null}
      * @since 1.0
      */
-    static <T, R> List<R> combineAndMapVarargs(@Nullable T[] elements, Function<T, R> mapper) {
+    static <T, R> List<R> combineAndMapVarargs(@Nullable T[] elements,
+                                               Function<T, R> mapper) {
         if (elements == null) {
-            return Collections.emptyList();
+            logger.warning("Ignored null varargs array");
+            return List.of();
         }
-        return Arrays.stream(elements)
-                .filter(Objects::nonNull)
-                .map(mapper)
-                .toList();
+
+        List<R> result = new ArrayList<>();
+        boolean droppedNull = false;
+
+        for (T e : elements) {
+            if (e == null) {
+                droppedNull = true;
+                continue;
+            }
+            result.add(mapper.apply(e));
+        }
+
+        if (droppedNull) {
+            logger.warning("Dropped one or more null elements");
+        }
+
+        return List.copyOf(result);
     }
 
     /**
-     * Combines multiple {@link File} collections into a single list of {@link Path}
-     * objects, ignoring any {@code null} collections or {@code null} elements.
+     * Combines multiple {@link File} collections into a list of {@link Path} objects.
+     * <p>
+     * Null collections and null elements are ignored.
      *
-     * @param collections the collections of files to combine; may be {@code null}
-     * @return a new list of {@link Path} objects for all non-null files from all
-     * non-null collections, or an empty list if {@code collections} is {@code null}
-     * @see File#toPath()
      * @since 1.0
      */
     @SafeVarargs
@@ -143,14 +177,10 @@ public final class CollectionTools {
     }
 
     /**
-     * Combines varargs {@link File} elements into a single list of {@link Path}
-     * objects, ignoring any {@code null} elements.
+     * Combines varargs {@link File} elements into a list of {@link Path} objects.
+     * <p>
+     * Null elements are ignored.
      *
-     * @param files the files to combine; may be {@code null}, and individual elements
-     *              may also be {@code null} (they are silently dropped)
-     * @return a new list of {@link Path} objects for all non-null files,
-     * or an empty list if {@code files} is {@code null}
-     * @see File#toPath()
      * @since 1.0
      */
     public static List<Path> combineFilesToPaths(@Nullable File... files) {
@@ -158,53 +188,35 @@ public final class CollectionTools {
     }
 
     /**
-     * Combines multiple {@link File} collections into a single list of normalized absolute
-     * path strings, ignoring any {@code null} collections or {@code null} elements.
+     * Combines multiple {@link File} collections into a list of normalized absolute path strings.
+     * <p>
+     * Uses {@link Path#toAbsolutePath()} and {@link Path#normalize()}.
      *
-     * <p>Uses {@link Path#toAbsolutePath()} followed by {@link Path#normalize()} to resolve
-     * relative paths and eliminate redundant {@code ..} and {@code .} segments. This is
-     * more robust than {@link File#getAbsolutePath()}, which does not normalize the path.</p>
-     *
-     * @param collections the collections of files to combine; may be {@code null}
-     * @return a new list of normalized absolute path strings for all non-null files from all
-     * non-null collections, or an empty list if {@code collections} is {@code null}
-     * @see Path#toAbsolutePath()
-     * @see Path#normalize()
      * @since 1.0
      */
     @SafeVarargs
     public static List<String> combineFilesToStrings(@Nullable Collection<File>... collections) {
-        return combineAndMap(collections, f -> Objects.requireNonNull(f).toPath().toAbsolutePath().normalize().toString());
+        return combineAndMap(collections,
+                f -> Objects.requireNonNull(f).toPath().toAbsolutePath().normalize().toString());
     }
 
     /**
-     * Combines varargs {@link File} elements into a single list of normalized absolute path
-     * strings, ignoring any {@code null} elements.
+     * Combines varargs {@link File} elements into a list of normalized absolute path strings.
+     * <p>
+     * Uses {@link Path#toAbsolutePath()} and {@link Path#normalize()}.
      *
-     * <p>Uses {@link Path#toAbsolutePath()} followed by {@link Path#normalize()} to resolve
-     * relative paths and eliminate redundant {@code ..} and {@code .} segments. This is
-     * more robust than {@link File#getAbsolutePath()}, which does not normalize the path.</p>
-     *
-     * @param files the files to combine; may be {@code null}, and individual elements
-     *              may also be {@code null} (they are silently dropped)
-     * @return a new list of normalized absolute path strings for all non-null files,
-     * or an empty list if {@code files} is {@code null}
-     * @see Path#toAbsolutePath()
-     * @see Path#normalize()
      * @since 1.0
      */
     public static List<String> combineFilesToStrings(@Nullable File... files) {
-        return combineAndMapVarargs(files, f -> Objects.requireNonNull(f).toPath().toAbsolutePath().normalize().toString());
+        return combineAndMapVarargs(files,
+                f -> Objects.requireNonNull(f).toPath().toAbsolutePath().normalize().toString());
     }
 
     /**
-     * Combines multiple {@link Path} collections into a single list of {@link File}
-     * objects, ignoring any {@code null} collections or {@code null} elements.
+     * Combines multiple {@link Path} collections into a list of {@link File} objects.
+     * <p>
+     * Null collections and null elements are ignored.
      *
-     * @param collections the collections of paths to combine; may be {@code null}
-     * @return a new list of {@link File} objects for all non-null paths from all
-     * non-null collections, or an empty list if {@code collections} is {@code null}
-     * @see Path#toFile()
      * @since 1.0
      */
     @SafeVarargs
@@ -213,14 +225,10 @@ public final class CollectionTools {
     }
 
     /**
-     * Combines varargs {@link Path} elements into a single list of {@link File}
-     * objects, ignoring any {@code null} elements.
+     * Combines varargs {@link Path} elements into a list of {@link File} objects.
+     * <p>
+     * Null elements are ignored.
      *
-     * @param paths the paths to combine; may be {@code null}, and individual elements
-     *              may also be {@code null} (they are silently dropped)
-     * @return a new list of {@link File} objects for all non-null paths,
-     * or an empty list if {@code paths} is {@code null}
-     * @see Path#toFile()
      * @since 1.0
      */
     public static List<File> combinePathsToFiles(@Nullable Path... paths) {
@@ -228,43 +236,35 @@ public final class CollectionTools {
     }
 
     /**
-     * Combines multiple {@link Path} collections into a single list of path
-     * strings, ignoring any {@code null} collections or {@code null} elements.
+     * Combines multiple {@link Path} collections into a list of absolute path strings.
+     * <p>
+     * Null collections and null elements are ignored.
      *
-     * @param collections the collections of paths to combine; may be {@code null}
-     * @return a new list of path strings for all non-null paths from all
-     * non-null collections, or an empty list if {@code collections} is {@code null}
-     * @see Path#toAbsolutePath()
      * @since 1.0
      */
     @SafeVarargs
     public static List<String> combinePathsToStrings(@Nullable Collection<Path>... collections) {
-        return combineAndMap(collections, p -> Objects.requireNonNull(p).toAbsolutePath().toString());
+        return combineAndMap(collections,
+                p -> Objects.requireNonNull(p).toAbsolutePath().toString());
     }
 
     /**
-     * Combines varargs {@link Path} elements into a single list of path strings,
-     * ignoring any {@code null} elements.
+     * Combines varargs {@link Path} elements into a list of absolute path strings.
+     * <p>
+     * Null elements are ignored.
      *
-     * @param paths the paths to combine; may be {@code null}, and individual elements
-     *              may also be {@code null} (they are silently dropped)
-     * @return a new list of path strings for all non-null paths,
-     * or an empty list if {@code paths} is {@code null}
-     * @see Path#toAbsolutePath()
      * @since 1.0
      */
     public static List<String> combinePathsToStrings(@Nullable Path... paths) {
-        return combineAndMapVarargs(paths, p -> Objects.requireNonNull(p).toAbsolutePath().toString());
+        return combineAndMapVarargs(paths,
+                p -> Objects.requireNonNull(p).toAbsolutePath().toString());
     }
 
     /**
-     * Combines multiple string collections into a single list of {@link File}
-     * objects, ignoring any {@code null} collections or {@code null} elements.
+     * Combines multiple string collections into a list of {@link File} objects.
+     * <p>
+     * Null collections and null elements are ignored.
      *
-     * @param collections the collections of strings to combine; may be {@code null}
-     * @return a new list of {@link File} objects for all non-null strings from all
-     * non-null collections, or an empty list if {@code collections} is {@code null}
-     * @see File#File(String)
      * @since 1.0
      */
     @SafeVarargs
@@ -273,14 +273,10 @@ public final class CollectionTools {
     }
 
     /**
-     * Combines varargs string elements into a single list of {@link File} objects,
-     * ignoring any {@code null} elements.
+     * Combines varargs string elements into a list of {@link File} objects.
+     * <p>
+     * Null elements are ignored.
      *
-     * @param strings the strings to combine; may be {@code null}, and individual elements
-     *                may also be {@code null} (they are silently dropped)
-     * @return a new list of {@link File} objects for all non-null strings,
-     * or an empty list if {@code strings} is {@code null}
-     * @see File#File(String)
      * @since 1.0
      */
     public static List<File> combineStringsToFiles(@Nullable String... strings) {
@@ -288,13 +284,10 @@ public final class CollectionTools {
     }
 
     /**
-     * Combines multiple string collections into a single list of {@link Path}
-     * objects, ignoring any {@code null} collections or {@code null} elements.
+     * Combines multiple string collections into a list of {@link Path} objects.
+     * <p>
+     * Null collections and null elements are ignored.
      *
-     * @param collections the collections of strings to combine; may be {@code null}
-     * @return a new list of {@link Path} objects for all non-null strings from all
-     * non-null collections, or an empty list if {@code collections} is {@code null}
-     * @see Path#of(String, String...)
      * @since 1.0
      */
     @SafeVarargs
@@ -303,14 +296,10 @@ public final class CollectionTools {
     }
 
     /**
-     * Combines varargs string elements into a single list of {@link Path} objects,
-     * ignoring any {@code null} elements.
+     * Combines varargs string elements into a list of {@link Path} objects.
+     * <p>
+     * Null elements are ignored.
      *
-     * @param strings the strings to combine; may be {@code null}, and individual elements
-     *                may also be {@code null} (they are silently dropped)
-     * @return a new list of {@link Path} objects for all non-null strings,
-     * or an empty list if {@code strings} is {@code null}
-     * @see Path#of(String, String...)
      * @since 1.0
      */
     public static List<Path> combineStringsToPaths(@Nullable String... strings) {

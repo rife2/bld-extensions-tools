@@ -16,21 +16,32 @@
 
 package rife.bld.extension.tools;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import rife.bld.extension.testing.LoggingExtension;
+import rife.bld.extension.testing.TestLogHandler;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class CollectionToolsTest {
+
+    private static final TestLogHandler TEST_LOG_HANDLER = new TestLogHandler();
+
+    @RegisterExtension
+    @SuppressWarnings({"LoggerInitializedWithForeignClass", "unused"})
+    private static final LoggingExtension loggingExtension = new LoggingExtension(
+            Logger.getLogger(CollectionTools.class.getName()),
+            TEST_LOG_HANDLER
+    );
 
     @Nested
     @DisplayName("combine()")
@@ -1017,6 +1028,106 @@ class CollectionToolsTest {
         void singleVararg() {
             var result = CollectionTools.combine("a", "b", "c");
             assertEquals(List.of("a", "b", "c"), result);
+        }
+    }
+
+    @Nested
+    @DisplayName("logging behavior")
+    class LoggingBehaviorTest {
+
+        @BeforeEach
+        void clearLog() {
+            TEST_LOG_HANDLER.clear();
+        }
+
+        @Test
+        @DisplayName("logs when empty collections are dropped")
+        void logsEmptyCollections() {
+            var result = CollectionTools.combineFilesToPaths(
+                    Collections.emptyList(),
+                    List.of(new File("a"))
+            );
+            assertEquals(1, result.size());
+            assertTrue(TEST_LOG_HANDLER.containsExactMessage("Dropped one or more empty collections"));
+        }
+
+        @Test
+        @DisplayName("does not log when nothing is dropped")
+        void logsNothingWhenNothingDropped() {
+            var result = CollectionTools.combine("a", "b");
+            assertEquals(2, result.size());
+            assertTrue(TEST_LOG_HANDLER.isEmpty());
+        }
+
+        @Test
+        @DisplayName("logs when both null and empty collections are dropped")
+        void logsNullAndEmptyCollections() {
+            var result = CollectionTools.combineFilesToPaths(
+                    null,
+                    Collections.emptyList(),
+                    List.of(new File("a"))
+            );
+            assertEquals(1, result.size());
+            assertTrue(TEST_LOG_HANDLER.containsExactMessage(
+                    "Dropped one or more null elements or collections and one or more empty collections"
+            ));
+        }
+
+        @Test
+        @DisplayName("logs when null collections are dropped")
+        void logsNullCollections() {
+            var result = CollectionTools.combineFilesToPaths(
+                    null,
+                    List.of(new File("a"))
+            );
+            assertEquals(1, result.size());
+            assertTrue(TEST_LOG_HANDLER.containsExactMessage("Dropped one or more null elements or collections"));
+        }
+
+        @Test
+        @DisplayName("logs when collections array is null")
+        void logsNullCollectionsArray() {
+            var result = CollectionTools.combine((Collection<String>[]) null);
+            assertTrue(result.isEmpty());
+            assertTrue(TEST_LOG_HANDLER.containsExactMessage("Ignored null collections array"));
+        }
+
+        @Test
+        @DisplayName("logs when null elements are dropped (collections)")
+        void logsNullElementsCollections() {
+            var result = CollectionTools.combineFilesToPaths(
+                    Arrays.asList(null, new File("a"))
+            );
+            assertEquals(1, result.size());
+            assertTrue(TEST_LOG_HANDLER.containsExactMessage("Dropped one or more null elements or collections"));
+        }
+
+        @Test
+        @DisplayName("logs when null elements are dropped (varargs)")
+        void logsNullElementsVarargs() {
+            var result = CollectionTools.combineFilesToPaths(
+                    null,
+                    new File("a"),
+                    null
+            );
+            assertEquals(1, result.size());
+            assertTrue(TEST_LOG_HANDLER.containsExactMessage("Dropped one or more null elements"));
+        }
+
+        @Test
+        @DisplayName("logs when varargs array is null")
+        void logsNullVarargsArray() {
+            var result = CollectionTools.combine((String[]) null);
+            assertTrue(result.isEmpty());
+            assertTrue(TEST_LOG_HANDLER.containsExactMessage("Ignored null varargs array"));
+        }
+
+        @Test
+        @DisplayName("does not log when called with empty varargs array")
+        void noLoggingOnEmptyVarargs() {
+            var result = CollectionTools.combine(new String[0]);
+            assertTrue(result.isEmpty());
+            assertTrue(TEST_LOG_HANDLER.isEmpty());
         }
     }
 }
