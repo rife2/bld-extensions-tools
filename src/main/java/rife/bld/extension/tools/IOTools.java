@@ -30,6 +30,7 @@ import java.nio.file.Path;
  * accept {@code null} inputs and return {@code false} (or an appropriate default)
  * rather than throwing {@link NullPointerException}.</p>
  *
+ * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
  */
 public final class IOTools {

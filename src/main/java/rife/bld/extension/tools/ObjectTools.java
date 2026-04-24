@@ -33,7 +33,8 @@ import java.util.Map;
  *
  * <p>Multi-value helpers are provided as both predicates and validators.</p>
  *
- * @since 1.2
+ * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
+ * @since 1.0
  */
 public final class ObjectTools {
 
@@ -46,7 +47,7 @@ public final class ObjectTools {
      *
      * @param values the values to inspect; may be {@code null}
      * @return {@code true} if all values are empty
-     * @since 1.2
+     * @since 1.3
      */
     public static boolean allEmpty(Object... values) {
         if (values == null) {
@@ -84,7 +85,7 @@ public final class ObjectTools {
      *
      * @param values the values to inspect; may be {@code null}
      * @return {@code true} if any value is not empty
-     * @since 1.2
+     * @since 1.3
      */
     public static boolean anyNotEmpty(Object... values) {
         if (values == null) {
@@ -125,7 +126,6 @@ public final class ObjectTools {
      *
      * @param value the value to inspect; may be {@code null}
      * @return {@code true} if the value is {@code null} or empty
-     * @since 1.0
      */
     public static boolean isEmpty(Object value) {
         if (value == null) {
@@ -149,7 +149,6 @@ public final class ObjectTools {
      *
      * @param value the value to inspect; may be {@code null}
      * @return {@code true} if the value is not {@code null} and not empty
-     * @since 1.0
      */
     public static boolean isNotEmpty(Object value) {
         return !isEmpty(value);
@@ -215,7 +214,7 @@ public final class ObjectTools {
      * all values must be {@code null} or empty as defined by {@link #isEmpty(Object)}.
      * If any value is not empty, an {@link IllegalArgumentException} is thrown.</p>
      *
-     * @since 1.5
+     * @since 1.3
      */
     public static void requireAllEmpty(Map<?, ?> map, String message) {
         requireValidMessage(message);
@@ -238,7 +237,7 @@ public final class ObjectTools {
      * which are resolved using the supplied {@code args}. If formatting fails,
      * the raw message is used.</p>
      *
-     * @since 1.5
+     * @since 1.3
      */
     public static void requireAllEmpty(Map<?, ?> map, String message, Object... args) {
         requireValidMessage(message);
@@ -313,7 +312,7 @@ public final class ObjectTools {
      * If the map is {@code null}, empty, or contains any empty value,
      * an {@link IllegalArgumentException} is thrown.</p>
      *
-     * @since 1.5
+     * @since 1.3
      */
     public static void requireAllNotEmpty(Map<?, ?> map, String message) {
         requireValidMessage(message);
@@ -336,7 +335,7 @@ public final class ObjectTools {
      * which are resolved using the supplied {@code args}. If formatting fails,
      * the raw message is used.</p>
      *
-     * @since 1.5
+     * @since 1.3
      */
     public static void requireAllNotEmpty(Map<?, ?> map, String message, Object... args) {
         requireValidMessage(message);
@@ -364,7 +363,7 @@ public final class ObjectTools {
      * @return the original value if it is empty
      * @throws IllegalArgumentException if the value is not empty
      * @throws IllegalArgumentException if message is null or empty
-     * @since 1.4
+     * @since 1.3
      */
     public static <T> T requireEmpty(T value, String message) {
         requireValidMessage(message);
@@ -392,7 +391,7 @@ public final class ObjectTools {
      * @return the original value if it is empty
      * @throws IllegalArgumentException if the value is not empty
      * @throws IllegalArgumentException if message is null or empty
-     * @since 1.4
+     * @since 1.3
      */
     public static <T> T requireEmpty(T value, String message, Object... args) {
         requireValidMessage(message);
@@ -416,7 +415,7 @@ public final class ObjectTools {
      * @return the original value if it is not empty
      * @throws IllegalArgumentException if the value is null or empty
      * @throws IllegalArgumentException if message is null or empty
-     * @since 1.4
+     * @since 1.3
      */
     public static <T> T requireNotEmpty(T value, String message) {
         requireValidMessage(message);
@@ -444,7 +443,7 @@ public final class ObjectTools {
      * @return the original value if it is not empty
      * @throws IllegalArgumentException if the value is null or empty
      * @throws IllegalArgumentException if message is null or empty
-     * @since 1.4
+     * @since 1.3
      */
     public static <T> T requireNotEmpty(T value, String message, Object... args) {
         requireValidMessage(message);

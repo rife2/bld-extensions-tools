@@ -50,6 +50,7 @@ public final class ClasspathTools {
      *              are silently skipped
      * @return a string representing the concatenated classpath entries, separated by
      * the system's path separator; an empty string if no valid paths are provided
+     * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
      * @since 1.0
      */
     public static String joinClasspath(@Nullable String... paths) {

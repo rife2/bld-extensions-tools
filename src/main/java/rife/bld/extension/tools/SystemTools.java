@@ -20,8 +20,18 @@ import java.util.Locale;
 import java.util.function.Function;
 
 /**
- * System Tools.
+ * Utility methods for detecting the current operating system and related
+ * execution environments.
+ * <p>
+ * Provides normalized OS-name checks for common platforms (AIX, FreeBSD,
+ * Linux, macOS, OpenVMS, Solaris, Windows) along with heuristics for
+ * identifying Cygwin and MinGW/MSYS2 environments. Designed for
+ * null‑safety, testability, and minimal overhead.
+ *
+ * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
+ * @since 1.0
  */
+
 public final class SystemTools {
 
     private static final String OS_NAME = System.getProperty("os.name", "").toLowerCase(Locale.ENGLISH);

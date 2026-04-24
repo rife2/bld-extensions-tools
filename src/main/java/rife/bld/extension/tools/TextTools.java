@@ -20,7 +20,15 @@ import java.util.Arrays;
 import java.util.regex.Pattern;
 
 /**
- * Text Tools.
+ * Utility methods for working with text and character sequences.
+ * <p>
+ * Provides null‑safe checks for blankness and emptiness across {@link CharSequence}
+ * and general {@link Object} inputs, along with a whitespace‑insensitive equality
+ * comparison. All operations avoid unnecessary allocations and optimize for
+ * {@link String} instances where possible.
+ *
+ * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
+ * @since 1.0
  */
 public final class TextTools {
 
