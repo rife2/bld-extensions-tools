@@ -147,7 +147,7 @@ class SystemToolsTest {
             var provider = createEnvProvider(emptyEnv);
 
             assertFalse(SystemTools.isCygwin("Windows 10", provider));
-            assertFalse(SystemTools.isMingw("Windows 10", provider));
+            assertFalse(SystemTools.isMinGw("Windows 10", provider));
         }
 
         @Test
@@ -170,7 +170,7 @@ class SystemToolsTest {
             Function<String, String> nullProvider = key -> null;
 
             assertFalse(SystemTools.isCygwin("Windows 10", nullProvider));
-            assertFalse(SystemTools.isMingw("Windows 10", nullProvider));
+            assertFalse(SystemTools.isMinGw("Windows 10", nullProvider));
         }
     }
 
@@ -279,9 +279,9 @@ class SystemToolsTest {
     class LinuxTests {
 
         @ParameterizedTest
-        @ValueSource(strings = {"linux", "Linux", "LINUX", "linux 5.15", "unix", "UNIX", "freebsd unix"})
-        @DisplayName("Should detect Linux and Unix systems")
-        void shouldDetectLinuxAndUnix(String osName) {
+        @ValueSource(strings = {"linux", "Linux", "LINUX", "linux 5.15"})
+        @DisplayName("Should detect Linux systems")
+        void shouldDetectLinux(String osName) {
             assertTrue(SystemTools.isLinux(osName));
         }
 
@@ -375,7 +375,7 @@ class SystemToolsTest {
         @MethodSource("provideMingwEnvironments")
         @DisplayName("Should detect valid MinGW environments")
         void shouldDetectMingwEnvironments(String description, Map<String, String> env) {
-            assertTrue(SystemTools.isMingw("Windows 10", createEnvProvider(env)),
+            assertTrue(SystemTools.isMinGw("Windows 10", createEnvProvider(env)),
                     "Failed to detect MinGW: " + description);
         }
 
@@ -388,9 +388,9 @@ class SystemToolsTest {
             var cygwinEnv = Map.of("TERM", "xterm", "SHELL", "/bin/bash");
             var cygwinProvider = createEnvProvider(cygwinEnv);
 
-            assertTrue(SystemTools.isMingw("Windows 10", mingwProvider));
+            assertTrue(SystemTools.isMinGw("Windows 10", mingwProvider));
             assertTrue(SystemTools.isCygwin("Windows 10", mingwProvider));
-            assertFalse(SystemTools.isMingw("Windows 10", cygwinProvider));
+            assertFalse(SystemTools.isMinGw("Windows 10", cygwinProvider));
             assertTrue(SystemTools.isCygwin("Windows 10", cygwinProvider));
         }
 
@@ -409,7 +409,7 @@ class SystemToolsTest {
 
             testCases.forEach((msystem, expected) -> {
                 var env = Map.of("MSYSTEM", msystem);
-                assertEquals(expected, SystemTools.isMingw("Windows 10", createEnvProvider(env)),
+                assertEquals(expected, SystemTools.isMinGw("Windows 10", createEnvProvider(env)),
                         "MSYSTEM=" + msystem);
             });
         }
@@ -418,7 +418,7 @@ class SystemToolsTest {
         @MethodSource("provideNonMingwEnvironments")
         @DisplayName("Should reject non-MinGW environments")
         void shouldRejectNonMingwEnvironments(String description, Map<String, String> env) {
-            assertFalse(SystemTools.isMingw("Windows 10", createEnvProvider(env)),
+            assertFalse(SystemTools.isMinGw("Windows 10", createEnvProvider(env)),
                     "Incorrectly detected MinGW: " + description);
         }
 
@@ -427,7 +427,7 @@ class SystemToolsTest {
         @DisplayName("Should reject non-Windows systems even with MinGW indicators")
         void shouldRejectNonWindowsSystems(String osName) {
             var env = Map.of("MSYSTEM", "MINGW64", "MINGW_PREFIX", "/mingw64", "SHELL", "/bin/bash");
-            assertFalse(SystemTools.isMingw(osName, createEnvProvider(env)));
+            assertFalse(SystemTools.isMinGw(osName, createEnvProvider(env)));
         }
 
         @ParameterizedTest
@@ -436,13 +436,13 @@ class SystemToolsTest {
         @DisplayName("Should require Windows OS for MinGW detection")
         void shouldRequireWindowsForMingw(String osName, boolean expected) {
             var env = Map.of("MSYSTEM", "MINGW64");
-            assertEquals(expected, SystemTools.isMingw(osName, createEnvProvider(env)));
+            assertEquals(expected, SystemTools.isMinGw(osName, createEnvProvider(env)));
         }
 
         @Test
         @DisplayName("Should use system environment")
         void shouldUseSystemEnvironment() {
-            assertDoesNotThrow(() -> SystemTools.isMingw());
+            assertDoesNotThrow(() -> SystemTools.isMinGw());
         }
     }
 
