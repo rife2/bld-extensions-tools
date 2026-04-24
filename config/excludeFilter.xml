@@ -13,5 +13,4 @@
         <Bug pattern="PATH_TRAVERSAL_IN"/>
         </Or>
     </Match>
-
 </FindBugsFilter>

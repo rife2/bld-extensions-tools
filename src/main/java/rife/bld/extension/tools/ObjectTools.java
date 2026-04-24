@@ -16,28 +16,24 @@
 
 package rife.bld.extension.tools;
 
-import java.util.Arrays;
+import java.lang.reflect.Array;
 import java.util.Collection;
+import java.util.IllegalFormatException;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Object Tools.
  *
- * <p>Utility methods for null-checking and emptiness-checking objects, arrays,
- * collections, and maps.</p>
+ * <p>Unified utility methods for emptiness-checking objects, arrays,
+ * collections, maps, and character sequences.</p>
  *
- * <p><strong>Varargs semantics note:</strong> single-argument {@code isEmpty} overloads
- * return {@code true} if that one argument is null or empty. Multi-argument (varargs)
- * {@code isEmpty} overloads return {@code true} only if <em>all</em> arguments are null
- * or empty. Conversely, multi-argument {@code isNotEmpty} overloads return {@code true}
- * if <em>any</em> argument is not null and not empty.</p>
+ * <p>Emptiness is defined only for types where the concept is meaningful:
+ * {@link CharSequence}, {@link Collection}, {@link Map}, and arrays.
+ * All other non-null objects are considered not empty.</p>
  *
- * <p>The same applies to {@code isNull}, {@code isAnyNull} and {@code isNotNull}.</p>
+ * <p>Multi-value helpers are provided as both predicates and validators.</p>
  *
- * <p>Callers should take care to use the correct overload for their intent.</p>
- *
- * @since 1.0
+ * @since 1.2
  */
 public final class ObjectTools {
 
@@ -46,311 +42,421 @@ public final class ObjectTools {
     }
 
     /**
-     * Checks if any of the provided objects are {@code null}.
+     * Returns {@code true} if all provided values are empty.
      *
-     * <p>Returns {@code true} if the varargs array itself is {@code null}.</p>
-     *
-     * @param objects the objects to check
-     * @return {@code true} if any object is {@code null}; {@code false} otherwise
-     * @since 1.0
+     * @param values the values to inspect; may be {@code null}
+     * @return {@code true} if all values are empty
+     * @since 1.2
      */
-    @SafeVarargs
-    public static <T> boolean isAnyNull(T... objects) {
-        return objects == null || Arrays.stream(objects).anyMatch(Objects::isNull);
+    public static boolean allEmpty(Object... values) {
+        if (values == null) {
+            return true;
+        }
+        for (Object v : values) {
+            if (isNotEmpty(v)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
-     * Checks if any element in the collection is {@code null}.
+     * Returns {@code true} if all provided values are not empty.
      *
-     * <p>Returns {@code true} if the collection itself is {@code null}.</p>
-     *
-     * @param collection the collection to check
-     * @return {@code true} if any element is {@code null}; {@code false} otherwise
-     * @since 1.0
+     * @param values the values to inspect; may be {@code null}
+     * @return {@code true} if all values are not empty
+     * @since 1.3
      */
-    public static boolean isAnyNull(Collection<?> collection) {
-        return collection == null || collection.stream().anyMatch(Objects::isNull);
+    public static boolean allNotEmpty(Object... values) {
+        if (values == null) {
+            return false;
+        }
+        for (Object v : values) {
+            if (isEmpty(v)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
-     * Checks if the provided array is empty or {@code null}.
+     * Returns {@code true} if at least one of the provided values is not empty.
      *
-     * <p>Note: this overload takes a plain array parameter. PMD's UseVarargs warning
-     * is suppressed intentionally as converting to varargs would create an ambiguous
-     * overload conflict with varargs collection overloads.</p>
-     *
-     * @param array the array to check; can be {@code null}
-     * @return {@code true} if the array is {@code null} or empty; {@code false} otherwise
-     * @since 1.0
+     * @param values the values to inspect; may be {@code null}
+     * @return {@code true} if any value is not empty
+     * @since 1.2
      */
-    @SuppressWarnings("PMD.UseVarargs")
-    public static <T> boolean isEmpty(T[] array) {
-        return array == null || array.length == 0;
+    public static boolean anyNotEmpty(Object... values) {
+        if (values == null) {
+            return false;
+        }
+        for (Object v : values) {
+            if (isNotEmpty(v)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
-     * Checks if the provided {@link Map} is empty or {@code null}.
+     * Formats a message with optional arguments.
      *
-     * @param map the map to check; can be {@code null}
-     * @return {@code true} if the map is {@code null} or empty; {@code false} otherwise
-     * @since 1.0
+     * @param message the message or format string
+     * @param args    optional arguments used to format the message
+     * @return the formatted message, or the raw message if formatting fails
      */
-    public static boolean isEmpty(Map<?, ?> map) {
-        return map == null || map.isEmpty();
-    }
-
-    /**
-     * Checks if the provided collection is empty or {@code null}.
-     *
-     * @param collection the collection to check; can be {@code null}
-     * @return {@code true} if the collection is {@code null} or empty; {@code false} otherwise
-     * @since 1.0
-     */
-    public static boolean isEmpty(Collection<?> collection) {
-        return collection == null || collection.isEmpty();
-    }
-
-    /**
-     * Checks if all provided collections are empty or {@code null}.
-     *
-     * <p>Returns {@code true} if the varargs array itself is {@code null} or if every
-     * individual collection is {@code null} or empty. Returns {@code false} as soon as
-     * any collection contains at least one element. See the class-level note on varargs
-     * semantics.</p>
-     *
-     * @param collections the collections to check; can be {@code null} or contain {@code null} elements
-     * @return {@code true} if all collections are {@code null} or empty;
-     * {@code false} if any collection is not empty
-     * @since 1.0
-     */
-    @SafeVarargs
-    public static <T extends Collection<?>> boolean isEmpty(T... collections) {
-        return collections == null
-                || Arrays.stream(collections).allMatch(c -> c == null || c.isEmpty());
-    }
-
-    /**
-     * Checks if the provided array is not {@code null} and not empty.
-     *
-     * @param array the array to check; can be {@code null}
-     * @return {@code true} if the array is not {@code null} and not empty; {@code false} otherwise
-     * @since 1.0
-     */
-    @SuppressWarnings("PMD.UseVarargs")
-    public static <T> boolean isNotEmpty(T[] array) {
-        return !isEmpty(array);
-    }
-
-    /**
-     * Checks if the provided {@link Map} is not {@code null} and not empty.
-     *
-     * @param map the map to check; can be {@code null}
-     * @return {@code true} if the map is not {@code null} and not empty; {@code false} otherwise
-     * @since 1.0
-     */
-    public static boolean isNotEmpty(Map<?, ?> map) {
-        return !isEmpty(map);
-    }
-
-    /**
-     * Checks if the provided collection is not {@code null} and not empty.
-     *
-     * @param collection the collection to check; can be {@code null}
-     * @return {@code true} if the collection is not {@code null} and not empty; {@code false} otherwise
-     * @since 1.0
-     */
-    public static boolean isNotEmpty(Collection<?> collection) {
-        return !isEmpty(collection);
-    }
-
-    /**
-     * Checks if any of the provided collections are not {@code null} and not empty.
-     *
-     * <p>Logical negation of {@link #isEmpty(Collection[])}. Returns {@code true} as soon
-     * as any collection contains at least one element. See the class-level note on varargs
-     * semantics.</p>
-     *
-     * @param collections the collections to check; can be {@code null} or contain {@code null} elements
-     * @return {@code true} if any collection is not {@code null} and not empty;
-     * {@code false} if all are {@code null} or empty
-     * @since 1.0
-     */
-    @SafeVarargs
-    public static <T extends Collection<?>> boolean isNotEmpty(T... collections) {
-        return !isEmpty(collections);
-    }
-
-    /**
-     * Checks if all provided objects are non-{@code null}.
-     *
-     * <p>Returns {@code false} if the varargs array itself is {@code null}.</p>
-     *
-     * <p>Returns {@code true} for an empty argument list (vacuously true).</p>
-     *
-     * @param objects the objects to check
-     * @return {@code true} if all objects are non-{@code null}; {@code false} otherwise
-     * @since 1.0
-     */
-    @SafeVarargs
-    public static <T> boolean isNotNull(T... objects) {
-        return objects != null && Arrays.stream(objects).noneMatch(Objects::isNull);
-    }
-
-    /**
-     * Checks if all elements in the collection are non-{@code null}.
-     *
-     * <p>Returns {@code false} if the collection itself is {@code null}.</p>
-     *
-     * @param collection the collection to check
-     * @return {@code true} if all elements are non-{@code null}; {@code false} otherwise
-     * @since 1.0
-     */
-    public static boolean isNotNull(Collection<?> collection) {
-        return collection != null && collection.stream().noneMatch(Objects::isNull);
-    }
-
-    /**
-     * Checks if all provided objects are {@code null}.
-     *
-     * <p>Returns {@code true} if the varargs array itself is {@code null}.</p>
-     *
-     * <p>Returns {@code true} for an empty argument list (vacuously true).</p>
-     *
-     * @param objects the objects to check
-     * @return {@code true} if all objects are {@code null}; {@code false} otherwise
-     * @since 1.0
-     */
-    @SafeVarargs
-    public static <T> boolean isNull(T... objects) {
-        return objects == null || Arrays.stream(objects).allMatch(Objects::isNull);
-    }
-
-    /**
-     * Checks if all elements in the collection are {@code null}.
-     *
-     * <p>Returns {@code true} if the collection itself is {@code null}.</p>
-     *
-     * @param collection the collection to check
-     * @return {@code true} if all elements are {@code null}; {@code false} otherwise
-     * @since 1.0
-     */
-    public static boolean isNull(Collection<?> collection) {
-        return collection == null || collection.stream().allMatch(Objects::isNull);
-    }
-
-    /**
-     * Requires the provided array to be non-null and contain at least one element.
-     *
-     * <p>Throws an {@link IllegalArgumentException} if the array is {@code null}
-     * or empty.</p>
-     *
-     * @since 1.1
-     */
-    public static <T> void requireAnyNotEmpty(T[] array, String message) {
-        if (isEmpty(array)) {
-            throw new IllegalArgumentException(message);
+    private static String formatMessage(String message, Object... args) {
+        if (args == null || args.length == 0) {
+            return message;
+        }
+        try {
+            return String.format(message, args);
+        } catch (IllegalFormatException e) {
+            return message;
         }
     }
 
     /**
-     * Requires the provided map to be non-null and contain at least one entry.
+     * Determines whether the given value is {@code null} or empty.
      *
-     * <p>Throws an {@link IllegalArgumentException} if the map is {@code null}
-     * or empty.</p>
+     * <p>Emptiness is defined for {@link CharSequence}, {@link Collection},
+     * {@link Map}, and arrays. All other non-null objects are considered
+     * not empty.</p>
      *
-     * @since 1.1
+     * @param value the value to inspect; may be {@code null}
+     * @return {@code true} if the value is {@code null} or empty
+     * @since 1.0
      */
-    public static void requireAnyNotEmpty(Map<?, ?> map, String message) {
-        if (isEmpty(map)) {
+    public static boolean isEmpty(Object value) {
+        if (value == null) {
+            return true;
+        }
+        if (value instanceof CharSequence cs) {
+            return cs.isEmpty();
+        }
+        if (value instanceof Collection<?> c) {
+            return c.isEmpty();
+        }
+        if (value instanceof Map<?, ?> m) {
+            return m.isEmpty();
+        }
+        // Array handling: use Array.getLength() for safe reflection-based length check
+        return value.getClass().isArray() && Array.getLength(value) == 0;
+    }
+
+    /**
+     * Determines whether the given value is not {@code null} and not empty.
+     *
+     * @param value the value to inspect; may be {@code null}
+     * @return {@code true} if the value is not {@code null} and not empty
+     * @since 1.0
+     */
+    public static boolean isNotEmpty(Object value) {
+        return !isEmpty(value);
+    }
+
+    /**
+     * Requires all provided values to be empty.
+     *
+     * <p>The array itself must not be null, but may be empty (all elements are empty).
+     * All elements must be null or empty.</p>
+     *
+     * @param values  the values to inspect; must not be null
+     * @param message the exception message; must not be null or empty
+     * @throws IllegalArgumentException if any value is not empty
+     * @throws IllegalArgumentException if values array is null
+     * @throws IllegalArgumentException if message is null or empty
+     * @since 1.3
+     */
+    public static void requireAllEmpty(Object[] values, String message) {
+        requireValidMessage(message);
+        if (values == null) {
             throw new IllegalArgumentException(message);
+        }
+        for (Object v : values) {
+            if (isNotEmpty(v)) {
+                throw new IllegalArgumentException(message);
+            }
         }
     }
 
     /**
-     * Requires the provided collection to be non-null and contain at least one element.
+     * Requires all provided values to be empty.
      *
-     * <p>Throws an {@link IllegalArgumentException} if the collection is {@code null}
-     * or empty.</p>
+     * <p>The array itself must not be null, but may be empty (all elements are empty).
+     * All elements must be null or empty. The message may contain
+     * {@link String#format(String, Object...)} placeholders, which are resolved
+     * using the supplied {@code args}. If formatting fails, the raw message is used.</p>
      *
-     * @since 1.1
+     * @param values  the values to inspect; must not be null
+     * @param message the exception message or format string; must not be null or empty
+     * @param args    optional arguments used to format the message
+     * @throws IllegalArgumentException if any value is not empty
+     * @throws IllegalArgumentException if values array is null
+     * @throws IllegalArgumentException if message is null or empty
+     * @since 1.3
      */
-    public static void requireAnyNotEmpty(Collection<?> collection, String message) {
-        if (isEmpty(collection)) {
-            throw new IllegalArgumentException(message);
+    public static void requireAllEmpty(Object[] values, String message, Object... args) {
+        requireValidMessage(message);
+        if (values == null) {
+            throw new IllegalArgumentException(formatMessage(message, args));
+        }
+        for (Object v : values) {
+            if (isNotEmpty(v)) {
+                throw new IllegalArgumentException(formatMessage(message, args));
+            }
         }
     }
 
     /**
-     * Requires at least one of the provided collections to be non-null and contain
-     * at least one element.
+     * Requires all values in the provided map to be empty.
      *
-     * <p>Throws an {@link IllegalArgumentException} if all collections are {@code null}
-     * or empty. See the class-level note on varargs semantics.</p>
+     * <p>The map itself may be {@code null} or empty. If it is non-empty,
+     * all values must be {@code null} or empty as defined by {@link #isEmpty(Object)}.
+     * If any value is not empty, an {@link IllegalArgumentException} is thrown.</p>
      *
-     * @since 1.1
+     * @since 1.5
      */
-    @SafeVarargs
-    public static <T extends Collection<?>> void requireAnyNotEmpty(String message, T... collections) {
-        if (isEmpty(collections)) {
-            throw new IllegalArgumentException(message);
+    public static void requireAllEmpty(Map<?, ?> map, String message) {
+        requireValidMessage(message);
+        if (map == null) {
+            return;
+        }
+        for (Object v : map.values()) {
+            if (isNotEmpty(v)) {
+                throw new IllegalArgumentException(message);
+            }
         }
     }
 
     /**
-     * Requires the provided array to be non-null and contain at least one element.
+     * Requires all values in the provided map to be empty.
      *
-     * <p>Throws an {@link IllegalArgumentException} if the array is {@code null}
-     * or empty.</p>
+     * <p>The map itself may be {@code null} or empty. If it is non-empty,
+     * all values must be {@code null} or empty as defined by {@link #isEmpty(Object)}.
+     * The message may contain {@link String#format(String, Object...)} placeholders,
+     * which are resolved using the supplied {@code args}. If formatting fails,
+     * the raw message is used.</p>
      *
-     * @since 1.1.1
+     * @since 1.5
      */
-    public static <T> void requireNotEmpty(T[] array, String message) {
-        if (isEmpty(array)) {
-            throw new IllegalArgumentException(message);
+    public static void requireAllEmpty(Map<?, ?> map, String message, Object... args) {
+        requireValidMessage(message);
+        if (map == null) {
+            return;
+        }
+        for (Object v : map.values()) {
+            if (isNotEmpty(v)) {
+                throw new IllegalArgumentException(formatMessage(message, args));
+            }
         }
     }
 
     /**
-     * Requires the provided {@link Map} to be non-null and contain at least one entry.
+     * Requires all provided values to be not empty.
      *
-     * <p>Throws an {@link IllegalArgumentException} if the map is {@code null}
-     * or empty.</p>
+     * <p>The array itself must not be null or empty, and none of its elements
+     * may be null or empty.</p>
      *
-     * @since 1.1.1
+     * @param values  the values to inspect; must not be null or empty
+     * @param message the exception message; must not be null or empty
+     * @throws IllegalArgumentException if values array is null or empty
+     * @throws IllegalArgumentException if any value is null or empty
+     * @throws IllegalArgumentException if message is null or empty
+     * @since 1.3
      */
-    public static void requireNotEmpty(Map<?, ?> map, String message) {
-        if (isEmpty(map)) {
+    public static void requireAllNotEmpty(Object[] values, String message) {
+        requireValidMessage(message);
+        if (values == null || values.length == 0) {
             throw new IllegalArgumentException(message);
+        }
+        for (Object v : values) {
+            if (isEmpty(v)) {
+                throw new IllegalArgumentException(message);
+            }
         }
     }
 
     /**
-     * Requires the provided collection to be non-null and contain at least one element.
+     * Requires all provided values to be not empty.
      *
-     * <p>Throws an {@link IllegalArgumentException} if the collection is {@code null}
-     * or empty.</p>
+     * <p>The array itself must not be null or empty, and none of its elements
+     * may be null or empty. The message may contain {@link String#format(String, Object...)}
+     * placeholders, which are resolved using the supplied {@code args}. If formatting fails,
+     * the raw message is used.</p>
      *
-     * @since 1.1.1
+     * @param values  the values to inspect; must not be null or empty
+     * @param message the exception message or format string; must not be null or empty
+     * @param args    optional arguments used to format the message
+     * @throws IllegalArgumentException if values array is null or empty
+     * @throws IllegalArgumentException if any value is null or empty
+     * @throws IllegalArgumentException if message is null or empty
+     * @since 1.3
      */
-    public static void requireNotEmpty(Collection<?> collection, String message) {
-        if (isEmpty(collection)) {
-            throw new IllegalArgumentException(message);
+    public static void requireAllNotEmpty(Object[] values, String message, Object... args) {
+        requireValidMessage(message);
+        if (values == null || values.length == 0) {
+            throw new IllegalArgumentException(formatMessage(message, args));
+        }
+        for (Object v : values) {
+            if (isEmpty(v)) {
+                throw new IllegalArgumentException(formatMessage(message, args));
+            }
         }
     }
 
     /**
-     * Requires all provided collections to be non-null and contain at least one element.
+     * Requires the provided map to be not empty, and all of its values to be not empty.
      *
-     * <p>Throws an {@link IllegalArgumentException} if any collection is {@code null}
-     * or empty. See the class-level note on varargs semantics.</p>
+     * <p>The map itself must not be {@code null} or empty, and none of its values
+     * may be {@code null} or empty as defined by {@link #isEmpty(Object)}.
+     * If the map is {@code null}, empty, or contains any empty value,
+     * an {@link IllegalArgumentException} is thrown.</p>
      *
-     * @since 1.1.1
+     * @since 1.5
      */
-    @SafeVarargs
-    public static <T extends Collection<?>> void requireNotEmpty(String message, T... collections) {
-        if (collections == null
-                || Arrays.stream(collections).anyMatch(c -> c == null || c.isEmpty())) {
+    public static void requireAllNotEmpty(Map<?, ?> map, String message) {
+        requireValidMessage(message);
+        if (map == null || map.isEmpty()) {
             throw new IllegalArgumentException(message);
+        }
+        for (Object v : map.values()) {
+            if (isEmpty(v)) {
+                throw new IllegalArgumentException(message);
+            }
+        }
+    }
+
+    /**
+     * Requires the provided map to be not empty, and all of its values to be not empty.
+     *
+     * <p>The map itself must not be {@code null} or empty, and none of its values
+     * may be {@code null} or empty as defined by {@link #isEmpty(Object)}.
+     * The message may contain {@link String#format(String, Object...)} placeholders,
+     * which are resolved using the supplied {@code args}. If formatting fails,
+     * the raw message is used.</p>
+     *
+     * @since 1.5
+     */
+    public static void requireAllNotEmpty(Map<?, ?> map, String message, Object... args) {
+        requireValidMessage(message);
+        if (map == null || map.isEmpty()) {
+            throw new IllegalArgumentException(formatMessage(message, args));
+        }
+        for (Object v : map.values()) {
+            if (isEmpty(v)) {
+                throw new IllegalArgumentException(formatMessage(message, args));
+            }
+        }
+    }
+
+    /**
+     * Requires the given value to be empty.
+     *
+     * <p>Emptiness is defined for {@link CharSequence}, {@link Collection},
+     * {@link Map}, and arrays. All other non-null objects are considered
+     * not empty. If the value is not empty, an {@link IllegalArgumentException}
+     * is thrown. Otherwise, the original value is returned unchanged.</p>
+     *
+     * @param value   the value to inspect; may be {@code null}
+     * @param message the exception message; must not be null or empty
+     * @param <T>     the value type
+     * @return the original value if it is empty
+     * @throws IllegalArgumentException if the value is not empty
+     * @throws IllegalArgumentException if message is null or empty
+     * @since 1.4
+     */
+    public static <T> T requireEmpty(T value, String message) {
+        requireValidMessage(message);
+        if (isNotEmpty(value)) {
+            throw new IllegalArgumentException(message);
+        }
+        return value;
+    }
+
+    /**
+     * Requires the given value to be empty.
+     *
+     * <p>Emptiness is defined for {@link CharSequence}, {@link Collection},
+     * {@link Map}, and arrays. All other non-null objects are considered
+     * not empty. If the value is not empty, an {@link IllegalArgumentException}
+     * is thrown. The message may contain {@link String#format(String, Object...)}
+     * placeholders, which are resolved using the supplied {@code args}. If
+     * formatting fails, the raw message is used. Otherwise, the original value
+     * is returned unchanged.</p>
+     *
+     * @param value   the value to inspect; may be {@code null}
+     * @param message the exception message or format string; must not be null or empty
+     * @param args    optional arguments used to format the message
+     * @param <T>     the value type
+     * @return the original value if it is empty
+     * @throws IllegalArgumentException if the value is not empty
+     * @throws IllegalArgumentException if message is null or empty
+     * @since 1.4
+     */
+    public static <T> T requireEmpty(T value, String message, Object... args) {
+        requireValidMessage(message);
+        if (isNotEmpty(value)) {
+            throw new IllegalArgumentException(formatMessage(message, args));
+        }
+        return value;
+    }
+
+    /**
+     * Requires the given value to be not empty.
+     *
+     * <p>Emptiness is defined for {@link CharSequence}, {@link Collection},
+     * {@link Map}, and arrays. All other non-null objects are considered
+     * not empty. If the value is empty, an {@link IllegalArgumentException}
+     * is thrown. Otherwise, the original value is returned unchanged.</p>
+     *
+     * @param value   the value to inspect; may be {@code null}
+     * @param message the exception message; must not be null or empty
+     * @param <T>     the value type
+     * @return the original value if it is not empty
+     * @throws IllegalArgumentException if the value is null or empty
+     * @throws IllegalArgumentException if message is null or empty
+     * @since 1.4
+     */
+    public static <T> T requireNotEmpty(T value, String message) {
+        requireValidMessage(message);
+        if (isEmpty(value)) {
+            throw new IllegalArgumentException(message);
+        }
+        return value;
+    }
+
+    /**
+     * Requires the given value to be not empty.
+     *
+     * <p>Emptiness is defined for {@link CharSequence}, {@link Collection},
+     * {@link Map}, and arrays. All other non-null objects are considered
+     * not empty. If the value is empty, an {@link IllegalArgumentException}
+     * is thrown. The message may contain {@link String#format(String, Object...)}
+     * placeholders, which are resolved using the supplied {@code args}. If
+     * formatting fails, the raw message is used. Otherwise, the original value
+     * is returned unchanged.</p>
+     *
+     * @param value   the value to inspect; may be {@code null}
+     * @param message the exception message or format string; must not be null or empty
+     * @param args    optional arguments used to format the message
+     * @param <T>     the value type
+     * @return the original value if it is not empty
+     * @throws IllegalArgumentException if the value is null or empty
+     * @throws IllegalArgumentException if message is null or empty
+     * @since 1.4
+     */
+    public static <T> T requireNotEmpty(T value, String message, Object... args) {
+        requireValidMessage(message);
+        if (isEmpty(value)) {
+            throw new IllegalArgumentException(formatMessage(message, args));
+        }
+        return value;
+    }
+
+    private static void requireValidMessage(String message) {
+        if (TextTools.isBlank(message)) {
+            throw new IllegalArgumentException("message must not be null or empty");
         }
     }
 }
