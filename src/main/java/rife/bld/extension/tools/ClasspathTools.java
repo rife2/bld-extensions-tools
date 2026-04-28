@@ -15,7 +15,7 @@
  */
 package rife.bld.extension.tools;
 
-import org.jetbrains.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 import java.io.File;
 import java.util.Arrays;

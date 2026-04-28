@@ -16,7 +16,7 @@
 
 package rife.bld.extension.tools;
 
-import org.jetbrains.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -173,7 +173,7 @@ public final class CollectionTools {
      */
     @SafeVarargs
     public static List<Path> combineFilesToPaths(@Nullable Collection<File>... collections) {
-        return combineAndMap(collections, f -> Objects.requireNonNull(f).toPath());
+        return combineAndMap(collections, CollectionTools::toPath);
     }
 
     /**
@@ -184,7 +184,7 @@ public final class CollectionTools {
      * @since 1.0
      */
     public static List<Path> combineFilesToPaths(@Nullable File... files) {
-        return combineAndMapVarargs(files, f -> Objects.requireNonNull(f).toPath());
+        return combineAndMapVarargs(files, CollectionTools::toPath);
     }
 
     /**
@@ -196,8 +196,7 @@ public final class CollectionTools {
      */
     @SafeVarargs
     public static List<String> combineFilesToStrings(@Nullable Collection<File>... collections) {
-        return combineAndMap(collections,
-                f -> Objects.requireNonNull(f).toPath().toAbsolutePath().normalize().toString());
+        return combineAndMap(collections, CollectionTools::toNormalizedString);
     }
 
     /**
@@ -208,8 +207,7 @@ public final class CollectionTools {
      * @since 1.0
      */
     public static List<String> combineFilesToStrings(@Nullable File... files) {
-        return combineAndMapVarargs(files,
-                f -> Objects.requireNonNull(f).toPath().toAbsolutePath().normalize().toString());
+        return combineAndMapVarargs(files, CollectionTools::toNormalizedString);
     }
 
     /**
@@ -221,7 +219,7 @@ public final class CollectionTools {
      */
     @SafeVarargs
     public static List<File> combinePathsToFiles(@Nullable Collection<Path>... collections) {
-        return combineAndMap(collections, p -> Objects.requireNonNull(p).toFile());
+        return combineAndMap(collections, CollectionTools::toFile);
     }
 
     /**
@@ -232,7 +230,7 @@ public final class CollectionTools {
      * @since 1.0
      */
     public static List<File> combinePathsToFiles(@Nullable Path... paths) {
-        return combineAndMapVarargs(paths, p -> Objects.requireNonNull(p).toFile());
+        return combineAndMapVarargs(paths, CollectionTools::toFile);
     }
 
     /**
@@ -244,8 +242,7 @@ public final class CollectionTools {
      */
     @SafeVarargs
     public static List<String> combinePathsToStrings(@Nullable Collection<Path>... collections) {
-        return combineAndMap(collections,
-                p -> Objects.requireNonNull(p).toAbsolutePath().toString());
+        return combineAndMap(collections, CollectionTools::toAbsoluteString);
     }
 
     /**
@@ -256,8 +253,7 @@ public final class CollectionTools {
      * @since 1.0
      */
     public static List<String> combinePathsToStrings(@Nullable Path... paths) {
-        return combineAndMapVarargs(paths,
-                p -> Objects.requireNonNull(p).toAbsolutePath().toString());
+        return combineAndMapVarargs(paths, CollectionTools::toAbsoluteString);
     }
 
     /**
@@ -269,7 +265,7 @@ public final class CollectionTools {
      */
     @SafeVarargs
     public static List<File> combineStringsToFiles(@Nullable Collection<String>... collections) {
-        return combineAndMap(collections, s -> new File(Objects.requireNonNull(s)));
+        return combineAndMap(collections, CollectionTools::toFile);
     }
 
     /**
@@ -280,7 +276,7 @@ public final class CollectionTools {
      * @since 1.0
      */
     public static List<File> combineStringsToFiles(@Nullable String... strings) {
-        return combineAndMapVarargs(strings, s -> new File(Objects.requireNonNull(s)));
+        return combineAndMapVarargs(strings, CollectionTools::toFile);
     }
 
     /**
@@ -292,7 +288,7 @@ public final class CollectionTools {
      */
     @SafeVarargs
     public static List<Path> combineStringsToPaths(@Nullable Collection<String>... collections) {
-        return combineAndMap(collections, s -> Path.of(Objects.requireNonNull(s)));
+        return combineAndMap(collections, CollectionTools::toPath);
     }
 
     /**
@@ -303,6 +299,34 @@ public final class CollectionTools {
      * @since 1.0
      */
     public static List<Path> combineStringsToPaths(@Nullable String... strings) {
-        return combineAndMapVarargs(strings, s -> Path.of(Objects.requireNonNull(s)));
+        return combineAndMapVarargs(strings, CollectionTools::toPath);
+    }
+
+    private static String toAbsoluteString(Path p) {
+        return Objects.requireNonNull(p).toAbsolutePath().toString();
+    }
+
+    private static File toFile(Path p) {
+        return Objects.requireNonNull(p).toFile();
+    }
+
+    private static File toFile(String s) {
+        return new File(Objects.requireNonNull(s));
+    }
+
+    private static String toNormalizedString(File f) {
+        return Objects.requireNonNull(f)
+                .toPath()
+                .toAbsolutePath()
+                .normalize()
+                .toString();
+    }
+
+    private static Path toPath(File f) {
+        return Objects.requireNonNull(f).toPath();
+    }
+
+    private static Path toPath(String s) {
+        return Path.of(Objects.requireNonNull(s));
     }
 }

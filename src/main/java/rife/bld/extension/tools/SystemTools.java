@@ -16,6 +16,8 @@
 
 package rife.bld.extension.tools;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.Locale;
 import java.util.function.Function;
 
@@ -31,7 +33,6 @@ import java.util.function.Function;
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
  */
-
 public final class SystemTools {
 
     private static final String OS_NAME = System.getProperty("os.name", "").toLowerCase(Locale.ENGLISH);
@@ -48,7 +49,7 @@ public final class SystemTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    static boolean isAix(String osName) {
+    static boolean isAix(@Nullable String osName) {
         return normalize(osName).contains("aix");
     }
 
@@ -85,7 +86,7 @@ public final class SystemTools {
      * @return {@code true} if the environment is detected as Cygwin, {@code false} otherwise
      * @since 1.0
      */
-    static boolean isCygwin(String osName, Function<String, String> envProvider) {
+    static boolean isCygwin(@Nullable String osName, Function<String, String> envProvider) {
         if (!isWindows(osName)) {
             return false;
         }
@@ -110,7 +111,6 @@ public final class SystemTools {
         return hasCygwinShell || hasCygwinPath || hasCygwinTerm;
     }
 
-
     /**
      * Determines if the given operating system name corresponds to FreeBSD.
      *
@@ -118,7 +118,7 @@ public final class SystemTools {
      * @return {@code true} if the operating system is FreeBSD, {@code false} otherwise
      * @since 1.0
      */
-    static boolean isFreeBsd(String osName) {
+    static boolean isFreeBsd(@Nullable String osName) {
         return normalize(osName).contains("freebsd");
     }
 
@@ -150,7 +150,7 @@ public final class SystemTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    static boolean isLinux(String osName) {
+    static boolean isLinux(@Nullable String osName) {
         var n = normalize(osName);
         return n.contains("linux");
     }
@@ -174,17 +174,13 @@ public final class SystemTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    static boolean isMacOS(String osName) {
+    static boolean isMacOS(@Nullable String osName) {
         var n = normalize(osName);
         return n.contains("mac") || n.contains("darwin") || n.contains("osx");
     }
 
     /**
      * Determines if the current environment is running in a MinGW environment.
-     *
-     * <p>This method delegates to {@link #isMinGw(String, Function)} using the current
-     * OS name and {@link System#getenv} as the environment provider. For testing, use
-     * {@link #isMinGw(String, Function)} directly with a custom environment provider.
      *
      * @return {@code true} if the environment is detected as MinGW/MSYS2, {@code false} otherwise
      * @since 1.0
@@ -202,19 +198,17 @@ public final class SystemTools {
      * @return {@code true} if the environment is detected as MinGW/MSYS2, {@code false} otherwise
      * @since 1.0
      */
-    static boolean isMinGw(String osName, Function<String, String> envProvider) {
+    static boolean isMinGw(@Nullable String osName, Function<String, String> envProvider) {
         if (!isWindows(osName)) {
             return false;
         }
 
-        // Strategy 1: MSYSTEM variable (set by MSYS2/MinGW terminals)
         var msystem = envProvider.apply("MSYSTEM");
         boolean hasMsystem = msystem != null && (msystem.contains("MINGW") || msystem.contains("MSYS"));
         if (hasMsystem) {
             return true;
         }
 
-        // Strategy 2: Explicit MinGW environment variables
         var mingwPrefix = envProvider.apply("MINGW_PREFIX");
         var mingwChost = envProvider.apply("MINGW_CHOST");
         boolean hasMingwVars = mingwPrefix != null || mingwChost != null;
@@ -222,7 +216,6 @@ public final class SystemTools {
             return true;
         }
 
-        // Strategy 3: PATH heuristic combined with shell check
         var path = envProvider.apply("PATH");
         var shell = envProvider.apply("SHELL");
         boolean hasMingwPath = path != null
@@ -253,7 +246,7 @@ public final class SystemTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    static boolean isOpenVms(String osName) {
+    static boolean isOpenVms(@Nullable String osName) {
         return normalize(osName).contains("openvms");
     }
 
@@ -276,7 +269,7 @@ public final class SystemTools {
      * @return {@code true} if the operating system is none of the above, {@code false} otherwise
      * @since 1.0
      */
-    static boolean isOtherOs(String osName) {
+    static boolean isOtherOs(@Nullable String osName) {
         return !isAix(osName)
                 && !isFreeBsd(osName)
                 && !isLinux(osName)
@@ -304,7 +297,7 @@ public final class SystemTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    static boolean isSolaris(String osName) {
+    static boolean isSolaris(@Nullable String osName) {
         var n = normalize(osName);
         return n.contains("solaris") || n.contains("sunos");
     }
@@ -327,7 +320,7 @@ public final class SystemTools {
      * (case-insensitive), {@code false} otherwise
      * @since 1.0
      */
-    static boolean isWindows(String osName) {
+    static boolean isWindows(@Nullable String osName) {
         var n = normalize(osName);
         return n.contains("windows") || n.startsWith("win");
     }
@@ -338,7 +331,7 @@ public final class SystemTools {
      * @param osName the OS name string to normalize
      * @return the normalized name or empty if {@code null}
      */
-    private static String normalize(String osName) {
+    private static String normalize(@Nullable String osName) {
         return osName != null ? osName.toLowerCase(Locale.ENGLISH) : "";
     }
 }

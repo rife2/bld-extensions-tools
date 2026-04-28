@@ -20,6 +20,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -946,12 +948,83 @@ class ObjectToolsTest {
                     () -> ObjectTools.requireEmpty("", "   "));
         }
 
+        @Nested
+        @DisplayName("requireAllEmpty(Collection) Tests")
+        class RequireAllEmptyCollectionTests {
+
+            @Test
+            @DisplayName("does not throw for null or empty collections")
+            void doesNotThrow() {
+                assertDoesNotThrow(() -> ObjectTools.requireAllEmpty(List.of(), "msg"));
+                assertDoesNotThrow(() -> ObjectTools.requireAllEmpty(Collections.emptyList(), "msg"));
+            }
+
+            @Test
+            @DisplayName("formatted message is applied when non-empty element found")
+            void formattedMessage() {
+                IllegalArgumentException ex = assertThrows(
+                        IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllEmpty(List.of("x"), "Value %s must be empty", "name")
+                );
+                assertEquals("Value name must be empty", ex.getMessage());
+            }
+
+            @Test
+            @DisplayName("formatted message with no args behaves like plain message")
+            void formattedMessageNoArgs() {
+                IllegalArgumentException ex = assertThrows(
+                        IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllEmpty(List.of("x"), "Simple message")
+                );
+                assertEquals("Simple message", ex.getMessage());
+            }
+
+            @Test
+            @DisplayName("formatting failure falls back to raw message")
+            void formattingFailureFallsBack() {
+                IllegalArgumentException ex = assertThrows(
+                        IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllEmpty(List.of("x"), "%s %s %s", "onlyOneArg")
+                );
+                assertEquals("%s %s %s", ex.getMessage());
+            }
+
+            @Test
+            @DisplayName("throws for non-empty elements")
+            void throwsForNonEmptyElements() {
+                assertThrows(IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllEmpty(List.of("x"), "msg"));
+                assertThrows(IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllEmpty(List.of(List.of("x")), "msg"));
+                assertThrows(IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllEmpty(List.of(Map.of("k", "v")), "msg"));
+                assertThrows(IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllEmpty(List.of(new Object[]{"x"}), "msg"));
+            }
+
+            @Test
+            @DisplayName("throws for null collection")
+            void throwsForNullCollection() {
+                assertThrows(IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllEmpty((Collection<?>) null, "msg"));
+            }
+
+            @Test
+            @DisplayName("throws when message is null or empty")
+            void throwsForNullOrEmptyMessage() {
+                assertThrows(IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllEmpty(List.of(), null));
+                assertThrows(IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllEmpty(List.of(), ""));
+                assertThrows(IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllEmpty(List.of(), "   "));
+            }
+        }
     }
 
     @Nested
     @DisplayName("requireNotEmpty Tests")
     class RequireNotEmptyTests {
-
 
         @Test
         @DisplayName("does not throw for non-empty values")
@@ -1078,6 +1151,85 @@ class ObjectToolsTest {
                     () -> ObjectTools.requireNotEmpty("x", ""));
             assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requireNotEmpty("x", "   "));
+        }
+
+        @Nested
+        @DisplayName("requireAllNotEmpty(Collection) Tests")
+        class RequireAllNotEmptyCollectionTests {
+
+            @Test
+            @DisplayName("does not throw for collections with all non-empty elements")
+            void doesNotThrow() {
+                assertDoesNotThrow(() -> ObjectTools.requireAllNotEmpty(List.of("x"), "msg"));
+                assertDoesNotThrow(() -> ObjectTools.requireAllNotEmpty(List.of(List.of("x")), "msg"));
+                assertDoesNotThrow(() -> ObjectTools.requireAllNotEmpty(List.of(Map.of("k", "v")), "msg"));
+                assertDoesNotThrow(() -> ObjectTools.requireAllNotEmpty(List.of(new Object[]{"x"}), "msg"));
+            }
+
+            @Test
+            @DisplayName("formatted message is applied when empty element found")
+            void formattedMessage() {
+                IllegalArgumentException ex = assertThrows(
+                        IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllNotEmpty(List.of(""), "Value %s must not be empty", "name")
+                );
+                assertEquals("Value name must not be empty", ex.getMessage());
+            }
+
+            @Test
+            @DisplayName("formatted message with no args behaves like plain message")
+            void formattedMessageNoArgs() {
+                IllegalArgumentException ex = assertThrows(
+                        IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllNotEmpty(List.of(""), "Simple message")
+                );
+                assertEquals("Simple message", ex.getMessage());
+            }
+
+            @Test
+            @DisplayName("formatting failure falls back to raw message")
+            void formattingFailureFallsBack() {
+                IllegalArgumentException ex = assertThrows(
+                        IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllNotEmpty(List.of(""), "%s %s %s", "onlyOneArg")
+                );
+                assertEquals("%s %s %s", ex.getMessage());
+            }
+
+            @Test
+            @DisplayName("throws for empty elements")
+            void throwsForEmptyElements() {
+                assertThrows(IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllNotEmpty(List.of(""), "msg"));
+                assertThrows(IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllNotEmpty(List.of(List.of()), "msg"));
+                assertThrows(IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllNotEmpty(List.of(Map.of()), "msg"));
+                assertThrows(IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllNotEmpty(List.of(new Object[]{}), "msg"));
+                assertThrows(IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllNotEmpty(Collections.singletonList(null), "msg"));
+            }
+
+            @Test
+            @DisplayName("throws for null or empty collection")
+            void throwsForNullOrEmptyCollection() {
+                assertThrows(IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllNotEmpty((Collection<?>) null, "msg"));
+                assertThrows(IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllNotEmpty(List.of(), "msg"));
+            }
+
+            @Test
+            @DisplayName("throws when message is null or empty")
+            void throwsForNullOrEmptyMessage() {
+                assertThrows(IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllNotEmpty(List.of("x"), null));
+                assertThrows(IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllNotEmpty(List.of("x"), ""));
+                assertThrows(IllegalArgumentException.class,
+                        () -> ObjectTools.requireAllNotEmpty(List.of("x"), "   "));
+            }
         }
     }
 }

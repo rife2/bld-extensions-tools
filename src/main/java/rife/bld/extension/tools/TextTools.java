@@ -16,6 +16,8 @@
 
 package rife.bld.extension.tools;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
@@ -46,7 +48,7 @@ public final class TextTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean equalsIgnoreWhitespace(CharSequence... strings) {
+    public static boolean equalsIgnoreWhitespace(@Nullable CharSequence... strings) {
         if (strings == null || strings.length < 2) {
             return false;
         }
@@ -68,11 +70,10 @@ public final class TextTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isBlank(CharSequence str) {
+    public static boolean isBlank(@Nullable CharSequence str) {
         if (str == null) {
             return true;
         }
-        // Optimize for String instances
         if (str instanceof String s) {
             return s.isBlank();
         }
@@ -93,22 +94,20 @@ public final class TextTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isBlank(CharSequence... strings) {
-        return (strings == null || strings.length == 0) || Arrays.stream(strings).allMatch(TextTools::isBlank);
+    public static boolean isBlank(@Nullable CharSequence... strings) {
+        return (strings == null || strings.length == 0)
+                || Arrays.stream(strings).allMatch(TextTools::isBlank);
     }
 
     /**
      * Checks if all string objects are {@code null}, empty, or contain only whitespace characters.
-     * <p>
-     * If an object is not {@code null}, it will be converted to its string representation
-     * for the check.
      *
      * @param strings the string objects to check
      * @return {@code true} if all string objects are {@code null}, their string representations are empty,
      * or their string representations are whitespace-only; {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isBlank(Object... strings) {
+    public static boolean isBlank(@Nullable Object... strings) {
         if (strings == null) {
             return true;
         }
@@ -116,7 +115,6 @@ public final class TextTools {
             if (obj == null) {
                 continue;
             }
-            // Avoid toString() call for CharSequence instances
             if (obj instanceof CharSequence cs) {
                 if (!isBlank(cs)) {
                     return false;
@@ -135,11 +133,10 @@ public final class TextTools {
      * @return {@code true} if the character sequence is {@code null} or empty; {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isEmpty(CharSequence str) {
+    public static boolean isEmpty(@Nullable CharSequence str) {
         if (str == null) {
             return true;
         }
-        // Optimize for String instances
         if (str instanceof String s) {
             return s.isEmpty();
         }
@@ -153,8 +150,9 @@ public final class TextTools {
      * @return {@code true} if all character sequences are {@code null} or empty; {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isEmpty(CharSequence... strings) {
-        return (strings == null || strings.length == 0) || Arrays.stream(strings).allMatch(TextTools::isEmpty);
+    public static boolean isEmpty(@Nullable CharSequence... strings) {
+        return (strings == null || strings.length == 0)
+                || Arrays.stream(strings).allMatch(TextTools::isEmpty);
     }
 
     /**
@@ -165,7 +163,7 @@ public final class TextTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isEmpty(Object... strings) {
+    public static boolean isEmpty(@Nullable Object... strings) {
         if (strings == null) {
             return true;
         }
@@ -173,7 +171,6 @@ public final class TextTools {
             if (obj == null) {
                 continue;
             }
-            // Avoid toString() call for CharSequence instances
             if (obj instanceof CharSequence cs) {
                 if (!isEmpty(cs)) {
                     return false;
@@ -193,7 +190,7 @@ public final class TextTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isNotBlank(CharSequence str) {
+    public static boolean isNotBlank(@Nullable CharSequence str) {
         return !isBlank(str);
     }
 
@@ -205,15 +202,13 @@ public final class TextTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isNotBlank(CharSequence... strings) {
-        return (strings != null && strings.length > 0) && Arrays.stream(strings).noneMatch(TextTools::isBlank);
+    public static boolean isNotBlank(@Nullable CharSequence... strings) {
+        return (strings != null && strings.length > 0)
+                && Arrays.stream(strings).noneMatch(TextTools::isBlank);
     }
 
     /**
      * Checks if all string objects are not {@code null}, not empty, and not whitespace-only.
-     * <p>
-     * If an object is not {@code null}, it will be converted to its string representation
-     * for the check.
      *
      * @param strings the string objects to check
      * @return {@code true} if all objects are not {@code null}, their string representations
@@ -221,7 +216,7 @@ public final class TextTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isNotBlank(Object... strings) {
+    public static boolean isNotBlank(@Nullable Object... strings) {
         if (strings == null || strings.length == 0) {
             return false;
         }
@@ -229,7 +224,6 @@ public final class TextTools {
             if (obj == null) {
                 return false;
             }
-            // Avoid toString() call for CharSequence instances
             if (obj instanceof CharSequence cs) {
                 if (isBlank(cs)) {
                     return false;
@@ -248,7 +242,7 @@ public final class TextTools {
      * @return {@code true} if the character sequence is not {@code null} and not empty; {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isNotEmpty(CharSequence str) {
+    public static boolean isNotEmpty(@Nullable CharSequence str) {
         return !isEmpty(str);
     }
 
@@ -259,7 +253,7 @@ public final class TextTools {
      * @return {@code true} if all character sequences are not {@code null} and not empty; {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isNotEmpty(CharSequence... strings) {
+    public static boolean isNotEmpty(@Nullable CharSequence... strings) {
         if (strings == null || strings.length == 0) {
             return false;
         }
@@ -279,7 +273,7 @@ public final class TextTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isNotEmpty(Object... strings) {
+    public static boolean isNotEmpty(@Nullable Object... strings) {
         if (strings == null || strings.length == 0) {
             return false;
         }
@@ -287,7 +281,6 @@ public final class TextTools {
             if (obj == null) {
                 return false;
             }
-            // Avoid toString() call for CharSequence instances
             if (obj instanceof CharSequence cs) {
                 if (isEmpty(cs)) {
                     return false;

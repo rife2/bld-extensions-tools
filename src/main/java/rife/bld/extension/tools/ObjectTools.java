@@ -16,6 +16,8 @@
 
 package rife.bld.extension.tools;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.IllegalFormatException;
@@ -49,7 +51,7 @@ public final class ObjectTools {
      * @return {@code true} if all values are empty
      * @since 1.3
      */
-    public static boolean allEmpty(Object... values) {
+    public static boolean allEmpty(@Nullable Object... values) {
         if (values == null) {
             return true;
         }
@@ -68,7 +70,7 @@ public final class ObjectTools {
      * @return {@code true} if all values are not empty
      * @since 1.3
      */
-    public static boolean allNotEmpty(Object... values) {
+    public static boolean allNotEmpty(@Nullable Object... values) {
         if (values == null) {
             return false;
         }
@@ -87,7 +89,7 @@ public final class ObjectTools {
      * @return {@code true} if any value is not empty
      * @since 1.3
      */
-    public static boolean anyNotEmpty(Object... values) {
+    public static boolean anyNotEmpty(@Nullable Object... values) {
         if (values == null) {
             return false;
         }
@@ -106,7 +108,7 @@ public final class ObjectTools {
      * @param args    optional arguments used to format the message
      * @return the formatted message, or the raw message if formatting fails
      */
-    private static String formatMessage(String message, Object... args) {
+    private static String formatMessage(String message, @Nullable Object... args) {
         if (args == null || args.length == 0) {
             return message;
         }
@@ -127,7 +129,7 @@ public final class ObjectTools {
      * @param value the value to inspect; may be {@code null}
      * @return {@code true} if the value is {@code null} or empty
      */
-    public static boolean isEmpty(Object value) {
+    public static boolean isEmpty(@Nullable Object value) {
         if (value == null) {
             return true;
         }
@@ -140,7 +142,6 @@ public final class ObjectTools {
         if (value instanceof Map<?, ?> m) {
             return m.isEmpty();
         }
-        // Array handling: use Array.getLength() for safe reflection-based length check
         return value.getClass().isArray() && Array.getLength(value) == 0;
     }
 
@@ -150,7 +151,7 @@ public final class ObjectTools {
      * @param value the value to inspect; may be {@code null}
      * @return {@code true} if the value is not {@code null} and not empty
      */
-    public static boolean isNotEmpty(Object value) {
+    public static boolean isNotEmpty(@Nullable Object value) {
         return !isEmpty(value);
     }
 
@@ -167,7 +168,7 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if message is null or empty
      * @since 1.3
      */
-    public static void requireAllEmpty(Object[] values, String message) {
+    public static void requireAllEmpty(@Nullable Object[] values, String message) {
         requireValidMessage(message);
         if (values == null) {
             throw new IllegalArgumentException(message);
@@ -195,7 +196,7 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if message is null or empty
      * @since 1.3
      */
-    public static void requireAllEmpty(Object[] values, String message, Object... args) {
+    public static void requireAllEmpty(@Nullable Object[] values, String message, @Nullable Object... args) {
         requireValidMessage(message);
         if (values == null) {
             throw new IllegalArgumentException(formatMessage(message, args));
@@ -216,7 +217,7 @@ public final class ObjectTools {
      *
      * @since 1.3
      */
-    public static void requireAllEmpty(Map<?, ?> map, String message) {
+    public static void requireAllEmpty(@Nullable Map<?, ?> map, String message) {
         requireValidMessage(message);
         if (map == null) {
             return;
@@ -239,12 +240,56 @@ public final class ObjectTools {
      *
      * @since 1.3
      */
-    public static void requireAllEmpty(Map<?, ?> map, String message, Object... args) {
+    public static void requireAllEmpty(@Nullable Map<?, ?> map, String message, @Nullable Object... args) {
         requireValidMessage(message);
         if (map == null) {
             return;
         }
         for (Object v : map.values()) {
+            if (isNotEmpty(v)) {
+                throw new IllegalArgumentException(formatMessage(message, args));
+            }
+        }
+    }
+
+    /**
+     * Requires all provided collection elements to be empty.
+     *
+     * <p>The collection itself must not be {@code null}, but may be empty.
+     * All elements must be {@code null} or empty as defined by {@link #isEmpty(Object)}.
+     * If any element is not empty, an {@link IllegalArgumentException} is thrown.</p>
+     *
+     * @since 1.2
+     */
+    public static void requireAllEmpty(@Nullable Collection<?> values, String message) {
+        requireValidMessage(message);
+        if (values == null) {
+            throw new IllegalArgumentException(message);
+        }
+        for (Object v : values) {
+            if (isNotEmpty(v)) {
+                throw new IllegalArgumentException(message);
+            }
+        }
+    }
+
+    /**
+     * Requires all provided collection elements to be empty.
+     *
+     * <p>The collection itself must not be {@code null}, but may be empty.
+     * All elements must be {@code null} or empty as defined by {@link #isEmpty(Object)}.
+     * The message may contain {@link String#format(String, Object...)} placeholders,
+     * which are resolved using the supplied {@code args}. If formatting fails,
+     * the raw message is used.</p>
+     *
+     * @since 1.2
+     */
+    public static void requireAllEmpty(@Nullable Collection<?> values, String message, @Nullable Object... args) {
+        requireValidMessage(message);
+        if (values == null) {
+            throw new IllegalArgumentException(formatMessage(message, args));
+        }
+        for (Object v : values) {
             if (isNotEmpty(v)) {
                 throw new IllegalArgumentException(formatMessage(message, args));
             }
@@ -264,7 +309,7 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if message is null or empty
      * @since 1.3
      */
-    public static void requireAllNotEmpty(Object[] values, String message) {
+    public static void requireAllNotEmpty(@Nullable Object[] values, String message) {
         requireValidMessage(message);
         if (values == null || values.length == 0) {
             throw new IllegalArgumentException(message);
@@ -292,7 +337,7 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if message is null or empty
      * @since 1.3
      */
-    public static void requireAllNotEmpty(Object[] values, String message, Object... args) {
+    public static void requireAllNotEmpty(@Nullable Object[] values, String message, @Nullable Object... args) {
         requireValidMessage(message);
         if (values == null || values.length == 0) {
             throw new IllegalArgumentException(formatMessage(message, args));
@@ -314,7 +359,7 @@ public final class ObjectTools {
      *
      * @since 1.3
      */
-    public static void requireAllNotEmpty(Map<?, ?> map, String message) {
+    public static void requireAllNotEmpty(@Nullable Map<?, ?> map, String message) {
         requireValidMessage(message);
         if (map == null || map.isEmpty()) {
             throw new IllegalArgumentException(message);
@@ -337,12 +382,57 @@ public final class ObjectTools {
      *
      * @since 1.3
      */
-    public static void requireAllNotEmpty(Map<?, ?> map, String message, Object... args) {
+    public static void requireAllNotEmpty(@Nullable Map<?, ?> map, String message, @Nullable Object... args) {
         requireValidMessage(message);
         if (map == null || map.isEmpty()) {
             throw new IllegalArgumentException(formatMessage(message, args));
         }
         for (Object v : map.values()) {
+            if (isEmpty(v)) {
+                throw new IllegalArgumentException(formatMessage(message, args));
+            }
+        }
+    }
+
+    /**
+     * Requires all provided collection elements to be not empty.
+     *
+     * <p>The collection itself must not be {@code null} or empty, and none of its
+     * elements may be {@code null} or empty as defined by {@link #isEmpty(Object)}.
+     * If the collection is {@code null}, empty, or contains any empty element,
+     * an {@link IllegalArgumentException} is thrown.</p>
+     *
+     * @since 1.2
+     */
+    public static void requireAllNotEmpty(@Nullable Collection<?> values, String message) {
+        requireValidMessage(message);
+        if (values == null || values.isEmpty()) {
+            throw new IllegalArgumentException(message);
+        }
+        for (Object v : values) {
+            if (isEmpty(v)) {
+                throw new IllegalArgumentException(message);
+            }
+        }
+    }
+
+    /**
+     * Requires all provided collection elements to be not empty.
+     *
+     * <p>The collection itself must not be {@code null} or empty, and none of its
+     * elements may be {@code null} or empty as defined by {@link #isEmpty(Object)}.
+     * The message may contain {@link String#format(String, Object...)} placeholders,
+     * which are resolved using the supplied {@code args}. If formatting fails,
+     * the raw message is used.</p>
+     *
+     * @since 1.2
+     */
+    public static void requireAllNotEmpty(@Nullable Collection<?> values, String message, @Nullable Object... args) {
+        requireValidMessage(message);
+        if (values == null || values.isEmpty()) {
+            throw new IllegalArgumentException(formatMessage(message, args));
+        }
+        for (Object v : values) {
             if (isEmpty(v)) {
                 throw new IllegalArgumentException(formatMessage(message, args));
             }
@@ -365,7 +455,7 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if message is null or empty
      * @since 1.3
      */
-    public static <T> T requireEmpty(T value, String message) {
+    public static <T> T requireEmpty(@Nullable T value, String message) {
         requireValidMessage(message);
         if (isNotEmpty(value)) {
             throw new IllegalArgumentException(message);
@@ -393,7 +483,7 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if message is null or empty
      * @since 1.3
      */
-    public static <T> T requireEmpty(T value, String message, Object... args) {
+    public static <T> T requireEmpty(@Nullable T value, String message, @Nullable Object... args) {
         requireValidMessage(message);
         if (isNotEmpty(value)) {
             throw new IllegalArgumentException(formatMessage(message, args));
@@ -417,7 +507,7 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if message is null or empty
      * @since 1.3
      */
-    public static <T> T requireNotEmpty(T value, String message) {
+    public static <T> T requireNotEmpty(@Nullable T value, String message) {
         requireValidMessage(message);
         if (isEmpty(value)) {
             throw new IllegalArgumentException(message);
@@ -445,8 +535,7 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if message is null or empty
      * @since 1.3
      */
-    public static <T> T requireNotEmpty(T value, String message, Object... args) {
-        requireValidMessage(message);
+    public static <T> T requireNotEmpty(@Nullable T value, String message, @Nullable Object... args) {
         if (isEmpty(value)) {
             throw new IllegalArgumentException(formatMessage(message, args));
         }

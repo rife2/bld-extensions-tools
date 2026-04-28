@@ -31,6 +31,7 @@ import java.util.List;
 import static rife.bld.dependencies.Repository.*;
 import static rife.bld.dependencies.Scope.provided;
 import static rife.bld.dependencies.Scope.test;
+import static rife.bld.operations.JavadocOptions.DocLinkOption.NO_MISSING;
 
 public class ToolsBuild extends Project {
 
@@ -38,7 +39,7 @@ public class ToolsBuild extends Project {
         pkg = "rife.bld.extension.tools";
         name = "Extensions Tolls";
         archiveBaseName = "bld-extensions-tools";
-        version = version(1, 1, 1);
+        version = version(1, 2, 0);
 
         javaRelease = 17;
 
@@ -49,13 +50,19 @@ public class ToolsBuild extends Project {
 
         var junit = version(6, 0, 3);
         scope(provided)
-                .include(dependency("org.jetbrains", "annotations",
-                        version(26, 1, 0)));
+                .include(dependency("com.github.spotbugs", "spotbugs-annotations",
+                        version(4, 9, 8)));
         scope(test)
                 .include(dependency("com.uwyn.rife2", "bld-extensions-testing-helpers",
                         version(1, 0, 0)))
                 .include(dependency("org.junit.jupiter", "junit-jupiter", junit))
                 .include(dependency("org.junit.platform", "junit-platform-console-standalone", junit));
+
+        javadocOperation()
+                .javadocOptions()
+                .author()
+                .docLint(NO_MISSING)
+                .link("https://findbugs.sourceforge.net/api/");
 
         publishOperation()
                 .repository(version.isSnapshot() ?

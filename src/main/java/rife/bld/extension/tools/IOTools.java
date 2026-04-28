@@ -16,6 +16,8 @@
 
 package rife.bld.extension.tools;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -47,7 +49,7 @@ public final class IOTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean canExecute(File file) {
+    public static boolean canExecute(@Nullable File file) {
         return file != null && file.isFile() && file.canExecute();
     }
 
@@ -59,7 +61,7 @@ public final class IOTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean canExecute(Path path) {
+    public static boolean canExecute(@Nullable Path path) {
         return path != null && Files.isRegularFile(path) && Files.isExecutable(path);
     }
 
@@ -71,7 +73,7 @@ public final class IOTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean canExecute(String path) {
+    public static boolean canExecute(@Nullable String path) {
         try {
             return TextTools.isNotBlank(path) && canExecute(Path.of(path));
         } catch (InvalidPathException | SecurityException e) {
@@ -87,7 +89,7 @@ public final class IOTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean exists(File file) {
+    public static boolean exists(@Nullable File file) {
         return file != null && file.exists();
     }
 
@@ -99,7 +101,7 @@ public final class IOTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean exists(Path path) {
+    public static boolean exists(@Nullable Path path) {
         return path != null && Files.exists(path);
     }
 
@@ -111,7 +113,7 @@ public final class IOTools {
      * exists at the specified path; {@code false} otherwise
      * @since 1.0
      */
-    public static boolean exists(String path) {
+    public static boolean exists(@Nullable String path) {
         try {
             return TextTools.isNotBlank(path) && Files.exists(Path.of(path));
         } catch (InvalidPathException | SecurityException e) {
@@ -126,7 +128,7 @@ public final class IOTools {
      * @return {@code true} if the file exists and is a directory; {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isDirectory(File file) {
+    public static boolean isDirectory(@Nullable File file) {
         return file != null && file.isDirectory();
     }
 
@@ -137,7 +139,7 @@ public final class IOTools {
      * @return {@code true} if the path exists and is a directory; {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isDirectory(Path path) {
+    public static boolean isDirectory(@Nullable Path path) {
         return path != null && Files.isDirectory(path);
     }
 
@@ -149,7 +151,7 @@ public final class IOTools {
      * {@code false} otherwise (including when the path string is invalid)
      * @since 1.0
      */
-    public static boolean isDirectory(String path) {
+    public static boolean isDirectory(@Nullable String path) {
         if (TextTools.isBlank(path)) {
             return false;
         }
@@ -172,7 +174,7 @@ public final class IOTools {
      * {@code false} if the directory could not be created or {@code file} is {@code null}
      * @since 1.0
      */
-    public static boolean mkdirs(File file) {
+    public static boolean mkdirs(@Nullable File file) {
         return file != null && mkdirs(file.toPath());
     }
 
@@ -186,7 +188,7 @@ public final class IOTools {
      * {@code false} if the directory could not be created or {@code path} is {@code null}
      * @since 1.0
      */
-    public static boolean mkdirs(Path path) {
+    public static boolean mkdirs(@Nullable Path path) {
         if (path == null) {
             return false;
         }
@@ -208,7 +210,7 @@ public final class IOTools {
      * {@code false} if the directory could not be created or {@code path} is {@code null} or blank
      * @since 1.0
      */
-    public static boolean mkdirs(String path) {
+    public static boolean mkdirs(@Nullable String path) {
         try {
             return TextTools.isNotBlank(path) && mkdirs(Path.of(path));
         } catch (InvalidPathException | SecurityException e) {
@@ -224,7 +226,7 @@ public final class IOTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean notExists(File file) {
+    public static boolean notExists(@Nullable File file) {
         return !exists(file);
     }
 
@@ -236,7 +238,7 @@ public final class IOTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean notExists(Path path) {
+    public static boolean notExists(@Nullable Path path) {
         return !exists(path);
     }
 
@@ -248,7 +250,7 @@ public final class IOTools {
      * exists at the specified path; {@code false} otherwise
      * @since 1.0
      */
-    public static boolean notExists(String path) {
+    public static boolean notExists(@Nullable String path) {
         return !exists(path);
     }
 
@@ -266,12 +268,14 @@ public final class IOTools {
      * @return a {@link File} representing the resolved path
      * @since 1.0
      */
-    public static File resolveFile(File base, String... segments) {
-        var path = new File(base, "").toPath(); // handle null file
+    public static File resolveFile(@Nullable File base, @Nullable String... segments) {
+        var path = (base == null ? Path.of("") : base.toPath());
+
         if (segments != null) {
             for (var segment : segments) {
-                if (segment != null) {
-                    path = path.resolve(segment);
+                if (segment != null && !segment.isEmpty()) {
+                    final String normalized = segment.startsWith("/") ? segment.substring(1) : segment;
+                    path = path.resolve(normalized);
                 }
             }
         }
