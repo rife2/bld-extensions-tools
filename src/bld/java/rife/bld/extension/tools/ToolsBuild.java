@@ -39,7 +39,7 @@ public class ToolsBuild extends Project {
         pkg = "rife.bld.extension.tools";
         name = "Extensions Tolls";
         archiveBaseName = "bld-extensions-tools";
-        version = version(1, 2, 0);
+        version = version(1, 3, 0, "SNAPSHOT");
 
         javaRelease = 17;
 
@@ -54,7 +54,7 @@ public class ToolsBuild extends Project {
                         version(4, 9, 8)));
         scope(test)
                 .include(dependency("com.uwyn.rife2", "bld-extensions-testing-helpers",
-                        version(1, 0, 0)))
+                        version(1, 0, 1)))
                 .include(dependency("org.junit.jupiter", "junit-jupiter", junit))
                 .include(dependency("org.junit.platform", "junit-platform-console-standalone", junit));
 
@@ -109,10 +109,10 @@ public class ToolsBuild extends Project {
     @BuildCommand(summary = "Runs PMD analysis")
     public void pmd() throws Exception {
         new PmdOperation()
-                .fromProject(this)
                 .inputPaths(srcMainDirectory())
                 .failOnViolation(true)
                 .ruleSets("config/pmd.xml")
+                .fromProject(this)
                 .execute();
     }
 

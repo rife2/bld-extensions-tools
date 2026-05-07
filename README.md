@@ -109,6 +109,11 @@ The following static methods are provided:
 
 *NOTE:* All methods properly handle `null` objects
 
+## Process Executor
+
+The [ProcessExecutor](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ProcessExecutor.html)
+class implements a generic process executor with timeout, I/O control, and output capture.
+
 ## System Tools
 
 The following static methods are provided:
