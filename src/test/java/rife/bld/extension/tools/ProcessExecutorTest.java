@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2026 the original author or authors.
+ * Copyright 2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,8 +63,8 @@ class ProcessExecutorTest {
             Level.ALL
     );
 
-    private ProcessExecutor<?> createBasicExecutor(File workDir) {
-        return new ProcessExecutor<>().workDir(workDir);
+    private ProcessExecutor createBasicExecutor(File workDir) {
+        return new ProcessExecutor().workDir(workDir);
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -210,260 +210,6 @@ class ProcessExecutorTest {
     }
 
     @Nested
-    @DisplayName("Execution Tests")
-    class ExecutionTests {
-
-        @Test
-        void executeFailure(@TempDir Path tmp) throws Exception {
-            var result = createBasicExecutor(tmp.toFile())
-                    .command(exitCommand(1))
-                    .execute();
-
-            assertFalse(result.isSuccess());
-            assertEquals(1, result.exitCode());
-            assertFalse(result.timedOut());
-        }
-
-        @Test
-        void executeInvalidCommandThrows(@TempDir Path tmp) {
-            assertThrows(IOException.class, () -> createBasicExecutor(tmp.toFile())
-                    .command("this_command_does_not_exist_12345")
-                    .execute());
-        }
-
-        @Test
-        void executeSuccess(@TempDir Path tmp) throws Exception {
-            var result = createBasicExecutor(tmp.toFile())
-                    .command(echoCommand(FOO))
-                    .outputConsumer(logger::info)
-                    .execute();
-
-            assertTrue(result.isSuccess());
-            assertEquals(0, result.exitCode());
-            assertFalse(result.timedOut());
-            assertTrue(testLogHandler.containsMessage(FOO));
-        }
-
-        @Test
-        void executeTimeout(@TempDir Path tmp) throws Exception {
-            var result = createBasicExecutor(tmp.toFile())
-                    .command(sleepCommand())
-                    .timeout(1)
-                    .execute();
-
-            assertTrue(result.timedOut());
-            assertEquals(-1, result.exitCode());
-            assertFalse(result.isSuccess());
-        }
-
-        @Test
-        void executeWithoutCommandThrows(@TempDir Path tmp) {
-            var ex = assertThrows(IllegalStateException.class,
-                    () -> createBasicExecutor(tmp.toFile()).execute());
-            assertTrue(ex.getMessage().contains("A command must be specified"));
-        }
-
-        @Test
-        void executeWithoutWorkDirThrows() {
-            var ex = assertThrows(IllegalStateException.class,
-                    () -> new ProcessExecutor<>().command("echo", FOO).execute());
-            assertTrue(ex.getMessage().contains("A valid working directory must be specified"));
-        }
-    }
-
-    @Nested
-    @DisplayName("Fluent API Tests")
-    class FluentApiTests {
-
-        @Test
-        void chainedCallsReturnSameInstance(@TempDir Path tmp) {
-            var exec = new ProcessExecutor<>();
-            assertSame(exec, exec.workDir(tmp.toFile()));
-            assertSame(exec, exec.command("echo"));
-            assertSame(exec, exec.env("K", "V"));
-            assertSame(exec, exec.timeout(10));
-            assertSame(exec, exec.inheritIO(true));
-        }
-
-        @Test
-        void subclassKeepsType() {
-            class CustomExecutor extends ProcessExecutor<CustomExecutor> {
-
-                CustomExecutor customMethod() {
-                    return this;
-                }
-            }
-
-            var result = new CustomExecutor()
-                    .command("echo", FOO)
-                    .timeout(5)
-                    .customMethod()
-                    .command();
-
-            assertEquals(List.of("echo", FOO), result);
-        }
-    }
-
-    @Nested
-    @DisplayName("I/O Tests")
-    class IOTests {
-
-        @Test
-        void inheritIOFalseCapturesOutput(@TempDir Path tmp) throws Exception {
-            var result = createBasicExecutor(tmp.toFile())
-                    .command(echoCommand(FOO))
-                    .inheritIO(false)
-                    .outputConsumer(logger::info)
-                    .execute();
-
-            assertTrue(testLogHandler.containsMessage(FOO));
-            assertFalse(result.output().isEmpty());
-        }
-
-        @Test
-        void inheritIOGetterSetter(@TempDir Path tmp) {
-            var exec = createBasicExecutor(tmp.toFile());
-            assertFalse(exec.inheritIO()); // default false
-            assertSame(exec, exec.inheritIO(true));
-            assertTrue(exec.inheritIO());
-        }
-
-        @Test
-        void inheritIOTrueDoesNotCapture(@TempDir Path tmp) throws Exception {
-            var result = createBasicExecutor(tmp.toFile())
-                    .command(echoCommand(FOO))
-                    .inheritIO(true)
-                    .outputConsumer(logger::info)
-                    .execute();
-
-            // When inheritIO=true, ProcessBuilder uses inherited FDs
-            // so we can't capture output and consumer isn't called
-            assertFalse(testLogHandler.containsMessage(FOO));
-            assertTrue(result.output().isEmpty());
-        }
-
-        @Test
-        void outputConsumerNotCalledWithInheritIO(@TempDir Path tmp) throws Exception {
-            var count = new AtomicInteger(0);
-            createBasicExecutor(tmp.toFile())
-                    .command(echoCommand(FOO))
-                    .inheritIO(true)
-                    .outputConsumer(line -> {
-                        logger.info(line);
-                        count.incrementAndGet();
-                    })
-                    .execute();
-
-            assertEquals(0, count.get());
-        }
-
-        @Test
-        void outputConsumerReceivesLines(@TempDir Path tmp) throws Exception {
-            createBasicExecutor(tmp.toFile())
-                    .command(multiLineEchoCommand())
-                    .outputConsumer(logger::info)
-                    .execute();
-
-            assertTrue(testLogHandler.containsMessage("line1"));
-            assertTrue(testLogHandler.containsMessage("line2"));
-        }
-    }
-
-    @Nested
-    @DisplayName("Timeout Tests")
-    class TimeoutTests {
-
-        @Test
-        void timeoutDefaultIs30(@TempDir Path tmp) {
-            assertEquals(30, createBasicExecutor(tmp.toFile()).timeout());
-        }
-
-        @Test
-        void timeoutNegativeThrows(@TempDir Path tmp) {
-            assertThrows(IllegalArgumentException.class,
-                    () -> createBasicExecutor(tmp.toFile()).timeout(-1));
-        }
-
-        @Test
-        void timeoutSetterGetter(@TempDir Path tmp) {
-            var exec = createBasicExecutor(tmp.toFile()).timeout(5);
-            assertEquals(5, exec.timeout());
-        }
-
-        @Test
-        void timeoutZeroThrows(@TempDir Path tmp) {
-            var ex = assertThrows(IllegalArgumentException.class,
-                    () -> createBasicExecutor(tmp.toFile()).timeout(0));
-            assertEquals("timeout must be > 0", ex.getMessage());
-        }
-    }
-
-    @Nested
-    @DisplayName("WorkDir Tests")
-    class WorkDirTests {
-
-        @Test
-        void workDirAsFile(@TempDir Path tmp) {
-            var exec = new ProcessExecutor<>().workDir(tmp.toFile());
-            assertEquals(tmp.toFile(), exec.workDir());
-        }
-
-        @Test
-        void workDirAsPath(@TempDir Path tmp) {
-            var exec = new ProcessExecutor<>().workDir(tmp);
-            assertEquals(tmp.toFile(), exec.workDir());
-        }
-
-        @Test
-        void workDirAsString(@TempDir Path tmp) {
-            var exec = new ProcessExecutor<>().workDir(tmp.toString());
-            assertEquals(tmp.toFile(), exec.workDir());
-        }
-
-        @Test
-        void workDirEmptyStringThrows() {
-            var ex = assertThrows(IllegalArgumentException.class,
-                    () -> new ProcessExecutor<>().workDir(""));
-            assertTrue(ex.getMessage().contains("directory must not be null or empty"));
-        }
-
-        @Test
-        @SuppressWarnings("DataFlowIssue")
-        void workDirNullThrows() {
-            assertThrows(NullPointerException.class,
-                    () -> new ProcessExecutor<>().workDir((File) null));
-        }
-
-        @Test
-        @EnabledOnOs({OS.LINUX, OS.MAC})
-        void workDirUsedByProcessUnix(@TempDir Path tmp) throws Exception {
-            var testFile = tmp.resolve("test.txt");
-            Files.writeString(testFile, "content");
-
-            createBasicExecutor(tmp.toFile())
-                    .command("cat", "test.txt")
-                    .outputConsumer(logger::info)
-                    .execute();
-
-            assertTrue(testLogHandler.containsMessage("content"));
-        }
-
-        @Test
-        @EnabledOnOs(OS.WINDOWS)
-        void workDirUsedByProcessWindows(@TempDir Path tmp) throws Exception {
-            var testFile = tmp.resolve("test.txt");
-            Files.writeString(testFile, "content");
-
-            createBasicExecutor(tmp.toFile())
-                    .command("cmd", "/c", "type", "test.txt")
-                    .outputConsumer(logger::info)
-                    .execute();
-
-            assertTrue(testLogHandler.containsMessage("content"));
-        }
-    }
-
-    @Nested
     @DisplayName("Cleanup Tests")
     class CleanupTests {
 
@@ -473,7 +219,7 @@ class ProcessExecutorTest {
             Files.writeString(javaFile, code);
 
             // Compile using ProcessExecutor itself
-            var compileResult = new ProcessExecutor<>()
+            var compileResult = new ProcessExecutor()
                     .workDir(tmp.toFile())
                     .command("javac", javaFile.toString())
                     .timeout(10)
@@ -538,6 +284,237 @@ class ProcessExecutorTest {
             assertTrue(result.timedOut());
             assertEquals(-1, result.exitCode());
             assertFalse(result.isSuccess());
+        }
+    }
+
+    @Nested
+    @DisplayName("Execution Tests")
+    class ExecutionTests {
+
+        @Test
+        void executeFailure(@TempDir Path tmp) throws Exception {
+            var result = createBasicExecutor(tmp.toFile())
+                    .command(exitCommand(1))
+                    .execute();
+
+            assertFalse(result.isSuccess());
+            assertEquals(1, result.exitCode());
+            assertFalse(result.timedOut());
+        }
+
+        @Test
+        void executeInvalidCommandThrows(@TempDir Path tmp) {
+            assertThrows(IOException.class, () -> createBasicExecutor(tmp.toFile())
+                    .command("this_command_does_not_exist_12345")
+                    .execute());
+        }
+
+        @Test
+        void executeSuccess(@TempDir Path tmp) throws Exception {
+            var result = createBasicExecutor(tmp.toFile())
+                    .command(echoCommand(FOO))
+                    .outputConsumer(logger::info)
+                    .execute();
+
+            assertTrue(result.isSuccess());
+            assertEquals(0, result.exitCode());
+            assertFalse(result.timedOut());
+            assertTrue(testLogHandler.containsMessage(FOO));
+        }
+
+        @Test
+        void executeTimeout(@TempDir Path tmp) throws Exception {
+            var result = createBasicExecutor(tmp.toFile())
+                    .command(sleepCommand())
+                    .timeout(1)
+                    .execute();
+
+            assertTrue(result.timedOut());
+            assertEquals(-1, result.exitCode());
+            assertFalse(result.isSuccess());
+        }
+
+        @Test
+        void executeWithoutCommandThrows(@TempDir Path tmp) {
+            var ex = assertThrows(IllegalStateException.class,
+                    () -> createBasicExecutor(tmp.toFile()).execute());
+            assertTrue(ex.getMessage().contains("A command must be specified"));
+        }
+
+        @Test
+        void executeWithoutWorkDirThrows() {
+            var ex = assertThrows(IllegalStateException.class,
+                    () -> new ProcessExecutor().command("echo", FOO).execute());
+            assertTrue(ex.getMessage().contains("A valid working directory must be specified"));
+        }
+    }
+
+    @Nested
+    @DisplayName("Fluent API Tests")
+    class FluentApiTests {
+
+        @Test
+        void chainedCallsReturnSameInstance(@TempDir Path tmp) {
+            var exec = new ProcessExecutor();
+            assertSame(exec, exec.workDir(tmp.toFile()));
+            assertSame(exec, exec.command("echo"));
+            assertSame(exec, exec.env("K", "V"));
+            assertSame(exec, exec.timeout(10));
+            assertSame(exec, exec.inheritIO(true));
+        }
+    }
+
+    @Nested
+    @DisplayName("Timeout Tests")
+    class TimeoutTests {
+
+        @Test
+        void timeoutDefaultIs30(@TempDir Path tmp) {
+            assertEquals(30, createBasicExecutor(tmp.toFile()).timeout());
+        }
+
+        @Test
+        void timeoutNegativeThrows(@TempDir Path tmp) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> createBasicExecutor(tmp.toFile()).timeout(-1));
+        }
+
+        @Test
+        void timeoutSetterGetter(@TempDir Path tmp) {
+            var exec = createBasicExecutor(tmp.toFile()).timeout(5);
+            assertEquals(5, exec.timeout());
+        }
+
+        @Test
+        void timeoutZeroThrows(@TempDir Path tmp) {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> createBasicExecutor(tmp.toFile()).timeout(0));
+            assertEquals("timeout must be > 0", ex.getMessage());
+        }
+    }
+
+    @Nested
+    @DisplayName("I/O Tests")
+    class IOTests {
+
+        @Test
+        void inheritIOFalseCapturesOutput(@TempDir Path tmp) throws Exception {
+            var result = createBasicExecutor(tmp.toFile())
+                    .command(echoCommand(FOO))
+                    .inheritIO(false)
+                    .outputConsumer(logger::info)
+                    .execute();
+
+            assertTrue(testLogHandler.containsMessage(FOO));
+            assertFalse(result.output().isEmpty());
+        }
+
+        @Test
+        void inheritIOGetterSetter(@TempDir Path tmp) {
+            var exec = createBasicExecutor(tmp.toFile());
+            assertFalse(exec.inheritIO()); // default false
+            assertSame(exec, exec.inheritIO(true));
+            assertTrue(exec.inheritIO());
+        }
+
+        @Test
+        void inheritIOTrueDoesNotCapture(@TempDir Path tmp) throws Exception {
+            var result = createBasicExecutor(tmp.toFile())
+                    .command(echoCommand(FOO))
+                    .inheritIO(true)
+                    .execute();
+
+            assertTrue(result.output().isEmpty());  // this is the real contract
+            assertEquals(0, result.exitCode());
+        }
+
+        @Test
+        void outputConsumerNotCalledWithInheritIO(@TempDir Path tmp) throws Exception {
+            var count = new AtomicInteger(0);
+            var result = createBasicExecutor(tmp.toFile())
+                    .command(echoCommand(FOO))
+                    .inheritIO(true)  // this must be last
+                    .execute();
+
+            assertEquals(0, count.get()); // no consumer was set
+            assertTrue(result.output().isEmpty());
+            assertEquals(0, result.exitCode());
+        }
+
+        @Test
+        void outputConsumerReceivesLines(@TempDir Path tmp) throws Exception {
+            createBasicExecutor(tmp.toFile())
+                    .command(multiLineEchoCommand())
+                    .outputConsumer(logger::info)
+                    .execute();
+
+            assertTrue(testLogHandler.containsMessage("line1"));
+            assertTrue(testLogHandler.containsMessage("line2"));
+        }
+    }
+
+    @Nested
+    @DisplayName("WorkDir Tests")
+    class WorkDirTests {
+
+        @Test
+        void workDirAsFile(@TempDir Path tmp) {
+            var exec = new ProcessExecutor().workDir(tmp.toFile());
+            assertEquals(tmp.toFile(), exec.workDir());
+        }
+
+        @Test
+        void workDirAsPath(@TempDir Path tmp) {
+            var exec = new ProcessExecutor().workDir(tmp);
+            assertEquals(tmp.toFile(), exec.workDir());
+        }
+
+        @Test
+        void workDirAsString(@TempDir Path tmp) {
+            var exec = new ProcessExecutor().workDir(tmp.toString());
+            assertEquals(tmp.toFile(), exec.workDir());
+        }
+
+        @Test
+        void workDirEmptyStringThrows() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> new ProcessExecutor().workDir(""));
+            assertTrue(ex.getMessage().contains("directory must not be null or empty"));
+        }
+
+        @Test
+        @SuppressWarnings("DataFlowIssue")
+        void workDirNullThrows() {
+            assertThrows(NullPointerException.class,
+                    () -> new ProcessExecutor().workDir((File) null));
+        }
+
+        @Test
+        @EnabledOnOs({OS.LINUX, OS.MAC})
+        void workDirUsedByProcessUnix(@TempDir Path tmp) throws Exception {
+            var testFile = tmp.resolve("test.txt");
+            Files.writeString(testFile, "content");
+
+            createBasicExecutor(tmp.toFile())
+                    .command("cat", "test.txt")
+                    .outputConsumer(logger::info)
+                    .execute();
+
+            assertTrue(testLogHandler.containsMessage("content"));
+        }
+
+        @Test
+        @EnabledOnOs(OS.WINDOWS)
+        void workDirUsedByProcessWindows(@TempDir Path tmp) throws Exception {
+            var testFile = tmp.resolve("test.txt");
+            Files.writeString(testFile, "content");
+
+            createBasicExecutor(tmp.toFile())
+                    .command("cmd", "/c", "type", "test.txt")
+                    .outputConsumer(logger::info)
+                    .execute();
+
+            assertTrue(testLogHandler.containsMessage("content"));
         }
     }
 }

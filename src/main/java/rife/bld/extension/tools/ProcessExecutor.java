@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2026 the original author or authors.
+ * Copyright 2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,14 +30,14 @@ import java.util.function.Consumer;
 /**
  * Generic process executor with timeout, I/O control, and output capture.
  * <p>
- * Uses the Curiously Recurring Template Pattern to preserve fluent return types in subclasses.
+ * Framework-agnostic utility that can be composed by any extension.
+ * Handles process tree cleanup and stream management for Windows compatibility.
  *
- * @param <T> the concrete subclass type
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
  */
 @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "intentional and documented")
-public class ProcessExecutor<T extends ProcessExecutor<T>> {
+public class ProcessExecutor {
 
     public static final String COMMAND_NOT_VALID = "command values must not be null or empty";
 
@@ -62,12 +62,11 @@ public class ProcessExecutor<T extends ProcessExecutor<T>> {
      * @throws NullPointerException     if args is null
      * @throws IllegalArgumentException if args contains null or empty elements
      */
-    @SuppressWarnings("unchecked") // safe: T is always this concrete type (CRTP)
-    public T command(@NonNull String... args) {
+    public ProcessExecutor command(@NonNull String... args) {
         ObjectTools.requireAllNotEmpty(args, COMMAND_NOT_VALID);
         command_.clear();
         command_.addAll(List.of(args));
-        return (T) this;
+        return this;
     }
 
     /**
@@ -87,12 +86,11 @@ public class ProcessExecutor<T extends ProcessExecutor<T>> {
      * @throws NullPointerException     if args is null
      * @throws IllegalArgumentException if args contains null or empty elements
      */
-    @SuppressWarnings("unchecked") // safe: T is always this concrete type (CRTP)
-    public T command(@NonNull Collection<String> args) {
+    public ProcessExecutor command(@NonNull Collection<String> args) {
         ObjectTools.requireAllNotEmpty(args, COMMAND_NOT_VALID);
         command_.clear();
         command_.addAll(args);
-        return (T) this;
+        return this;
     }
 
     /**
@@ -103,12 +101,11 @@ public class ProcessExecutor<T extends ProcessExecutor<T>> {
      * @return this instance
      * @throws NullPointerException if name or value is null
      */
-    @SuppressWarnings("unchecked") // safe: T is always this concrete type (CRTP)
-    public T env(@NonNull String name, @NonNull String value) {
+    public ProcessExecutor env(@NonNull String name, @NonNull String value) {
         Objects.requireNonNull(name, "environment variable name must not be null");
         Objects.requireNonNull(value, "environment variable value must not be null");
         env_.put(name, value);
-        return (T) this;
+        return this;
     }
 
     /**
@@ -118,11 +115,10 @@ public class ProcessExecutor<T extends ProcessExecutor<T>> {
      * @return this instance
      * @throws NullPointerException if vars is null
      */
-    @SuppressWarnings("unchecked") // safe: T is always this concrete type (CRTP)
-    public T env(@NonNull Map<String, String> vars) {
+    public ProcessExecutor env(@NonNull Map<String, String> vars) {
         Objects.requireNonNull(vars, "environment variables map must not be null");
         env_.putAll(vars);
-        return (T) this;
+        return this;
     }
 
     /**
@@ -140,23 +136,18 @@ public class ProcessExecutor<T extends ProcessExecutor<T>> {
      * @return the process result containing exit code and captured output
      * @throws IOException           if the process cannot be started
      * @throws InterruptedException  if the thread is interrupted while waiting
-     * @throws IllegalStateException if no command is set or the working directory is invalid
+     * @throws IllegalStateException if no command is set, the working directory is invalid,
+     *                               or both {@link #inheritIO()} and {@link #outputConsumer(Consumer)} are configured
      */
     public ProcessResult execute() throws IOException, InterruptedException {
-        // Eagerly validate so callers get a clear error before any process is spawned.
         validatePreconditions();
 
         var pb = createProcessBuilder();
-
-        // Use a thread-safe list so the reader thread and the main thread never race
-        // on the same mutable buffer. Lines are joined once, after the happens-before
-        // established by Thread.join().
         var outputLines = new ArrayList<String>();
-        // Process does not implement AutoCloseable until a future JDK version (JDK-8364362).
-        // PMD's CloseResource warning is suppressed; cleanup is handled manually in finally.
         @SuppressWarnings("PMD.CloseResource")
         Process proc = null;
         Thread outputThread = null;
+        boolean timedOut = false;
 
         try {
             proc = pb.start();
@@ -164,25 +155,15 @@ public class ProcessExecutor<T extends ProcessExecutor<T>> {
             boolean finished = proc.waitFor(timeout_, TimeUnit.SECONDS);
 
             if (!finished) {
-                proc.destroyForcibly();
-                proc.waitFor(5, TimeUnit.SECONDS);
-
-                // Best-effort: collect whatever output the reader captured before the kill.
-                // We join with a short timeout; if the reader is still blocked, we move on.
-                if (outputThread != null) {
-                    outputThread.join(500);
-                }
-                return new ProcessResult(-1, joinLines(outputLines), true);
+                timedOut = true;
             }
 
-            // Process exited normally. Its stdout stream has reached EOF, so the reader
-            // thread will terminate on its own — join indefinitely (with a generous cap)
-            // to guarantee we capture all output before reading outputLines.
             if (outputThread != null) {
-                outputThread.join(10_000);
+                outputThread.join(timedOut ? 500 : 10_000);
             }
 
-            return new ProcessResult(proc.exitValue(), joinLines(outputLines), false);
+            int exitCode = timedOut ? -1 : proc.exitValue();
+            return new ProcessResult(exitCode, joinLines(outputLines), timedOut);
         } finally {
             cleanupProcess(proc);
             cleanupThread(outputThread);
@@ -194,17 +175,18 @@ public class ProcessExecutor<T extends ProcessExecutor<T>> {
      * <p>
      * When {@code true}, the child process uses the same stdin, stdout, and stderr as the current
      * Java process. Output is <em>not</em> captured; {@link ProcessResult#output()} will return
-     * {@code null} in this mode.
+     * an empty string in this mode.
      * <p>
      * When {@code false} (the default), stdout and stderr are merged and captured. Stdin receives EOF.
+     * <p>
+     * Cannot be used with {@link #outputConsumer(Consumer)}.
      *
      * @param inheritIO {@code true} to inherit I/O, {@code false} to capture output
      * @return this instance
      */
-    @SuppressWarnings("unchecked") // safe: T is always this concrete type (CRTP)
-    public T inheritIO(boolean inheritIO) {
+    public ProcessExecutor inheritIO(boolean inheritIO) {
         inheritIO_ = inheritIO;
-        return (T) this;
+        return this;
     }
 
     /**
@@ -219,16 +201,15 @@ public class ProcessExecutor<T extends ProcessExecutor<T>> {
     /**
      * Sets a consumer to receive output lines as they arrive.
      * <p>
-     * Only called when {@link #inheritIO()} is {@code false}. The consumer is called from a
-     * background thread.
+     * Only effective when {@link #inheritIO()} is {@code false}. The consumer is called from a
+     * background thread. Setting this implies output should be captured, not inherited.
      *
      * @param consumer the output consumer, or null to disable
      * @return this instance
      */
-    @SuppressWarnings("unchecked") // safe: T is always this concrete type (CRTP)
-    public T outputConsumer(Consumer<String> consumer) {
+    public ProcessExecutor outputConsumer(Consumer<String> consumer) {
         outputConsumer_ = consumer;
-        return (T) this;
+        return this;
     }
 
     /**
@@ -238,13 +219,12 @@ public class ProcessExecutor<T extends ProcessExecutor<T>> {
      * @return this instance
      * @throws IllegalArgumentException if timeout is less than or equal to 0
      */
-    @SuppressWarnings("unchecked") // safe: T is always this concrete type (CRTP)
-    public T timeout(int timeout) {
+    public ProcessExecutor timeout(int timeout) {
         if (timeout <= 0) {
             throw new IllegalArgumentException("timeout must be > 0");
         }
         timeout_ = timeout;
-        return (T) this;
+        return this;
     }
 
     /**
@@ -263,11 +243,10 @@ public class ProcessExecutor<T extends ProcessExecutor<T>> {
      * @return this instance
      * @throws NullPointerException if dir is null
      */
-    @SuppressWarnings("unchecked") // safe: T is always this concrete type (CRTP)
-    public T workDir(@NonNull File dir) {
+    public ProcessExecutor workDir(@NonNull File dir) {
         Objects.requireNonNull(dir, "directory must not be null");
         workDir_ = dir;
-        return (T) this;
+        return this;
     }
 
     /**
@@ -277,7 +256,7 @@ public class ProcessExecutor<T extends ProcessExecutor<T>> {
      * @return this instance
      * @throws NullPointerException if dir is null
      */
-    public T workDir(@NonNull Path dir) {
+    public ProcessExecutor workDir(@NonNull Path dir) {
         Objects.requireNonNull(dir, "directory must not be null");
         return workDir(dir.toFile());
     }
@@ -290,7 +269,7 @@ public class ProcessExecutor<T extends ProcessExecutor<T>> {
      * @throws IllegalArgumentException if dir is null or empty
      */
     @SuppressFBWarnings("PATH_TRAVERSAL_IN")
-    public T workDir(@NonNull String dir) {
+    public ProcessExecutor workDir(@NonNull String dir) {
         ObjectTools.requireNotEmpty(dir, "directory must not be null or empty");
         return workDir(new File(dir));
     }
@@ -308,9 +287,8 @@ public class ProcessExecutor<T extends ProcessExecutor<T>> {
     private void cleanupProcess(Process proc) {
         if (proc != null) {
             var handle = proc.toHandle();
-            handle.descendants().forEach(ProcessHandle::destroyForcibly); // Windows needs this
+            handle.descendants().forEach(ProcessHandle::destroyForcibly);
             handle.destroyForcibly();
-
             closeQuietly(proc.getInputStream());
             closeQuietly(proc.getErrorStream());
             closeQuietly(proc.getOutputStream());
@@ -323,7 +301,7 @@ public class ProcessExecutor<T extends ProcessExecutor<T>> {
             try {
                 outputThread.join(100);
             } catch (InterruptedException ignored) {
-                Thread.currentThread().interrupt(); // restore interrupt flag
+                Thread.currentThread().interrupt();
             }
         }
     }
@@ -349,6 +327,8 @@ public class ProcessExecutor<T extends ProcessExecutor<T>> {
             pb.inheritIO();
         } else {
             pb.redirectErrorStream(true);
+            pb.redirectInput(ProcessBuilder.Redirect.from(new File(
+                    SystemTools.isWindows() ? "NUL" : "/dev/null")));
         }
         return pb;
     }
@@ -373,7 +353,6 @@ public class ProcessExecutor<T extends ProcessExecutor<T>> {
                     }
                 }
             } catch (IOException ignored) {
-                // Stream closed (by process exit or cleanup) — normal termination path.
             }
         });
         thread.setDaemon(true);
@@ -387,6 +366,9 @@ public class ProcessExecutor<T extends ProcessExecutor<T>> {
         }
         if (!IOTools.isDirectory(workDir_)) {
             throw new IllegalStateException("A valid working directory must be specified.");
+        }
+        if (inheritIO_ && outputConsumer_ != null) {
+            throw new IllegalStateException("Cannot use both inheritIO(true) and outputConsumer()");
         }
     }
 
