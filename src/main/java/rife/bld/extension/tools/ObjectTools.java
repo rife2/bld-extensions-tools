@@ -22,6 +22,7 @@ import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.IllegalFormatException;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Object Tools.
@@ -31,7 +32,7 @@ import java.util.Map;
  *
  * <p>Emptiness is defined only for types where the concept is meaningful:
  * {@link CharSequence}, {@link Collection}, {@link Map}, and arrays.
- * All other non-null objects are considered not empty.</p>
+ * All other non-{@code null} objects are considered not empty.</p>
  *
  * <p>Multi-value helpers are provided as both predicates and validators.</p>
  *
@@ -45,7 +46,7 @@ public final class ObjectTools {
     }
 
     /**
-     * Returns {@code true} if all provided values are empty.
+     * Returns {@code true} if all provided {@code values} are empty.
      *
      * @param values the values to inspect; may be {@code null}
      * @return {@code true} if all values are empty
@@ -64,7 +65,7 @@ public final class ObjectTools {
     }
 
     /**
-     * Returns {@code true} if all provided values are not empty.
+     * Returns {@code true} if all provided {@code values} are not empty.
      *
      * @param values the values to inspect; may be {@code null}
      * @return {@code true} if all values are not empty
@@ -83,7 +84,7 @@ public final class ObjectTools {
     }
 
     /**
-     * Returns {@code true} if at least one of the provided values is not empty.
+     * Returns {@code true} if at least one of the provided {@code values} is not empty.
      *
      * @param values the values to inspect; may be {@code null}
      * @return {@code true} if any value is not empty
@@ -102,11 +103,33 @@ public final class ObjectTools {
     }
 
     /**
+     * Appends index context to a base message.
+     *
+     * @param base  the base message
+     * @param index the index to append
+     * @return the message with {@code " [index=" + index + "]"} appended
+     */
+    private static String formatIndex(String base, int index) {
+        return base + " [index=" + index + "]";
+    }
+
+    /**
+     * Appends key context to a base message.
+     *
+     * @param base the base message
+     * @param key  the key to append
+     * @return the message with {@code " [key=" + key + "]"} appended
+     */
+    private static String formatKey(String base, @Nullable Object key) {
+        return base + " [key=" + key + "]";
+    }
+
+    /**
      * Formats a message with optional arguments.
      *
      * @param message the message or format string
      * @param args    optional arguments used to format the message
-     * @return the formatted message, or the raw message if formatting fails
+     * @return the formatted message, or the raw {@code message} if formatting fails
      */
     private static String formatMessage(String message, @Nullable Object... args) {
         if (args == null || args.length == 0) {
@@ -120,14 +143,14 @@ public final class ObjectTools {
     }
 
     /**
-     * Determines whether the given value is {@code null} or empty.
+     * Determines whether the given {@code value} is {@code null} or empty.
      *
      * <p>Emptiness is defined for {@link CharSequence}, {@link Collection},
-     * {@link Map}, and arrays. All other non-null objects are considered
+     * {@link Map}, and arrays. All other non-{@code null} objects are considered
      * not empty.</p>
      *
      * @param value the value to inspect; may be {@code null}
-     * @return {@code true} if the value is {@code null} or empty
+     * @return {@code true} if the {@code value} is {@code null} or empty
      */
     public static boolean isEmpty(@Nullable Object value) {
         if (value == null) {
@@ -146,33 +169,31 @@ public final class ObjectTools {
     }
 
     /**
-     * Determines whether the given value is not {@code null} and not empty.
+     * Determines whether the given {@code value} is not {@code null} and not empty.
      *
      * @param value the value to inspect; may be {@code null}
-     * @return {@code true} if the value is not {@code null} and not empty
+     * @return {@code true} if the {@code value} is not {@code null} and not empty
      */
     public static boolean isNotEmpty(@Nullable Object value) {
         return !isEmpty(value);
     }
 
     /**
-     * Requires all provided values to be empty.
+     * Requires all provided {@code values} to be empty.
      *
-     * <p>The array itself must not be null, but may be empty (all elements are empty).
-     * All elements must be null or empty.</p>
+     * <p>The {@code values} array itself must not be {@code null}, but may be empty.
+     * All elements must be {@code null} or empty.</p>
      *
-     * @param values  the values to inspect; must not be null
-     * @param message the exception message; must not be null or empty
+     * @param values  the values to inspect; must not be {@code null}
+     * @param message the exception message; must not be {@code null} or empty
+     * @throws NullPointerException     if {@code values} is {@code null}
      * @throws IllegalArgumentException if any value is not empty
-     * @throws IllegalArgumentException if values array is null
-     * @throws IllegalArgumentException if message is null or empty
+     * @throws IllegalArgumentException if {@code message} is {@code null} or empty
      * @since 1.3
      */
-    public static void requireAllEmpty(@Nullable Object[] values, String message) {
+    public static void requireAllEmpty(Object[] values, String message) {
         requireValidMessage(message);
-        if (values == null) {
-            throw new IllegalArgumentException(message);
-        }
+        Objects.requireNonNull(values, message);
         for (Object v : values) {
             if (isNotEmpty(v)) {
                 throw new IllegalArgumentException(message);
@@ -181,40 +202,43 @@ public final class ObjectTools {
     }
 
     /**
-     * Requires all provided values to be empty.
+     * Requires all provided {@code values} to be empty.
      *
-     * <p>The array itself must not be null, but may be empty (all elements are empty).
-     * All elements must be null or empty. The message may contain
+     * <p>The {@code values} array itself must not be {@code null}, but may be empty.
+     * All elements must be {@code null} or empty. The {@code message} may contain
      * {@link String#format(String, Object...)} placeholders, which are resolved
-     * using the supplied {@code args}. If formatting fails, the raw message is used.</p>
+     * using the supplied {@code args}. If formatting fails, the raw {@code message} is used.</p>
      *
-     * @param values  the values to inspect; must not be null
-     * @param message the exception message or format string; must not be null or empty
-     * @param args    optional arguments used to format the message
+     * @param values  the values to inspect; must not be {@code null}
+     * @param message the exception message or format string; must not be {@code null} or empty
+     * @param args    optional arguments used to format the {@code message}
+     * @throws NullPointerException     if {@code values} is {@code null}
      * @throws IllegalArgumentException if any value is not empty
-     * @throws IllegalArgumentException if values array is null
-     * @throws IllegalArgumentException if message is null or empty
+     * @throws IllegalArgumentException if {@code message} is {@code null} or empty
      * @since 1.3
      */
-    public static void requireAllEmpty(@Nullable Object[] values, String message, @Nullable Object... args) {
+    public static void requireAllEmpty(Object[] values, String message, @Nullable Object... args) {
         requireValidMessage(message);
-        if (values == null) {
-            throw new IllegalArgumentException(formatMessage(message, args));
-        }
-        for (Object v : values) {
+        Objects.requireNonNull(values, () -> formatMessage(message, args));
+        for (int i = 0; i < values.length; i++) {
+            Object v = values[i];
             if (isNotEmpty(v)) {
-                throw new IllegalArgumentException(formatMessage(message, args));
+                throw new IllegalArgumentException(formatMessage(formatIndex(message, i), args));
             }
         }
     }
 
     /**
-     * Requires all values in the provided map to be empty.
+     * Requires all values in the provided {@code map} to be empty.
      *
-     * <p>The map itself may be {@code null} or empty. If it is non-empty,
+     * <p>The {@code map} itself may be {@code null} or empty. If it is non-empty,
      * all values must be {@code null} or empty as defined by {@link #isEmpty(Object)}.
      * If any value is not empty, an {@link IllegalArgumentException} is thrown.</p>
      *
+     * @param map     the map to inspect; may be {@code null}
+     * @param message the exception message; must not be {@code null} or empty
+     * @throws IllegalArgumentException if any value is not empty
+     * @throws IllegalArgumentException if {@code message} is {@code null} or empty
      * @since 1.3
      */
     public static void requireAllEmpty(@Nullable Map<?, ?> map, String message) {
@@ -230,14 +254,19 @@ public final class ObjectTools {
     }
 
     /**
-     * Requires all values in the provided map to be empty.
+     * Requires all values in the provided {@code map} to be empty.
      *
-     * <p>The map itself may be {@code null} or empty. If it is non-empty,
+     * <p>The {@code map} itself may be {@code null} or empty. If it is non-empty,
      * all values must be {@code null} or empty as defined by {@link #isEmpty(Object)}.
-     * The message may contain {@link String#format(String, Object...)} placeholders,
+     * The {@code message} may contain {@link String#format(String, Object...)} placeholders,
      * which are resolved using the supplied {@code args}. If formatting fails,
-     * the raw message is used.</p>
+     * the raw {@code message} is used.</p>
      *
+     * @param map     the map to inspect; may be {@code null}
+     * @param message the exception message or format string; must not be {@code null} or empty
+     * @param args    optional arguments used to format the {@code message}
+     * @throws IllegalArgumentException if any value is not empty
+     * @throws IllegalArgumentException if {@code message} is {@code null} or empty
      * @since 1.3
      */
     public static void requireAllEmpty(@Nullable Map<?, ?> map, String message, @Nullable Object... args) {
@@ -245,27 +274,31 @@ public final class ObjectTools {
         if (map == null) {
             return;
         }
-        for (Object v : map.values()) {
-            if (isNotEmpty(v)) {
-                throw new IllegalArgumentException(formatMessage(message, args));
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            if (isNotEmpty(entry.getValue())) {
+                throw new IllegalArgumentException(
+                        formatMessage(formatKey(message, entry.getKey()), args));
             }
         }
     }
 
     /**
-     * Requires all provided collection elements to be empty.
+     * Requires all provided {@code values} collection elements to be empty.
      *
-     * <p>The collection itself must not be {@code null}, but may be empty.
+     * <p>The {@code values} collection itself must not be {@code null}, but may be empty.
      * All elements must be {@code null} or empty as defined by {@link #isEmpty(Object)}.
      * If any element is not empty, an {@link IllegalArgumentException} is thrown.</p>
      *
+     * @param values  the collection to inspect; must not be {@code null}
+     * @param message the exception message; must not be {@code null} or empty
+     * @throws NullPointerException     if {@code values} is {@code null}
+     * @throws IllegalArgumentException if any element is not empty
+     * @throws IllegalArgumentException if {@code message} is {@code null} or empty
      * @since 1.2
      */
-    public static void requireAllEmpty(@Nullable Collection<?> values, String message) {
+    public static void requireAllEmpty(Collection<?> values, String message) {
         requireValidMessage(message);
-        if (values == null) {
-            throw new IllegalArgumentException(message);
-        }
+        Objects.requireNonNull(values, message);
         for (Object v : values) {
             if (isNotEmpty(v)) {
                 throw new IllegalArgumentException(message);
@@ -274,185 +307,229 @@ public final class ObjectTools {
     }
 
     /**
-     * Requires all provided collection elements to be empty.
+     * Requires all provided {@code values} collection elements to be empty.
      *
-     * <p>The collection itself must not be {@code null}, but may be empty.
+     * <p>The {@code values} collection itself must not be {@code null}, but may be empty.
      * All elements must be {@code null} or empty as defined by {@link #isEmpty(Object)}.
-     * The message may contain {@link String#format(String, Object...)} placeholders,
+     * The {@code message} may contain {@link String#format(String, Object...)} placeholders,
      * which are resolved using the supplied {@code args}. If formatting fails,
-     * the raw message is used.</p>
+     * the raw {@code message} is used.</p>
      *
+     * @param values  the collection to inspect; must not be {@code null}
+     * @param message the exception message or format string; must not be {@code null} or empty
+     * @param args    optional arguments used to format the {@code message}
+     * @throws NullPointerException     if {@code values} is {@code null}
+     * @throws IllegalArgumentException if any element is not empty
+     * @throws IllegalArgumentException if {@code message} is {@code null} or empty
      * @since 1.2
      */
-    public static void requireAllEmpty(@Nullable Collection<?> values, String message, @Nullable Object... args) {
+    public static void requireAllEmpty(Collection<?> values, String message, @Nullable Object... args) {
         requireValidMessage(message);
-        if (values == null) {
-            throw new IllegalArgumentException(formatMessage(message, args));
-        }
+        Objects.requireNonNull(values, () -> formatMessage(message, args));
+        int i = 0;
         for (Object v : values) {
             if (isNotEmpty(v)) {
-                throw new IllegalArgumentException(formatMessage(message, args));
+                throw new IllegalArgumentException(formatMessage(formatIndex(message, i), args));
             }
+            i++;
         }
     }
 
     /**
-     * Requires all provided values to be not empty.
+     * Requires all provided {@code values} to be not {@code null} and not empty.
      *
-     * <p>The array itself must not be null or empty, and none of its elements
-     * may be null or empty.</p>
+     * <p>The {@code values} array itself must not be {@code null} or empty, and none of its elements
+     * may be {@code null} or empty.</p>
      *
-     * @param values  the values to inspect; must not be null or empty
-     * @param message the exception message; must not be null or empty
-     * @throws IllegalArgumentException if values array is null or empty
-     * @throws IllegalArgumentException if any value is null or empty
-     * @throws IllegalArgumentException if message is null or empty
+     * @param values  the values to inspect; must not be {@code null} or empty
+     * @param message the exception message; must not be {@code null} or empty
+     * @throws NullPointerException     if {@code values} is {@code null} or any element is {@code null}
+     * @throws IllegalArgumentException if {@code values} is empty or any element is empty
+     * @throws IllegalArgumentException if {@code message} is {@code null} or empty
      * @since 1.3
      */
-    public static void requireAllNotEmpty(@Nullable Object[] values, String message) {
+    public static void requireAllNotEmpty(Object[] values, String message) {
         requireValidMessage(message);
-        if (values == null || values.length == 0) {
+        Objects.requireNonNull(values, message);
+        if (values.length == 0) {
             throw new IllegalArgumentException(message);
         }
-        for (Object v : values) {
+        for (int i = 0; i < values.length; i++) {
+            Object v = Objects.requireNonNull(values[i], formatIndex(message, i));
             if (isEmpty(v)) {
-                throw new IllegalArgumentException(message);
+                throw new IllegalArgumentException(formatIndex(message, i));
             }
         }
     }
 
     /**
-     * Requires all provided values to be not empty.
+     * Requires all provided {@code values} to be not {@code null} and not empty.
      *
-     * <p>The array itself must not be null or empty, and none of its elements
-     * may be null or empty. The message may contain {@link String#format(String, Object...)}
+     * <p>The {@code values} array itself must not be {@code null} or empty, and none of its elements
+     * may be {@code null} or empty. The {@code message} may contain {@link String#format(String, Object...)}
      * placeholders, which are resolved using the supplied {@code args}. If formatting fails,
-     * the raw message is used.</p>
+     * the raw {@code message} is used.</p>
      *
-     * @param values  the values to inspect; must not be null or empty
-     * @param message the exception message or format string; must not be null or empty
-     * @param args    optional arguments used to format the message
-     * @throws IllegalArgumentException if values array is null or empty
-     * @throws IllegalArgumentException if any value is null or empty
-     * @throws IllegalArgumentException if message is null or empty
+     * @param values  the values to inspect; must not be {@code null} or empty
+     * @param message the exception message or format string; must not be {@code null} or empty
+     * @param args    optional arguments used to format the {@code message}
+     * @throws NullPointerException     if {@code values} is {@code null} or any element is {@code null}
+     * @throws IllegalArgumentException if {@code values} is empty or any element is empty
+     * @throws IllegalArgumentException if {@code message} is {@code null} or empty
      * @since 1.3
      */
-    public static void requireAllNotEmpty(@Nullable Object[] values, String message, @Nullable Object... args) {
+    public static void requireAllNotEmpty(Object[] values, String message, @Nullable Object... args) {
         requireValidMessage(message);
-        if (values == null || values.length == 0) {
+        Objects.requireNonNull(values, () -> formatMessage(message, args));
+        if (values.length == 0) {
             throw new IllegalArgumentException(formatMessage(message, args));
         }
-        for (Object v : values) {
+        for (int i = 0; i < values.length; i++) {
+            int idx = i;
+            Object v = Objects.requireNonNull(values[i], () -> formatMessage(formatIndex(message, idx), args));
             if (isEmpty(v)) {
-                throw new IllegalArgumentException(formatMessage(message, args));
+                throw new IllegalArgumentException(formatMessage(formatIndex(message, i), args));
             }
         }
     }
 
     /**
-     * Requires the provided map to be not empty, and all of its values to be not empty.
+     * Requires the provided {@code map} to be not {@code null}, not empty, and all of its values to be not {@code null} and not empty.
      *
-     * <p>The map itself must not be {@code null} or empty, and none of its values
-     * may be {@code null} or empty as defined by {@link #isEmpty(Object)}.
-     * If the map is {@code null}, empty, or contains any empty value,
-     * an {@link IllegalArgumentException} is thrown.</p>
+     * <p>The {@code map} itself must not be {@code null} or empty, and none of its values
+     * may be {@code null} or empty as defined by {@link #isEmpty(Object)}.</p>
      *
+     * @param map     the map to inspect; must not be {@code null} or empty
+     * @param message the exception message; must not be {@code null} or empty
+     * @throws NullPointerException     if {@code map} is {@code null} or any value is {@code null}
+     * @throws IllegalArgumentException if {@code map} is empty or any value is empty
+     * @throws IllegalArgumentException if {@code message} is {@code null} or empty
      * @since 1.3
      */
-    public static void requireAllNotEmpty(@Nullable Map<?, ?> map, String message) {
+    public static void requireAllNotEmpty(Map<?, ?> map, String message) {
         requireValidMessage(message);
-        if (map == null || map.isEmpty()) {
+        Objects.requireNonNull(map, message);
+        if (map.isEmpty()) {
             throw new IllegalArgumentException(message);
         }
-        for (Object v : map.values()) {
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            Object k = entry.getKey();
+            Object v = Objects.requireNonNull(entry.getValue(), formatKey(message, k));
             if (isEmpty(v)) {
-                throw new IllegalArgumentException(message);
+                throw new IllegalArgumentException(formatKey(message, k));
             }
         }
     }
 
     /**
-     * Requires the provided map to be not empty, and all of its values to be not empty.
+     * Requires the provided {@code map} to be not {@code null}, not empty, and all of its values to be not {@code null} and not empty.
      *
-     * <p>The map itself must not be {@code null} or empty, and none of its values
+     * <p>The {@code map} itself must not be {@code null} or empty, and none of its values
      * may be {@code null} or empty as defined by {@link #isEmpty(Object)}.
-     * The message may contain {@link String#format(String, Object...)} placeholders,
+     * The {@code message} may contain {@link String#format(String, Object...)} placeholders,
      * which are resolved using the supplied {@code args}. If formatting fails,
-     * the raw message is used.</p>
+     * the raw {@code message} is used.</p>
      *
+     * @param map     the map to inspect; must not be {@code null} or empty
+     * @param message the exception message or format string; must not be {@code null} or empty
+     * @param args    optional arguments used to format the {@code message}
+     * @throws NullPointerException     if {@code map} is {@code null} or any value is {@code null}
+     * @throws IllegalArgumentException if {@code map} is empty or any value is empty
+     * @throws IllegalArgumentException if {@code message} is {@code null} or empty
      * @since 1.3
      */
-    public static void requireAllNotEmpty(@Nullable Map<?, ?> map, String message, @Nullable Object... args) {
+    public static void requireAllNotEmpty(Map<?, ?> map, String message, @Nullable Object... args) {
         requireValidMessage(message);
-        if (map == null || map.isEmpty()) {
+        Objects.requireNonNull(map, () -> formatMessage(message, args));
+        if (map.isEmpty()) {
             throw new IllegalArgumentException(formatMessage(message, args));
         }
-        for (Object v : map.values()) {
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            Object k = entry.getKey();
+            Object v = Objects.requireNonNull(entry.getValue(), () -> formatMessage(formatKey(message, k), args));
             if (isEmpty(v)) {
-                throw new IllegalArgumentException(formatMessage(message, args));
+                throw new IllegalArgumentException(formatMessage(formatKey(message, k), args));
             }
         }
     }
 
     /**
-     * Requires all provided collection elements to be not empty.
+     * Requires all provided {@code values} collection elements to be not {@code null} and not empty.
      *
-     * <p>The collection itself must not be {@code null} or empty, and none of its
-     * elements may be {@code null} or empty as defined by {@link #isEmpty(Object)}.
-     * If the collection is {@code null}, empty, or contains any empty element,
-     * an {@link IllegalArgumentException} is thrown.</p>
+     * <p>The {@code values} collection itself must not be {@code null} or empty, and none of its
+     * elements may be {@code null} or empty as defined by {@link #isEmpty(Object)}.</p>
      *
+     * @param values  the collection to inspect; must not be {@code null} or empty
+     * @param message the exception message; must not be {@code null} or empty
+     * @throws NullPointerException     if {@code values} is {@code null} or any element is {@code null}
+     * @throws IllegalArgumentException if {@code values} is empty or any element is empty
+     * @throws IllegalArgumentException if {@code message} is {@code null} or empty
      * @since 1.2
      */
-    public static void requireAllNotEmpty(@Nullable Collection<?> values, String message) {
+    public static void requireAllNotEmpty(Collection<?> values, String message) {
         requireValidMessage(message);
-        if (values == null || values.isEmpty()) {
+        Objects.requireNonNull(values, message);
+        if (values.isEmpty()) {
             throw new IllegalArgumentException(message);
         }
+        int i = 0;
         for (Object v : values) {
+            Objects.requireNonNull(v, formatIndex(message, i));
             if (isEmpty(v)) {
-                throw new IllegalArgumentException(message);
+                throw new IllegalArgumentException(formatIndex(message, i));
             }
+            i++;
         }
     }
 
     /**
-     * Requires all provided collection elements to be not empty.
+     * Requires all provided {@code values} collection elements to be not {@code null} and not empty.
      *
-     * <p>The collection itself must not be {@code null} or empty, and none of its
+     * <p>The {@code values} collection itself must not be {@code null} or empty, and none of its
      * elements may be {@code null} or empty as defined by {@link #isEmpty(Object)}.
-     * The message may contain {@link String#format(String, Object...)} placeholders,
+     * The {@code message} may contain {@link String#format(String, Object...)} placeholders,
      * which are resolved using the supplied {@code args}. If formatting fails,
-     * the raw message is used.</p>
+     * the raw {@code message} is used.</p>
      *
+     * @param values  the collection to inspect; must not be {@code null} or empty
+     * @param message the exception message or format string; must not be {@code null} or empty
+     * @param args    optional arguments used to format the {@code message}
+     * @throws NullPointerException     if {@code values} is {@code null} or any element is {@code null}
+     * @throws IllegalArgumentException if {@code values} is empty or any element is empty
+     * @throws IllegalArgumentException if {@code message} is {@code null} or empty
      * @since 1.2
      */
-    public static void requireAllNotEmpty(@Nullable Collection<?> values, String message, @Nullable Object... args) {
+    public static void requireAllNotEmpty(Collection<?> values, String message, @Nullable Object... args) {
         requireValidMessage(message);
-        if (values == null || values.isEmpty()) {
+        Objects.requireNonNull(values, () -> formatMessage(message, args));
+        if (values.isEmpty()) {
             throw new IllegalArgumentException(formatMessage(message, args));
         }
+        int i = 0;
         for (Object v : values) {
+            int idx = i;
+            Objects.requireNonNull(v, () -> formatMessage(formatIndex(message, idx), args));
             if (isEmpty(v)) {
-                throw new IllegalArgumentException(formatMessage(message, args));
+                throw new IllegalArgumentException(formatMessage(formatIndex(message, i), args));
             }
+            i++;
         }
     }
 
     /**
-     * Requires the given value to be empty.
+     * Requires the given {@code value} to be empty.
      *
      * <p>Emptiness is defined for {@link CharSequence}, {@link Collection},
-     * {@link Map}, and arrays. All other non-null objects are considered
-     * not empty. If the value is not empty, an {@link IllegalArgumentException}
-     * is thrown. Otherwise, the original value is returned unchanged.</p>
+     * {@link Map}, and arrays. All other non-{@code null} objects are considered
+     * not empty. If the {@code value} is not empty, an {@link IllegalArgumentException}
+     * is thrown. Otherwise, the original {@code value} is returned unchanged.</p>
      *
      * @param value   the value to inspect; may be {@code null}
-     * @param message the exception message; must not be null or empty
+     * @param message the exception message; must not be {@code null} or empty
      * @param <T>     the value type
-     * @return the original value if it is empty
-     * @throws IllegalArgumentException if the value is not empty
-     * @throws IllegalArgumentException if message is null or empty
+     * @return the original {@code value} if it is empty
+     * @throws IllegalArgumentException if the {@code value} is not empty
+     * @throws IllegalArgumentException if {@code message} is {@code null} or empty
      * @since 1.3
      */
     public static <T> T requireEmpty(@Nullable T value, String message) {
@@ -464,23 +541,23 @@ public final class ObjectTools {
     }
 
     /**
-     * Requires the given value to be empty.
+     * Requires the given {@code value} to be empty.
      *
      * <p>Emptiness is defined for {@link CharSequence}, {@link Collection},
-     * {@link Map}, and arrays. All other non-null objects are considered
-     * not empty. If the value is not empty, an {@link IllegalArgumentException}
-     * is thrown. The message may contain {@link String#format(String, Object...)}
+     * {@link Map}, and arrays. All other non-{@code null} objects are considered
+     * not empty. If the {@code value} is not empty, an {@link IllegalArgumentException}
+     * is thrown. The {@code message} may contain {@link String#format(String, Object...)}
      * placeholders, which are resolved using the supplied {@code args}. If
-     * formatting fails, the raw message is used. Otherwise, the original value
+     * formatting fails, the raw {@code message} is used. Otherwise, the original {@code value}
      * is returned unchanged.</p>
      *
      * @param value   the value to inspect; may be {@code null}
-     * @param message the exception message or format string; must not be null or empty
-     * @param args    optional arguments used to format the message
+     * @param message the exception message or format string; must not be {@code null} or empty
+     * @param args    optional arguments used to format the {@code message}
      * @param <T>     the value type
-     * @return the original value if it is empty
-     * @throws IllegalArgumentException if the value is not empty
-     * @throws IllegalArgumentException if message is null or empty
+     * @return the original {@code value} if it is empty
+     * @throws IllegalArgumentException if the {@code value} is not empty
+     * @throws IllegalArgumentException if {@code message} is {@code null} or empty
      * @since 1.3
      */
     public static <T> T requireEmpty(@Nullable T value, String message, @Nullable Object... args) {
@@ -492,23 +569,25 @@ public final class ObjectTools {
     }
 
     /**
-     * Requires the given value to be not empty.
+     * Requires the given {@code value} to be not {@code null} and not empty.
      *
      * <p>Emptiness is defined for {@link CharSequence}, {@link Collection},
-     * {@link Map}, and arrays. All other non-null objects are considered
-     * not empty. If the value is empty, an {@link IllegalArgumentException}
-     * is thrown. Otherwise, the original value is returned unchanged.</p>
+     * {@link Map}, and arrays. All other non-{@code null} objects are considered
+     * not empty. If the {@code value} is {@code null} or empty, an exception is thrown.
+     * Otherwise, the original {@code value} is returned unchanged.</p>
      *
-     * @param value   the value to inspect; may be {@code null}
-     * @param message the exception message; must not be null or empty
+     * @param value   the value to inspect; must not be {@code null} or empty
+     * @param message the exception message; must not be {@code null} or empty
      * @param <T>     the value type
-     * @return the original value if it is not empty
-     * @throws IllegalArgumentException if the value is null or empty
-     * @throws IllegalArgumentException if message is null or empty
+     * @return the original {@code value} if it is not {@code null} and not empty
+     * @throws NullPointerException     if the {@code value} is {@code null}
+     * @throws IllegalArgumentException if the {@code value} is empty
+     * @throws IllegalArgumentException if {@code message} is {@code null} or empty
      * @since 1.3
      */
-    public static <T> T requireNotEmpty(@Nullable T value, String message) {
+    public static <T> T requireNotEmpty(T value, String message) {
         requireValidMessage(message);
+        Objects.requireNonNull(value, message);
         if (isEmpty(value)) {
             throw new IllegalArgumentException(message);
         }
@@ -516,32 +595,41 @@ public final class ObjectTools {
     }
 
     /**
-     * Requires the given value to be not empty.
+     * Requires the given {@code value} to be not {@code null} and not empty.
      *
      * <p>Emptiness is defined for {@link CharSequence}, {@link Collection},
-     * {@link Map}, and arrays. All other non-null objects are considered
-     * not empty. If the value is empty, an {@link IllegalArgumentException}
-     * is thrown. The message may contain {@link String#format(String, Object...)}
+     * {@link Map}, and arrays. All other non-{@code null} objects are considered
+     * not empty. If the {@code value} is {@code null} or empty, an exception is thrown.
+     * The {@code message} may contain {@link String#format(String, Object...)}
      * placeholders, which are resolved using the supplied {@code args}. If
-     * formatting fails, the raw message is used. Otherwise, the original value
+     * formatting fails, the raw {@code message} is used. Otherwise, the original {@code value}
      * is returned unchanged.</p>
      *
-     * @param value   the value to inspect; may be {@code null}
-     * @param message the exception message or format string; must not be null or empty
-     * @param args    optional arguments used to format the message
+     * @param value   the value to inspect; must not be {@code null} or empty
+     * @param message the exception message or format string; must not be {@code null} or empty
+     * @param args    optional arguments used to format the {@code message}
      * @param <T>     the value type
-     * @return the original value if it is not empty
-     * @throws IllegalArgumentException if the value is null or empty
-     * @throws IllegalArgumentException if message is null or empty
+     * @return the original {@code value} if it is not {@code null} and not empty
+     * @throws NullPointerException     if the {@code value} is {@code null}
+     * @throws IllegalArgumentException if the {@code value} is empty
+     * @throws IllegalArgumentException if {@code message} is {@code null} or empty
      * @since 1.3
      */
-    public static <T> T requireNotEmpty(@Nullable T value, String message, @Nullable Object... args) {
+    public static <T> T requireNotEmpty(T value, String message, @Nullable Object... args) {
+        requireValidMessage(message);
+        Objects.requireNonNull(value, () -> formatMessage(message, args));
         if (isEmpty(value)) {
             throw new IllegalArgumentException(formatMessage(message, args));
         }
         return value;
     }
 
+    /**
+     * Validates that the {@code message} is not blank.
+     *
+     * @param message the message to validate
+     * @throws IllegalArgumentException if {@code message} is {@code null} or empty
+     */
     private static void requireValidMessage(String message) {
         if (TextTools.isBlank(message)) {
             throw new IllegalArgumentException("message must not be null or empty");

@@ -350,8 +350,8 @@ class ObjectToolsTest {
         @Test
         @DisplayName("throws with correct message for null array")
         void correctMessageForNullArray() {
-            IllegalArgumentException ex = assertThrows(
-                    IllegalArgumentException.class,
+            var ex = assertThrows(
+                    NullPointerException.class,
                     () -> ObjectTools.requireAllEmpty((Object[]) null, "All values must be empty")
             );
             assertEquals("All values must be empty", ex.getMessage());
@@ -378,14 +378,14 @@ class ObjectToolsTest {
                     () -> ObjectTools.requireAllEmpty(
                             new Object[]{"x"}, "Values %s must be empty", "element")
             );
-            assertEquals("Values element must be empty", ex.getMessage());
+            assertEquals("Values element must be empty [index=0]", ex.getMessage());
         }
 
         @Test
         @DisplayName("formatted message is applied when array is null")
         void formattedMessageForNullArray() {
-            IllegalArgumentException ex = assertThrows(
-                    IllegalArgumentException.class,
+            var ex = assertThrows(
+                    NullPointerException.class,
                     () -> ObjectTools.requireAllEmpty((Object[]) null, "Values %s must be empty", "array")
             );
             assertEquals("Values array must be empty", ex.getMessage());
@@ -409,7 +409,7 @@ class ObjectToolsTest {
                     () -> ObjectTools.requireAllEmpty(
                             new Object[]{"x"}, "%s %s %s", "onlyOneArg")
             );
-            assertEquals("%s %s %s", ex.getMessage());
+            assertEquals("%s %s %s [index=0]", ex.getMessage());
         }
 
         @Test
@@ -427,7 +427,7 @@ class ObjectToolsTest {
                     () -> ObjectTools.requireAllEmpty(
                             new Object[]{"x"}, "%s:%s:%s", "a", "b", "c")
             );
-            assertEquals("a:b:c", ex.getMessage());
+            assertEquals("a:b:c [index=0]", ex.getMessage());
         }
 
         @Test
@@ -486,7 +486,7 @@ class ObjectToolsTest {
         @Test
         @DisplayName("throws when array is null")
         void throwsForNullArray() {
-            assertThrows(IllegalArgumentException.class,
+            assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireAllEmpty((Object[]) null, "msg"));
         }
 
@@ -532,7 +532,7 @@ class ObjectToolsTest {
                         IllegalArgumentException.class,
                         () -> ObjectTools.requireAllEmpty(map, "Value %s invalid", "A")
                 );
-                assertEquals("Value A invalid", ex.getMessage());
+                assertEquals("Value A invalid [key=a]", ex.getMessage());
             }
 
             @Test
@@ -543,7 +543,7 @@ class ObjectToolsTest {
                         IllegalArgumentException.class,
                         () -> ObjectTools.requireAllEmpty(map, "%s %s", "onlyOne")
                 );
-                assertEquals("%s %s", ex.getMessage());
+                assertEquals("%s %s [key=a]", ex.getMessage());
             }
 
             @Test
@@ -600,14 +600,14 @@ class ObjectToolsTest {
                     IllegalArgumentException.class,
                     () -> ObjectTools.requireAllNotEmpty(new Object[]{"x", ""}, "Values required")
             );
-            assertEquals("Values required", ex.getMessage());
+            assertEquals("Values required [index=1]", ex.getMessage());
         }
 
         @Test
         @DisplayName("throws with correct message for null array")
         void correctMessageForNullArray() {
-            IllegalArgumentException ex = assertThrows(
-                    IllegalArgumentException.class,
+            var ex = assertThrows(
+                    NullPointerException.class,
                     () -> ObjectTools.requireAllNotEmpty((Object[]) null, "Values required")
             );
             assertEquals("Values required", ex.getMessage());
@@ -647,23 +647,23 @@ class ObjectToolsTest {
         @Test
         @DisplayName("formatted message is applied when array is null or empty")
         void formattedMessageForEmptyArray() {
-            IllegalArgumentException ex = assertThrows(
-                    IllegalArgumentException.class,
+            var ex = assertThrows(
+                    NullPointerException.class,
                     () -> ObjectTools.requireAllNotEmpty((Object[]) null,
-                            "Value %s must not be empty", "array")
+                            "Value %s must not be null", "array")
             );
-            assertEquals("Value array must not be empty", ex.getMessage());
+            assertEquals("Value array must not be null", ex.getMessage());
         }
 
         @Test
         @DisplayName("formatted message is applied when element is empty")
         void formattedMessageForEmptyElement() {
-            IllegalArgumentException ex = assertThrows(
+            var ex = assertThrows(
                     IllegalArgumentException.class,
                     () -> ObjectTools.requireAllNotEmpty(
                             new Object[]{"x", ""}, "Value %s must not be empty", "element")
             );
-            assertEquals("Value element must not be empty", ex.getMessage());
+            assertEquals("Value element must not be empty [index=1]", ex.getMessage());
         }
 
         @Test
@@ -695,7 +695,7 @@ class ObjectToolsTest {
                     () -> ObjectTools.requireAllNotEmpty(
                             new Object[]{"x", ""}, "%s:%s:%s", "a", "b", "c")
             );
-            assertEquals("a:b:c", ex.getMessage());
+            assertEquals("a:b:c [index=1]", ex.getMessage());
         }
 
         @Test
@@ -729,7 +729,7 @@ class ObjectToolsTest {
             assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requireAllNotEmpty(
                             new Object[]{"x", List.of(), "y"}, "msg"));
-            assertThrows(IllegalArgumentException.class,
+            assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireAllNotEmpty(
                             new Object[]{null, "x", "y"}, "msg"));
         }
@@ -744,7 +744,7 @@ class ObjectToolsTest {
         @Test
         @DisplayName("throws when array is null")
         void throwsForNullArray() {
-            assertThrows(IllegalArgumentException.class,
+            assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireAllNotEmpty((Object[]) null, "msg"));
         }
 
@@ -790,7 +790,7 @@ class ObjectToolsTest {
                         IllegalArgumentException.class,
                         () -> ObjectTools.requireAllNotEmpty(map, "Bad %s", "Value")
                 );
-                assertEquals("Bad Value", ex.getMessage());
+                assertEquals("Bad Value [key=a]", ex.getMessage());
             }
 
             @Test
@@ -801,13 +801,13 @@ class ObjectToolsTest {
                         IllegalArgumentException.class,
                         () -> ObjectTools.requireAllNotEmpty(map, "%s %s", "onlyOne")
                 );
-                assertEquals("%s %s", ex.getMessage());
+                assertEquals("%s %s [key=a]", ex.getMessage());
             }
 
             @Test
             @DisplayName("throws for null map")
             void nullMapThrows() {
-                assertThrows(IllegalArgumentException.class,
+                assertThrows(NullPointerException.class,
                         () -> ObjectTools.requireAllNotEmpty((Map<String, Object>) null, "msg"));
             }
 
@@ -966,7 +966,7 @@ class ObjectToolsTest {
                         IllegalArgumentException.class,
                         () -> ObjectTools.requireAllEmpty(List.of("x"), "Value %s must be empty", "name")
                 );
-                assertEquals("Value name must be empty", ex.getMessage());
+                assertEquals("Value name must be empty [index=0]", ex.getMessage());
             }
 
             @Test
@@ -986,7 +986,7 @@ class ObjectToolsTest {
                         IllegalArgumentException.class,
                         () -> ObjectTools.requireAllEmpty(List.of("x"), "%s %s %s", "onlyOneArg")
                 );
-                assertEquals("%s %s %s", ex.getMessage());
+                assertEquals("%s %s %s [index=0]", ex.getMessage());
             }
 
             @Test
@@ -1005,7 +1005,7 @@ class ObjectToolsTest {
             @Test
             @DisplayName("throws for null collection")
             void throwsForNullCollection() {
-                assertThrows(IllegalArgumentException.class,
+                assertThrows(NullPointerException.class,
                         () -> ObjectTools.requireAllEmpty((Collection<?>) null, "msg"));
             }
 
@@ -1080,8 +1080,8 @@ class ObjectToolsTest {
         @Test
         @DisplayName("exception message is correct for null value")
         void messageForNullValue() {
-            IllegalArgumentException ex = assertThrows(
-                    IllegalArgumentException.class,
+            var ex = assertThrows(
+                    NullPointerException.class,
                     () -> ObjectTools.requireNotEmpty(null, "Custom error message")
             );
             assertEquals("Custom error message", ex.getMessage());
@@ -1128,7 +1128,7 @@ class ObjectToolsTest {
         @Test
         @DisplayName("throws for null or empty values")
         void throwsForEmpty() {
-            assertThrows(IllegalArgumentException.class,
+            assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNotEmpty(null, "msg"));
             assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requireNotEmpty("", "msg"));
@@ -1173,7 +1173,7 @@ class ObjectToolsTest {
                         IllegalArgumentException.class,
                         () -> ObjectTools.requireAllNotEmpty(List.of(""), "Value %s must not be empty", "name")
                 );
-                assertEquals("Value name must not be empty", ex.getMessage());
+                assertEquals("Value name must not be empty [index=0]", ex.getMessage());
             }
 
             @Test
@@ -1183,7 +1183,7 @@ class ObjectToolsTest {
                         IllegalArgumentException.class,
                         () -> ObjectTools.requireAllNotEmpty(List.of(""), "Simple message")
                 );
-                assertEquals("Simple message", ex.getMessage());
+                assertEquals("Simple message [index=0]", ex.getMessage());
             }
 
             @Test
@@ -1193,7 +1193,7 @@ class ObjectToolsTest {
                         IllegalArgumentException.class,
                         () -> ObjectTools.requireAllNotEmpty(List.of(""), "%s %s %s", "onlyOneArg")
                 );
-                assertEquals("%s %s %s", ex.getMessage());
+                assertEquals("%s %s %s [index=0]", ex.getMessage());
             }
 
             @Test
@@ -1207,14 +1207,14 @@ class ObjectToolsTest {
                         () -> ObjectTools.requireAllNotEmpty(List.of(Map.of()), "msg"));
                 assertThrows(IllegalArgumentException.class,
                         () -> ObjectTools.requireAllNotEmpty(List.of(new Object[]{}), "msg"));
-                assertThrows(IllegalArgumentException.class,
+                assertThrows(NullPointerException.class,
                         () -> ObjectTools.requireAllNotEmpty(Collections.singletonList(null), "msg"));
             }
 
             @Test
             @DisplayName("throws for null or empty collection")
             void throwsForNullOrEmptyCollection() {
-                assertThrows(IllegalArgumentException.class,
+                assertThrows(NullPointerException.class,
                         () -> ObjectTools.requireAllNotEmpty((Collection<?>) null, "msg"));
                 assertThrows(IllegalArgumentException.class,
                         () -> ObjectTools.requireAllNotEmpty(List.of(), "msg"));

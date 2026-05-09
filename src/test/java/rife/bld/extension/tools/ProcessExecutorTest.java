@@ -230,20 +230,20 @@ class ProcessExecutorTest {
         @Test
         @SuppressWarnings("DataFlowIssue")
         void commandNullArrayThrows(@TempDir Path tmp) {
-            assertThrows(IllegalArgumentException.class,
+            assertThrows(NullPointerException.class,
                     () -> createBasicExecutor(tmp.toFile()).command((String[]) null));
         }
 
         @Test
         @SuppressWarnings("DataFlowIssue")
         void commandNullCollectionThrows(@TempDir Path tmp) {
-            assertThrows(IllegalArgumentException.class,
+            assertThrows(NullPointerException.class,
                     () -> createBasicExecutor(tmp.toFile()).command((Collection<String>) null));
         }
 
         @Test
         void commandNullElementThrows(@TempDir Path tmp) {
-            var ex = assertThrows(IllegalArgumentException.class,
+            var ex = assertThrows(NullPointerException.class,
                     () -> createBasicExecutor(tmp.toFile()).command("echo", null));
             assertTrue(ex.getMessage().contains(ProcessExecutor.COMMAND_NOT_VALID));
         }
