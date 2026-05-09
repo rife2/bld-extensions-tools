@@ -74,24 +74,6 @@ class ProcessExecutorTest {
                 : List.of("echo", String.join(" ", args));
     }
 
-    @BeforeEach
-    void setUp() {
-        testLogHandler.clear();
-    }
-
-    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-    private List<String> sleepCommand() {
-        return SystemTools.isWindows()
-                ? List.of("cmd", "/c", "ping -n 12 127.0.0.1") // single arg
-                : List.of("sleep", "5");
-    }
-
-    private List<String> multiLineEchoCommand() {
-        return SystemTools.isWindows()
-                ? List.of("cmd", "/c", "echo line1 & echo line2") // single arg
-                : List.of("sh", "-c", "echo line1; echo line2");
-    }
-
     @SuppressWarnings("SameParameterValue")
     private List<String> envEchoCommand(String var) {
         return SystemTools.isWindows()
@@ -104,6 +86,121 @@ class ProcessExecutorTest {
         return SystemTools.isWindows()
                 ? List.of("cmd", "/c", "exit " + code) // single arg
                 : List.of("sh", "-c", "exit " + code);
+    }
+
+    private List<String> multiLineEchoCommand() {
+        return SystemTools.isWindows()
+                ? List.of("cmd", "/c", "echo line1 & echo line2") // single arg
+                : List.of("sh", "-c", "echo line1; echo line2");
+    }
+
+    @BeforeEach
+    void setUp() {
+        testLogHandler.clear();
+    }
+
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
+    private List<String> sleepCommand() {
+        return SystemTools.isWindows()
+                ? List.of("cmd", "/c", "ping -n 12 127.0.0.1") // single arg
+                : List.of("sleep", "5");
+    }
+
+    @Nested
+    @DisplayName("Cleanup Tests")
+    class CleanupTests {
+
+        @Test
+        @DisplayName("cleanupThread interrupts reader on timeout")
+        void cleanupThreadInterruptedOnTimeout(@TempDir Path tmp) throws Exception {
+            var interrupted = new AtomicBoolean(false);
+            var started = new CountDownLatch(1);
+
+            var runCmd = compileAndGetRunCommand(tmp, "Blocker", """
+                    public class Blocker {
+                        public static void main(String[] args) throws Exception {
+                            System.out.println("started");
+                            System.out.flush();
+                            Thread.sleep(10000);
+                        }
+                    }
+                    """);
+
+            var result = createBasicExecutor(tmp.toFile())
+                    .command(runCmd)
+                    .timeout(1)
+                    .outputConsumer(line -> {
+                        if ("started".equals(line)) {
+                            started.countDown();
+                            try {
+                                Thread.sleep(10_000);
+                            } catch (InterruptedException e) {
+                                interrupted.set(true);
+                                Thread.currentThread().interrupt();
+                            }
+                        }
+                    })
+                    .execute();
+
+            assertTrue(started.await(5, TimeUnit.SECONDS), "Consumer should have started");
+            assertTrue(result.timedOut());
+            assertTrue(interrupted.get(), "Reader thread should be interrupted by cleanupThread()");
+        }
+
+        private List<String> compileAndGetRunCommand(@TempDir Path tmp, String className, String code)
+                throws Exception {
+            var javaFile = tmp.resolve(className + ".java");
+            Files.writeString(javaFile, code);
+
+            // Compile using ProcessExecutor itself
+            var compileResult = new ProcessExecutor()
+                    .workDir(tmp.toFile())
+                    .command("javac", javaFile.toString())
+                    .timeout(10)
+                    .execute();
+
+            assertTrue(compileResult.isSuccess(), "Test helper should compile: " + compileResult.output());
+            return List.of("java", "-cp", tmp.toString(), className);
+        }
+
+        @Test
+        void executeTimeout(@TempDir Path tmp) throws Exception {
+            var runCmd = compileAndGetRunCommand(tmp, "Sleeper", """
+                    public class Sleeper {
+                        public static void main(String[] args) throws Exception {
+                            Thread.sleep(10000);
+                        }
+                    }
+                    """);
+
+            var result = createBasicExecutor(tmp.toFile())
+                    .command(runCmd)
+                    .timeout(1)
+                    .execute();
+
+            assertTrue(result.timedOut());
+            assertEquals(-1, result.exitCode());
+            assertFalse(result.isSuccess());
+        }
+
+        @Test
+        void executeWithNoTimeout(@TempDir Path tmp) throws Exception {
+            var runCmd = compileAndGetRunCommand(tmp, "Sleeper", """
+                    public class Sleeper {
+                        public static void main(String[] args) throws Exception {
+                            Thread.sleep(10_000);
+                        }
+                    }
+                    """);
+
+            var result = createBasicExecutor(tmp.toFile())
+                    .command(runCmd)
+                    .timeout(-1)
+                    .execute();
+
+            assertEquals(0, result.exitCode());
+            assertTrue(result.isSuccess());
+        }
     }
 
     @Nested
@@ -210,84 +307,6 @@ class ProcessExecutorTest {
     }
 
     @Nested
-    @DisplayName("Cleanup Tests")
-    class CleanupTests {
-
-        private List<String> compileAndGetRunCommand(@TempDir Path tmp, String className, String code)
-                throws Exception {
-            var javaFile = tmp.resolve(className + ".java");
-            Files.writeString(javaFile, code);
-
-            // Compile using ProcessExecutor itself
-            var compileResult = new ProcessExecutor()
-                    .workDir(tmp.toFile())
-                    .command("javac", javaFile.toString())
-                    .timeout(10)
-                    .execute();
-
-            assertTrue(compileResult.isSuccess(), "Test helper should compile: " + compileResult.output());
-            return List.of("java", "-cp", tmp.toString(), className);
-        }
-
-        @Test
-        @DisplayName("cleanupThread interrupts reader on timeout")
-        void cleanupThreadInterruptedOnTimeout(@TempDir Path tmp) throws Exception {
-            var interrupted = new AtomicBoolean(false);
-            var started = new CountDownLatch(1);
-
-            var runCmd = compileAndGetRunCommand(tmp, "Blocker", """
-            public class Blocker {
-                public static void main(String[] args) throws Exception {
-                    System.out.println("started");
-                    System.out.flush();
-                    Thread.sleep(10000);
-                }
-            }
-            """);
-
-            var result = createBasicExecutor(tmp.toFile())
-                    .command(runCmd)
-                    .timeout(1)
-                    .outputConsumer(line -> {
-                        if ("started".equals(line)) {
-                            started.countDown();
-                            try {
-                                Thread.sleep(10_000);
-                            } catch (InterruptedException e) {
-                                interrupted.set(true);
-                                Thread.currentThread().interrupt();
-                            }
-                        }
-                    })
-                    .execute();
-
-            assertTrue(started.await(5, TimeUnit.SECONDS), "Consumer should have started");
-            assertTrue(result.timedOut());
-            assertTrue(interrupted.get(), "Reader thread should be interrupted by cleanupThread()");
-        }
-
-        @Test
-        void executeTimeout(@TempDir Path tmp) throws Exception {
-            var runCmd = compileAndGetRunCommand(tmp, "Sleeper", """
-            public class Sleeper {
-                public static void main(String[] args) throws Exception {
-                    Thread.sleep(10000);
-                }
-            }
-            """);
-
-            var result = createBasicExecutor(tmp.toFile())
-                    .command(runCmd)
-                    .timeout(1)
-                    .execute();
-
-            assertTrue(result.timedOut());
-            assertEquals(-1, result.exitCode());
-            assertFalse(result.isSuccess());
-        }
-    }
-
-    @Nested
     @DisplayName("Execution Tests")
     class ExecutionTests {
 
@@ -365,35 +384,6 @@ class ProcessExecutorTest {
     }
 
     @Nested
-    @DisplayName("Timeout Tests")
-    class TimeoutTests {
-
-        @Test
-        void timeoutDefaultIs30(@TempDir Path tmp) {
-            assertEquals(30, createBasicExecutor(tmp.toFile()).timeout());
-        }
-
-        @Test
-        void timeoutNegativeThrows(@TempDir Path tmp) {
-            assertThrows(IllegalArgumentException.class,
-                    () -> createBasicExecutor(tmp.toFile()).timeout(-1));
-        }
-
-        @Test
-        void timeoutSetterGetter(@TempDir Path tmp) {
-            var exec = createBasicExecutor(tmp.toFile()).timeout(5);
-            assertEquals(5, exec.timeout());
-        }
-
-        @Test
-        void timeoutZeroThrows(@TempDir Path tmp) {
-            var ex = assertThrows(IllegalArgumentException.class,
-                    () -> createBasicExecutor(tmp.toFile()).timeout(0));
-            assertEquals("timeout must be > 0", ex.getMessage());
-        }
-    }
-
-    @Nested
     @DisplayName("I/O Tests")
     class IOTests {
 
@@ -450,6 +440,35 @@ class ProcessExecutorTest {
 
             assertTrue(testLogHandler.containsMessage("line1"));
             assertTrue(testLogHandler.containsMessage("line2"));
+        }
+    }
+
+    @Nested
+    @DisplayName("Timeout Tests")
+    class TimeoutTests {
+
+        @Test
+        void timeoutDefault(@TempDir Path tmp) {
+            assertEquals(ProcessExecutor.DEFAULT_TIMEOUT_SECONDS, createBasicExecutor(tmp.toFile()).timeout());
+        }
+
+        @Test
+        void timeoutNegative(@TempDir Path tmp) {
+            var exec = createBasicExecutor(tmp.toFile()).timeout(-1);
+            assertEquals(-1, exec.timeout());
+        }
+
+        @Test
+        void timeoutSetterGetter(@TempDir Path tmp) {
+            var exec = createBasicExecutor(tmp.toFile()).timeout(5);
+            assertEquals(5, exec.timeout());
+        }
+
+        @Test
+        void timeoutZeroThrows(@TempDir Path tmp) {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> createBasicExecutor(tmp.toFile()).timeout(0));
+            assertEquals("timeout 0 is ambiguous; use negative value for no timeout", ex.getMessage());
         }
     }
 

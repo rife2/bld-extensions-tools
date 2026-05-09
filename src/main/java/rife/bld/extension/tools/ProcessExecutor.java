@@ -39,19 +39,19 @@ import java.util.function.Consumer;
 @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "intentional and documented")
 public class ProcessExecutor {
 
-    public static final String COMMAND_NOT_VALID = "command values must not be null or empty";
-
     /**
      * Default timeout in seconds.
      */
-    static final int DEFAULT_TIMEOUT_SECONDS = 30;
+    public static final long DEFAULT_TIMEOUT_SECONDS = 30L;
+
+    static final String COMMAND_NOT_VALID = "command values must not be null or empty";
 
     private final List<String> command_ = new ArrayList<>();
     private final Map<String, String> env_ = new HashMap<>();
     private boolean inheritIO_;
     @Nullable
     private Consumer<String> outputConsumer_;
-    private int timeout_ = DEFAULT_TIMEOUT_SECONDS;
+    private long timeout_ = DEFAULT_TIMEOUT_SECONDS;
     private File workDir_;
 
     /**
@@ -152,7 +152,14 @@ public class ProcessExecutor {
         try {
             proc = pb.start();
             outputThread = startOutputReader(proc, outputLines);
-            boolean finished = proc.waitFor(timeout_, TimeUnit.SECONDS);
+
+            boolean finished;
+            if (timeout_ < 0) {
+                proc.waitFor(); // wait indefinitely
+                finished = true;
+            } else {
+                finished = proc.waitFor(timeout_, TimeUnit.SECONDS);
+            }
 
             if (!finished) {
                 timedOut = true;
@@ -214,14 +221,20 @@ public class ProcessExecutor {
 
     /**
      * Configure the command timeout in seconds.
+     * <p>
+     * Use a negative value to disable the timeout and wait indefinitely.
+     * <p>
+     * A value of 0 is invalid as it would cause the process to fail immediately if not completed instantly.
+     * <p>
+     * The default is {@link #DEFAULT_TIMEOUT_SECONDS}
      *
-     * @param timeout the timeout, must be greater than 0
+     * @param timeout the timeout in seconds; use negative value for no timeout
      * @return this instance
-     * @throws IllegalArgumentException if timeout is less than or equal to 0
+     * @throws IllegalArgumentException if timeout is 0
      */
-    public ProcessExecutor timeout(int timeout) {
-        if (timeout <= 0) {
-            throw new IllegalArgumentException("timeout must be > 0");
+    public ProcessExecutor timeout(long timeout) {
+        if (timeout == 0) {
+            throw new IllegalArgumentException("timeout 0 is ambiguous; use negative value for no timeout");
         }
         timeout_ = timeout;
         return this;
@@ -232,7 +245,7 @@ public class ProcessExecutor {
      *
      * @return the timeout
      */
-    public int timeout() {
+    public long timeout() {
         return timeout_;
     }
 
