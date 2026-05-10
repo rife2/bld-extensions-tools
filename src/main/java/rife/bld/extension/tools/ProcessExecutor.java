@@ -44,8 +44,6 @@ public class ProcessExecutor {
      */
     public static final long DEFAULT_TIMEOUT_SECONDS = 30L;
 
-    static final String COMMAND_NOT_VALID = "command values must not be null or empty";
-
     private final List<String> command_ = new ArrayList<>();
     private final Map<String, String> env_ = new HashMap<>();
     private boolean inheritIO_;
@@ -63,7 +61,7 @@ public class ProcessExecutor {
      * @throws IllegalArgumentException if args contains null or empty elements
      */
     public ProcessExecutor command(@NonNull String... args) {
-        ObjectTools.requireAllNotEmpty(args, COMMAND_NOT_VALID);
+        ObjectTools.requireNotEmpty(args, "command");
         command_.clear();
         command_.addAll(List.of(args));
         return this;
@@ -87,7 +85,7 @@ public class ProcessExecutor {
      * @throws IllegalArgumentException if args contains null or empty elements
      */
     public ProcessExecutor command(@NonNull Collection<String> args) {
-        ObjectTools.requireAllNotEmpty(args, COMMAND_NOT_VALID);
+        ObjectTools.requireNotEmpty(args, "command");
         command_.clear();
         command_.addAll(args);
         return this;

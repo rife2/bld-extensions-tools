@@ -217,7 +217,7 @@ class ProcessExecutorTest {
         void commandEmptyElementThrows(@TempDir Path tmp) {
             var ex = assertThrows(IllegalArgumentException.class,
                     () -> createBasicExecutor(tmp.toFile()).command("echo", ""));
-            assertTrue(ex.getMessage().contains(ProcessExecutor.COMMAND_NOT_VALID));
+            assertTrue(ex.getMessage().contains("command must not be empty"));
         }
 
         @Test
@@ -243,9 +243,9 @@ class ProcessExecutorTest {
 
         @Test
         void commandNullElementThrows(@TempDir Path tmp) {
-            var ex = assertThrows(NullPointerException.class,
+            var ex = assertThrows(IllegalArgumentException.class,
                     () -> createBasicExecutor(tmp.toFile()).command("echo", null));
-            assertTrue(ex.getMessage().contains(ProcessExecutor.COMMAND_NOT_VALID));
+            assertTrue(ex.getMessage().contains("command must not be empty"));
         }
 
         @Test
