@@ -66,6 +66,7 @@ public final class IOTools {
     }
 
     /**
+     * createDirs
      * Determines if the file at the specified path string exists, is a regular file, and is executable.
      *
      * @param path the path string to be checked
@@ -79,6 +80,64 @@ public final class IOTools {
         } catch (InvalidPathException | SecurityException e) {
             return false;
         }
+    }
+
+    /**
+     * Creates the directory named by the given path, including any
+     * nonexistent parent directories.
+     *
+     * <p>If {@code path} is {@code null}, this method does nothing and returns {@code false}.
+     * If the directory already exists, this method does nothing and returns {@code true}.
+     *
+     * @param path the directory to create, may be {@code null}
+     * @return {@code true} if the directory exists after the call, {@code false} if {@code path} is {@code null}
+     * @throws java.nio.file.FileAlreadyExistsException if {@code path} exists and is not a directory
+     * @throws java.nio.file.AccessDeniedException      if the process does not have permission to create the directory
+     * @throws IOException                              if an I/O error occurs while creating the directory
+     * @throws SecurityException                        if a security manager denies write access
+     * @since 1.3
+     */
+    public static boolean createDirs(@Nullable Path path) throws IOException {
+        if (path == null) {
+            return false;
+        }
+        Files.createDirectories(path);
+        return true;
+    }
+
+    /**
+     * Creates the directory named by the given file, including any
+     * nonexistent parent directories.
+     *
+     * <p>If {@code file} is {@code null}, this method does nothing and returns {@code false}.
+     *
+     * @param file the directory to create, may be {@code null}
+     * @return {@code true} if the directory exists after the call, {@code false} if {@code file} is {@code null}
+     * @throws java.nio.file.FileAlreadyExistsException if {@code file} exists and is not a directory
+     * @throws IOException                              if an I/O error occurs while creating the directory
+     * @throws SecurityException                        if a security manager denies write access
+     * @since 1.3
+     */
+    public static boolean createDirs(@Nullable File file) throws IOException {
+        return file != null && createDirs(file.toPath());
+    }
+
+    /**
+     * Creates the directory named by the given path string, including any
+     * nonexistent parent directories.
+     *
+     * <p>If {@code path} is {@code null} or blank, this method does nothing and returns {@code false}.
+     *
+     * @param path the path string of the directory to create, may be {@code null} or blank
+     * @return {@code true} if the directory exists after the call, {@code false} if {@code path} is {@code null} or blank
+     * @throws java.nio.file.InvalidPathException       if {@code path} cannot be converted to a {@code Path}
+     * @throws java.nio.file.FileAlreadyExistsException if {@code path} exists and is not a directory
+     * @throws IOException                              if an I/O error occurs while creating the directory
+     * @throws SecurityException                        if a security manager denies write access
+     * @since 1.3
+     */
+    public static boolean createDirs(@Nullable String path) throws IOException {
+        return TextTools.isNotBlank(path) && createDirs(Path.of(path));
     }
 
     /**
@@ -163,15 +222,12 @@ public final class IOTools {
     }
 
     /**
-     * Creates the directory named by the specified {@code File}, including any
-     * necessary but nonexistent parent directories.
+     * Creates the directory specified by the given path string, including any
+     * nonexistent parent directories as necessary.
      *
-     * <p>Delegates to {@link #mkdirs(Path)} for consistent, race-condition-free behavior.</p>
-     *
-     * @param file the {@code File} object representing the directory to be created;
-     *             if {@code null}, this method returns {@code false}
+     * @param file the directory to be created
      * @return {@code true} if the directory was created successfully or already exists;
-     * {@code false} if the directory could not be created or {@code file} is {@code null}
+     * {@code false} if the directory could not be created or {@code path} is {@code null} or blank
      * @since 1.0
      */
     public static boolean mkdirs(@Nullable File file) {
@@ -179,11 +235,10 @@ public final class IOTools {
     }
 
     /**
-     * Creates the directory specified by the given {@code Path}, including any
+     * Creates the directory specified by the given path string, including any
      * nonexistent parent directories as necessary.
      *
-     * @param path the {@code Path} object representing the directory to be created;
-     *             if {@code null}, this method returns {@code false}
+     * @param path the directory to be created
      * @return {@code true} if the directory was created successfully or already exists;
      * {@code false} if the directory could not be created or {@code path} is {@code null}
      * @since 1.0
@@ -193,7 +248,7 @@ public final class IOTools {
             return false;
         }
         try {
-            Files.createDirectories(path);
+            createDirs(path);
             return true;
         } catch (IOException e) {
             return false;
@@ -204,10 +259,9 @@ public final class IOTools {
      * Creates the directory specified by the given path string, including any
      * nonexistent parent directories as necessary.
      *
-     * @param path the path string representing the directory to be created;
-     *             if {@code null} or blank, this method returns {@code false}
+     * @param path the directory to be created
      * @return {@code true} if the directory was created successfully or already exists;
-     * {@code false} if the directory could not be created or {@code path} is {@code null} or blank
+     * {@code false} if the directory could not be created or {@code path} is {@code null}
      * @since 1.0
      */
     public static boolean mkdirs(@Nullable String path) {
