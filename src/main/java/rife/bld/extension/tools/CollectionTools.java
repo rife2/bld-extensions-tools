@@ -90,7 +90,7 @@ public final class CollectionTools {
     static <T, R> List<R> combineAndMap(@Nullable Collection<T>[] collections,
                                         Function<T, R> mapper) {
         if (collections == null) {
-            logger.warning("Ignored null collections array");
+            logger.fine("Ignored null collections array");
             return List.of();
         }
 
@@ -117,11 +117,11 @@ public final class CollectionTools {
         }
 
         if (droppedNull && droppedEmpty) {
-            logger.warning("Dropped one or more null elements or collections and one or more empty collections");
+            logger.fine("Dropped one or more null elements or collections and one or more empty collections");
         } else if (droppedNull) {
-            logger.warning("Dropped one or more null elements or collections");
+            logger.fine("Dropped one or more null elements or collections");
         } else if (droppedEmpty) {
-            logger.warning("Dropped one or more empty collections");
+            logger.fine("Dropped one or more empty collections");
         }
 
         return List.copyOf(result);
@@ -142,7 +142,7 @@ public final class CollectionTools {
     static <T, R> List<R> combineAndMapVarargs(@Nullable T[] elements,
                                                Function<T, R> mapper) {
         if (elements == null) {
-            logger.warning("Ignored null varargs array");
+            logger.fine("Ignored null varargs array");
             return List.of();
         }
 
@@ -158,7 +158,7 @@ public final class CollectionTools {
         }
 
         if (droppedNull) {
-            logger.warning("Dropped one or more null elements");
+            logger.fine("Dropped one or more null elements");
         }
 
         return List.copyOf(result);
