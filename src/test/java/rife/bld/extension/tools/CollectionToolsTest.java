@@ -34,13 +34,13 @@ import static org.junit.jupiter.api.Assertions.*;
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class CollectionToolsTest {
 
-    private static final TestLogHandler TEST_LOG_HANDLER = new TestLogHandler();
+    private static final TestLogHandler testLogHandler = new TestLogHandler();
 
     @RegisterExtension
     @SuppressWarnings({"LoggerInitializedWithForeignClass", "unused"})
     private static final LoggingExtension loggingExtension = new LoggingExtension(
             Logger.getLogger(CollectionTools.class.getName()),
-            TEST_LOG_HANDLER
+            testLogHandler
     );
 
     @Nested
@@ -1037,7 +1037,7 @@ class CollectionToolsTest {
 
         @BeforeEach
         void clearLog() {
-            TEST_LOG_HANDLER.clear();
+            testLogHandler.clear();
         }
 
         @Test
@@ -1048,7 +1048,8 @@ class CollectionToolsTest {
                     List.of(new File("a"))
             );
             assertEquals(1, result.size());
-            assertTrue(TEST_LOG_HANDLER.containsExactMessage("Dropped one or more empty collections"));
+            testLogHandler.printLogMessages();
+            assertTrue(testLogHandler.containsExactMessage("Dropped empty collections"));
         }
 
         @Test
@@ -1056,7 +1057,7 @@ class CollectionToolsTest {
         void logsNothingWhenNothingDropped() {
             var result = CollectionTools.combine("a", "b");
             assertEquals(2, result.size());
-            assertTrue(TEST_LOG_HANDLER.isEmpty());
+            assertTrue(testLogHandler.isEmpty());
         }
 
         @Test
@@ -1068,9 +1069,8 @@ class CollectionToolsTest {
                     List.of(new File("a"))
             );
             assertEquals(1, result.size());
-            assertTrue(TEST_LOG_HANDLER.containsExactMessage(
-                    "Dropped one or more null elements or collections and one or more empty collections"
-            ));
+            testLogHandler.printLogMessages();
+            assertTrue(testLogHandler.containsExactMessage("Dropped null collections, empty collections"));
         }
 
         @Test
@@ -1081,7 +1081,8 @@ class CollectionToolsTest {
                     List.of(new File("a"))
             );
             assertEquals(1, result.size());
-            assertTrue(TEST_LOG_HANDLER.containsExactMessage("Dropped one or more null elements or collections"));
+            testLogHandler.printLogMessages();
+            assertTrue(testLogHandler.containsExactMessage("Dropped null collections"));
         }
 
         @Test
@@ -1089,7 +1090,7 @@ class CollectionToolsTest {
         void logsNullCollectionsArray() {
             var result = CollectionTools.combine((Collection<String>[]) null);
             assertTrue(result.isEmpty());
-            assertTrue(TEST_LOG_HANDLER.containsExactMessage("Ignored null collections array"));
+            assertTrue(testLogHandler.containsExactMessage("Ignored null collections array"));
         }
 
         @Test
@@ -1099,7 +1100,8 @@ class CollectionToolsTest {
                     Arrays.asList(null, new File("a"))
             );
             assertEquals(1, result.size());
-            assertTrue(TEST_LOG_HANDLER.containsExactMessage("Dropped one or more null elements or collections"));
+            testLogHandler.printLogMessages();
+            assertTrue(testLogHandler.containsExactMessage("Dropped null elements"));
         }
 
         @Test
@@ -1111,7 +1113,8 @@ class CollectionToolsTest {
                     null
             );
             assertEquals(1, result.size());
-            assertTrue(TEST_LOG_HANDLER.containsExactMessage("Dropped one or more null elements"));
+            testLogHandler.printLogMessages();
+            assertTrue(testLogHandler.containsExactMessage("Dropped null elements"));
         }
 
         @Test
@@ -1119,7 +1122,7 @@ class CollectionToolsTest {
         void logsNullVarargsArray() {
             var result = CollectionTools.combine((String[]) null);
             assertTrue(result.isEmpty());
-            assertTrue(TEST_LOG_HANDLER.containsExactMessage("Ignored null varargs array"));
+            assertTrue(testLogHandler.containsExactMessage("Ignored null varargs array"));
         }
 
         @Test
@@ -1127,7 +1130,7 @@ class CollectionToolsTest {
         void noLoggingOnEmptyVarargs() {
             var result = CollectionTools.combine(new String[0]);
             assertTrue(result.isEmpty());
-            assertTrue(TEST_LOG_HANDLER.isEmpty());
+            assertTrue(testLogHandler.isEmpty());
         }
     }
 }

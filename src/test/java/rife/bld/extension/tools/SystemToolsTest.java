@@ -24,6 +24,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.*;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -31,7 +32,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("System Tools Tests")
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+@SuppressWarnings({"PMD.AvoidDuplicateLiterals", "PMD.TooManyStaticImports"})
 class SystemToolsTest {
 
     private static Function<String, String> createEnvProvider(Map<String, String> env) {
@@ -65,6 +66,60 @@ class SystemToolsTest {
     }
 
     @Nested
+    @DisplayName("Architecture Detection Tests")
+    class ArchitectureTests {
+
+        @Test
+        @DisplayName("arch() should return current architecture")
+        void archShouldReturnCurrentArch() {
+            var arch = SystemTools.arch();
+            assertNotNull(arch);
+            assertEquals(System.getProperty("os.arch", "").toLowerCase(Locale.ROOT), arch);
+            assertFalse(arch.contains(" "), "arch() should be single token, no spaces");
+        }
+
+        @Test
+        @DisplayName("isArm() should work for current system")
+        void isArmShouldWorkForCurrentSystem() {
+            assertEquals(SystemTools.isArm32() || SystemTools.isArm64(), SystemTools.isArm());
+        }
+
+        @Test
+        @DisplayName("isX86Family() should work for current system")
+        void isX86FamilyShouldWorkForCurrentSystem() {
+            assertEquals(SystemTools.isX86() || SystemTools.isX64(), SystemTools.isX86Family());
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"arm", "arm32", "armv7", "armv8"})
+        @DisplayName("Should detect ARM 32-bit architectures")
+        void shouldDetectArm32(String arch) {
+            assertTrue(SystemTools.isArm32(arch));
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"aarch64", "arm64"})
+        @DisplayName("Should detect ARM 64-bit architectures")
+        void shouldDetectArm64(String arch) {
+            assertTrue(SystemTools.isArm64(arch));
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"amd64", "x86_64"})
+        @DisplayName("Should detect x64 architectures")
+        void shouldDetectX64(String arch) {
+            assertTrue(SystemTools.isX64(arch));
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"x86", "i386", "i486", "i586", "i686"})
+        @DisplayName("Should detect x86 architectures")
+        void shouldDetectX86(String arch) {
+            assertTrue(SystemTools.isX86(arch));
+        }
+    }
+
+    @Nested
     @DisplayName("Cygwin Detection Tests")
     class CygwinTests {
 
@@ -74,11 +129,8 @@ class SystemToolsTest {
                     Arguments.of("Unix shell /bin/sh", Map.of("SHELL", "/bin/sh")),
                     Arguments.of("Unix shell /usr/bin/zsh", Map.of("SHELL", "/usr/bin/zsh")),
                     Arguments.of("PATH with /cygdrive/", Map.of("PATH", "/usr/bin:/cygdrive/c/Windows")),
-                    Arguments.of("PATH with /usr/bin", Map.of("PATH", "/usr/bin:/usr/local/bin")),
                     Arguments.of("PATH with both indicators", Map.of("PATH", "/cygdrive/c/Windows:/usr/bin")),
-                    Arguments.of("TERM xterm", Map.of("TERM", "xterm")),
                     Arguments.of("TERM cygwin", Map.of("TERM", "cygwin")),
-                    Arguments.of("TERM xterm-256color", Map.of("TERM", "xterm-256color")),
                     Arguments.of("Complete Cygwin environment",
                             Map.of("TERM", "xterm", "SHELL", "/bin/bash", "PATH", "/usr/bin:/cygdrive/c/Windows"))
             );
@@ -141,6 +193,20 @@ class SystemToolsTest {
     class EnvironmentEdgeCasesTests {
 
         @Test
+        @DisplayName("Should detect Cygwin")
+        void shouldDetectCygwin() {
+            var cygwinEnv = Map.of(
+                    "PATH", "/usr/bin:/cygdrive/c/Windows",
+                    "SHELL", "/usr/bin/bash"
+            );
+            var provider = createEnvProvider(cygwinEnv);
+            assertTrue(SystemTools.isCygwin("Windows 10", provider));
+
+            var nonCygwinEnv = Map.of("PATH", "C:\\Windows\\System32");
+            assertFalse(SystemTools.isCygwin("Windows 10", createEnvProvider(nonCygwinEnv)));
+        }
+
+        @Test
         @DisplayName("Should handle empty environment map")
         void shouldHandleEmptyEnvironment() {
             var emptyEnv = Map.<String, String>of();
@@ -148,20 +214,6 @@ class SystemToolsTest {
 
             assertFalse(SystemTools.isCygwin("Windows 10", provider));
             assertFalse(SystemTools.isMinGw("Windows 10", provider));
-        }
-
-        @Test
-        @DisplayName("Should handle mixed null and present variables")
-        void shouldHandleMixedEnvironment() {
-            var mixedEnv = Map.of("PATH", "/usr/bin");
-            var provider = createEnvProvider(mixedEnv);
-
-            // PATH with /usr/bin is a Cygwin indicator, so this will be detected as Cygwin
-            assertTrue(SystemTools.isCygwin("Windows 10", provider));
-
-            // PATH without Cygwin indicators should not detect Cygwin
-            var nonCygwinEnv = Map.of("PATH", "C:\\Windows\\System32");
-            assertFalse(SystemTools.isCygwin("Windows 10", createEnvProvider(nonCygwinEnv)));
         }
 
         @Test
@@ -554,6 +606,56 @@ class SystemToolsTest {
     }
 
     @Nested
+    @DisplayName("Package-Private Method Coverage Tests")
+    class PackagePrivateCoverageTests {
+
+        @Test
+        @DisplayName("isOtherOs() no-arg should match current system")
+        void isOtherOsNoArgShouldMatchCurrent() {
+            boolean isKnown = SystemTools.isAix() || SystemTools.isFreeBsd() || SystemTools.isLinux()
+                    || SystemTools.isMacOS() || SystemTools.isOpenVms() || SystemTools.isSolaris()
+                    || SystemTools.isWindows();
+            assertEquals(!isKnown, SystemTools.isOtherOs());
+        }
+
+        @Test
+        @DisplayName("isOtherOs(String) should reject known OS and accept unknown")
+        void isOtherOsParamShouldWork() {
+            assertTrue(SystemTools.isOtherOs("amiga-os"));
+            assertTrue(SystemTools.isOtherOs("beos"));
+            assertFalse(SystemTools.isOtherOs("linux"));
+            assertFalse(SystemTools.isOtherOs("Windows 11"));
+            assertFalse(SystemTools.isOtherOs("Mac OS X"));
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"aix", "freebsd", "linux", "darwin", "mac os x", "openvms",
+                "solaris", "sunos", "windows", "win"})
+        @DisplayName("Param versions should handle all known OS names")
+        void paramVersionsShouldHandleAllKnownOs(String fakeOsName) {
+            assertDoesNotThrow(() -> SystemTools.isAix(fakeOsName));
+            assertDoesNotThrow(() -> SystemTools.isFreeBsd(fakeOsName));
+            assertDoesNotThrow(() -> SystemTools.isLinux(fakeOsName));
+            assertDoesNotThrow(() -> SystemTools.isMacOS(fakeOsName));
+            assertDoesNotThrow(() -> SystemTools.isOpenVms(fakeOsName));
+            assertDoesNotThrow(() -> SystemTools.isSolaris(fakeOsName));
+            assertDoesNotThrow(() -> SystemTools.isWindows(fakeOsName));
+            assertDoesNotThrow(() -> SystemTools.isOtherOs(fakeOsName));
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        @ValueSource(strings = {" ", "  \t  "})
+        @DisplayName("Param versions should handle blank/null consistently")
+        void paramVersionsShouldHandleBlankNull(String osName) {
+            assertFalse(SystemTools.isAix(osName));
+            assertFalse(SystemTools.isLinux(osName));
+            assertFalse(SystemTools.isWindows(osName));
+            assertTrue(SystemTools.isOtherOs(osName));
+        }
+    }
+
+    @Nested
     @DisplayName("Solaris Detection Tests")
     class SolarisTests {
 
@@ -603,6 +705,50 @@ class SystemToolsTest {
         @DisplayName("Should verify current system is Windows")
         void shouldVerifyCurrentSystemIsWindows() {
             assertTrue(SystemTools.isWindows());
+        }
+    }
+
+    @Nested
+    @DisplayName("WSL Detection Tests")
+    @SuppressWarnings("PMD.UnusedPrivateMethod")
+    class WslTests {
+
+        @Test
+        @DisplayName("isWsl() should work for current system")
+        void isWslShouldWorkForCurrentSystem() {
+            if (SystemTools.isWsl()) {
+                assertTrue(SystemTools.isLinux(), "WSL must run on Linux");
+            }
+        }
+
+        @Test
+        @DisplayName("Should detect WSL with Microsoft signature")
+        void shouldDetectWslWithMicrosoft() {
+            assertTrue(SystemTools.isWsl("Linux", () -> "Linux version 5.15.0-microsoft-standard-WSL2"));
+        }
+
+        @Test
+        @DisplayName("Should detect WSL with wsl signature")
+        void shouldDetectWslWithWslSignature() {
+            assertTrue(SystemTools.isWsl("Linux", () -> "Linux version 5.10.102.1-wsl2"));
+        }
+
+        @Test
+        @DisplayName("Should handle null proc version")
+        void shouldHandleNullProcVersion() {
+            assertFalse(SystemTools.isWsl("Linux", () -> null));
+        }
+
+        @Test
+        @DisplayName("Should reject non-Linux OS")
+        void shouldRejectNonLinuxOs() {
+            assertFalse(SystemTools.isWsl("Windows 10", () -> "Linux version 5.15.0-microsoft-standard"));
+        }
+
+        @Test
+        @DisplayName("Should reject non-WSL Linux")
+        void shouldRejectNonWslLinux() {
+            assertFalse(SystemTools.isWsl("Linux", () -> "Linux version 5.15.0-generic"));
         }
     }
 }

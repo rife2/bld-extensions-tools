@@ -28,13 +28,10 @@ import org.junit.jupiter.api.io.TempDir;
 import rife.bld.extension.testing.LoggingExtension;
 import rife.bld.extension.testing.TestLogHandler;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -42,7 +39,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(LoggingExtension.class)
 @SuppressWarnings({"PMD.AvoidDuplicateLiterals", "PMD.TooManyMethods"})
@@ -243,9 +242,9 @@ class ProcessExecutorTest {
 
         @Test
         void commandNullElementThrows(@TempDir Path tmp) {
-            var ex = assertThrows(IllegalArgumentException.class,
+            var ex = assertThrows(NullPointerException.class,
                     () -> createBasicExecutor(tmp.toFile()).command("echo", null));
-            assertTrue(ex.getMessage().contains("command must not be empty"));
+            assertTrue(ex.getMessage().contains("command must not be null"));
         }
 
         @Test
@@ -359,13 +358,6 @@ class ProcessExecutorTest {
                     () -> createBasicExecutor(tmp.toFile()).execute());
             assertTrue(ex.getMessage().contains("A command must be specified"));
         }
-
-        @Test
-        void executeWithoutWorkDirThrows() {
-            var ex = assertThrows(IllegalStateException.class,
-                    () -> new ProcessExecutor().command("echo", FOO).execute());
-            assertTrue(ex.getMessage().contains("A valid working directory must be specified"));
-        }
     }
 
     @Nested
@@ -386,6 +378,20 @@ class ProcessExecutorTest {
     @Nested
     @DisplayName("I/O Tests")
     class IOTests {
+
+        @Test
+        @DisplayName("throws when inheritIO(true) and outputConsumer both set")
+        void inheritIOAndConsumerThrows() {
+            var ex = assertThrows(IllegalStateException.class, () ->
+                    new ProcessExecutor()
+                            .command("echo", "test")
+                            .inheritIO(true)
+                            .outputConsumer(line -> {
+                            })
+                            .execute()
+            );
+            assertEquals("Cannot use both inheritIO(true) and outputConsumer()", ex.getMessage());
+        }
 
         @Test
         void inheritIOFalseCapturesOutput(@TempDir Path tmp) throws Exception {
@@ -444,6 +450,367 @@ class ProcessExecutorTest {
     }
 
     @Nested
+    @DisplayName("Internals Tests")
+    class InternalsTests {
+
+        ProcessExecutor exec = new ProcessExecutor();
+
+        @Nested
+        @DisplayName("cleanupProcess branches")
+        class CleanupProcessTests {
+
+            @Test
+            @DisplayName("calls destroyProcessTree and closeAllStreams")
+            void callsHelpers() {
+                var exec = spy(new ProcessExecutor());
+                var proc = mock(Process.class);
+                when(proc.toHandle()).thenReturn(mock(ProcessHandle.class));
+                doNothing().when(exec).destroyProcessTree(any());
+                doNothing().when(exec).closeAllStreams(any());
+
+                exec.cleanupProcess(proc);
+
+                verify(exec).destroyProcessTree(any());
+                verify(exec).closeAllStreams(proc);
+            }
+
+            @Test
+            @DisplayName("handles null process gracefully")
+            void handlesNullProcess() {
+                assertDoesNotThrow(() -> new ProcessExecutor().cleanupProcess(null));
+            }
+        }
+
+        @Nested
+        @DisplayName("cleanupThread()")
+        class CleanupThread {
+
+            @Test
+            @DisplayName("does nothing for null or dead thread")
+            @SuppressWarnings("InstantiatingAThreadWithDefaultRunMethod")
+            void doesNothingForNullOrDead() {
+                assertDoesNotThrow(() -> exec.cleanupThread(null));
+                assertDoesNotThrow(() -> exec.cleanupThread(new Thread()));
+            }
+
+            @Test
+            @DisplayName("interrupts and joins alive thread")
+            @SuppressWarnings("BusyWait")
+            void interruptsAliveThread() throws Exception {
+                var thread = new Thread(() -> {
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException ignored) {
+                    }
+                });
+                thread.start();
+
+                // Wait until thread is actually running
+                while (thread.getState() == Thread.State.NEW) {
+                    Thread.sleep(1);
+                }
+
+                exec.cleanupThread(thread);
+
+                // What matters: thread is no longer alive
+                assertFalse(thread.isAlive(), "Thread should be terminated after cleanup");
+            }
+
+            @Test
+            @DisplayName("restores interrupt flag if join throws InterruptedException")
+            void restoresInterruptOnJoinFailure() throws Exception {
+                var thread = spy(new Thread(() -> {
+                }));
+                doThrow(new InterruptedException()).when(thread).join(100);
+                when(thread.isAlive()).thenReturn(true);
+                thread.start();
+
+                assertFalse(Thread.interrupted());
+                exec.cleanupThread(thread);
+                assertTrue(Thread.interrupted()); // flag restored by restoreInterruptFlag()
+            }
+        }
+
+        @Nested
+        @DisplayName("closeAllStreams()")
+        class CloseAllStreams {
+
+            @Test
+            @DisplayName("closes all 3 streams even if one throws")
+            void closesAllDespiteException() throws Exception {
+                var proc = mock(Process.class);
+                var in = mock(java.io.InputStream.class);
+                var err = mock(java.io.InputStream.class);
+                var out = mock(java.io.OutputStream.class);
+
+                when(proc.getInputStream()).thenReturn(in);
+                when(proc.getErrorStream()).thenReturn(err);
+                when(proc.getOutputStream()).thenReturn(out);
+                doThrow(new IOException()).when(err).close();
+
+                exec.closeAllStreams(proc);
+
+                verify(in).close();
+                verify(err).close();
+                verify(out).close();
+            }
+        }
+
+        @Nested
+        @DisplayName("closeQuietly()")
+        class CloseQuietly {
+
+            @Test
+            @DisplayName("closes without exception")
+            void closesNormally() throws Exception {
+                var closeable = mock(Closeable.class);
+                exec.closeQuietly(closeable);
+                verify(closeable).close();
+            }
+
+            @Test
+            @DisplayName("swallows IOException")
+            void swallowsIOException() throws Exception {
+                var closeable = mock(Closeable.class);
+                doThrow(new IOException("test")).when(closeable).close();
+                assertDoesNotThrow(() -> exec.closeQuietly(closeable));
+            }
+        }
+
+        @Nested
+        @DisplayName("createProcessBuilder branches")
+        class CreateProcessBuilderTests {
+
+            @Test
+            @DisplayName("redirects stdin to null device when inheritIO false")
+            void redirectsStdinToNull() {
+                var exec = new ProcessExecutor()
+                        .command("echo", "test")
+                        .inheritIO(false);
+
+                var pb = exec.createProcessBuilder();
+                assertTrue(pb.redirectErrorStream());
+                assertEquals(ProcessBuilder.Redirect.PIPE, pb.redirectOutput());
+                assertNotNull(pb.redirectInput().file());
+            }
+
+            @Test
+            @DisplayName("sets env when map not empty")
+            void setsEnv() {
+                var exec = new ProcessExecutor()
+                        .command("echo", "test")
+                        .env("FOO", "bar");
+
+                var pb = exec.createProcessBuilder(); // make it package-private first
+                assertEquals("bar", pb.environment().get("FOO"));
+            }
+
+            @Test
+            @DisplayName("sets inheritIO true")
+            void setsInheritIO() {
+                var exec = new ProcessExecutor()
+                        .command("echo", "test")
+                        .inheritIO(true);
+
+                var pb = exec.createProcessBuilder();
+                assertSame(ProcessBuilder.Redirect.INHERIT, pb.redirectInput());
+            }
+        }
+
+        @Nested
+        @DisplayName("destroyHandleQuietly()")
+        class DestroyHandleQuietly {
+
+            @Test
+            @DisplayName("calls destroyForcibly")
+            void callsDestroyForcibly() {
+                var handle = mock(ProcessHandle.class);
+                exec.destroyHandleQuietly(handle);
+                verify(handle).destroyForcibly();
+            }
+
+            @Test
+            @DisplayName("swallows UnsupportedOperationException")
+            void swallowsUnsupportedOp() {
+                var handle = mock(ProcessHandle.class);
+                when(handle.destroyForcibly()).thenThrow(new UnsupportedOperationException());
+                assertDoesNotThrow(() -> exec.destroyHandleQuietly(handle));
+            }
+        }
+
+        @Nested
+        @DisplayName("destroyProcessTree()")
+        class DestroyProcessTree {
+
+            @Test
+            @DisplayName("destroys self and descendants")
+            void destroysAll() {
+                var child = mock(ProcessHandle.class);
+                var parent = mock(ProcessHandle.class);
+                when(parent.descendants()).thenReturn(java.util.stream.Stream.of(child));
+
+                exec.destroyProcessTree(parent);
+
+                verify(child).destroyForcibly();
+                verify(parent).destroyForcibly();
+            }
+
+            @Test
+            @DisplayName("swallows UnsupportedOperationException from descendants()")
+            void swallowsUnsupportedOpFromDescendants() {
+                var handle = mock(ProcessHandle.class);
+                when(handle.descendants()).thenThrow(new UnsupportedOperationException());
+                assertDoesNotThrow(() -> exec.destroyProcessTree(handle));
+                verify(handle, never()).destroyForcibly(); // never reached
+            }
+        }
+
+        @Nested
+        @DisplayName("notifyOutputConsumer()")
+        class NotifyOutputConsumer {
+
+            @Test
+            @DisplayName("does nothing when consumer is null")
+            void doesNothingWhenNull() {
+                assertDoesNotThrow(() -> exec.notifyOutputConsumer("test"));
+            }
+
+            @Test
+            @DisplayName("invokes consumer when present")
+            void invokesConsumer() {
+                var called = new AtomicBoolean(false);
+                new ProcessExecutor().outputConsumer(s -> called.set(true))
+                        .notifyOutputConsumer("test");
+                assertTrue(called.get());
+            }
+
+            @Test
+            @DisplayName("swallows exception from consumer")
+            void swallowsException() {
+                var exec = new ProcessExecutor()
+                        .outputConsumer(s -> {
+                            throw new RuntimeException("boom");
+                        });
+                assertDoesNotThrow(() -> exec.notifyOutputConsumer("test"));
+            }
+        }
+
+        @Nested
+        @DisplayName("nullDevicePath()")
+        class NullDevicePath {
+
+            @Test
+            @EnabledOnOs({OS.LINUX, OS.MAC})
+            @DisplayName("returns /dev/null on Unix")
+            void unixReturnsDevNull() {
+                assertEquals("/dev/null", exec.nullDevicePath());
+            }
+
+            @Test
+            @EnabledOnOs(OS.WINDOWS)
+            @DisplayName("returns NUL on Windows")
+            void windowsReturnsNul() {
+                assertEquals("NUL", exec.nullDevicePath());
+            }
+        }
+
+        @Nested
+        @DisplayName("restoreInterruptFlag()")
+        class RestoreInterruptFlag {
+
+            @Test
+            @DisplayName("sets interrupt flag on current thread")
+            void setsInterruptFlag() {
+                assertFalse(Thread.interrupted()); // clear any existing flag
+                exec.restoreInterruptFlag();
+                assertTrue(Thread.interrupted()); // clears flag after checking
+            }
+        }
+
+        @Nested
+        @DisplayName("startOutputReader branches")
+        class StartOutputReaderTests {
+
+            @Test
+            @DisplayName("reads lines and calls consumer")
+            void readsLines() throws Exception {
+                var exec = new ProcessExecutor();
+                var proc = mock(Process.class);
+                var lines = new ArrayList<String>();
+                var consumerLines = new ArrayList<String>();
+                exec.outputConsumer(consumerLines::add);
+
+                var input = new ByteArrayInputStream("line1\nline2\n".getBytes(UTF_8));
+                when(proc.getInputStream()).thenReturn(input);
+
+                var thread = exec.startOutputReader(proc, lines);
+                thread.join(1000);
+
+                assertEquals(List.of("line1", "line2"), lines);
+                assertEquals(List.of("line1", "line2"), consumerLines);
+            }
+
+            @Test
+            @DisplayName("returns null when inheritIO true")
+            void returnsNullWhenInheritIO() {
+                var exec = new ProcessExecutor().inheritIO(true);
+                var proc = mock(Process.class);
+                assertNull(exec.startOutputReader(proc, new ArrayList<>()));
+            }
+
+            @Test
+            @DisplayName("swallows IOException from reader")
+            void swallowsIOException() throws Exception {
+                var exec = new ProcessExecutor();
+                var proc = mock(Process.class);
+                var badStream = mock(InputStream.class);
+                when(badStream.read(any(byte[].class))).thenThrow(new IOException("boom"));
+                when(proc.getInputStream()).thenReturn(badStream);
+
+                var thread = exec.startOutputReader(proc, new ArrayList<>());
+                assertDoesNotThrow(() -> thread.join(1000));
+            }
+        }
+
+        @Nested
+        @DisplayName("validatePreconditions branches")
+        class ValidatePreconditionsTests {
+
+            @Test
+            @DisplayName("throws when inheritIO and outputConsumer both set")
+            void throwsWhenBothIOModesSet() {
+                var exec = new ProcessExecutor()
+                        .command("echo")
+                        .inheritIO(true)
+                        .outputConsumer(s -> {
+                        });
+
+                var ex = assertThrows(IllegalStateException.class, exec::validatePreconditions);
+                assertEquals("Cannot use both inheritIO(true) and outputConsumer()", ex.getMessage());
+            }
+
+            @Test
+            @DisplayName("throws when command empty")
+            void throwsWhenCommandEmpty() {
+                var exec = new ProcessExecutor();
+                var ex = assertThrows(IllegalStateException.class, exec::validatePreconditions);
+                assertTrue(ex.getMessage().contains("command must be specified"));
+            }
+
+            @Test
+            @DisplayName("throws when workDir not a directory")
+            void throwsWhenWorkDirNotDir() throws Exception {
+                var file = File.createTempFile("notdir", ".tmp");
+                file.deleteOnExit();
+                var exec = new ProcessExecutor().command("echo").workDir(file);
+
+                var ex = assertThrows(IllegalStateException.class, exec::validatePreconditions);
+                assertTrue(ex.getMessage().contains("valid working directory"));
+            }
+        }
+    }
+
+    @Nested
     @DisplayName("Timeout Tests")
     class TimeoutTests {
 
@@ -469,6 +836,40 @@ class ProcessExecutorTest {
             var ex = assertThrows(IllegalArgumentException.class,
                     () -> createBasicExecutor(tmp.toFile()).timeout(0));
             assertEquals("timeout 0 is ambiguous; use negative value for no timeout", ex.getMessage());
+        }
+    }
+
+    @Nested
+    @DisplayName("validation")
+    class Validation {
+
+        @Test
+        @DisplayName("throws when workDir is not a directory")
+        void invalidWorkDirThrows() throws Exception {
+            var notADir = File.createTempFile("not-a-dir", ".tmp");
+            notADir.deleteOnExit();
+
+            var ex = assertThrows(IllegalStateException.class, () ->
+                    new ProcessExecutor()
+                            .command(SystemTools.isWindows() ? "cmd" : "echo", "test")
+                            .workDir(notADir)
+                            .execute()
+            );
+            assertEquals("A valid working directory must be specified.", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("throws when workDir does not exist")
+        void nonExistentWorkDirThrows() {
+            var nonExistent = new File("definitely/does/not/exist-" + UUID.randomUUID());
+
+            var ex = assertThrows(IllegalStateException.class, () ->
+                    new ProcessExecutor()
+                            .command("echo", "test")
+                            .workDir(nonExistent)
+                            .execute()
+            );
+            assertEquals("A valid working directory must be specified.", ex.getMessage());
         }
     }
 

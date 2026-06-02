@@ -26,15 +26,14 @@ import java.util.regex.Pattern;
  * <p>
  * Provides null‑safe checks for blankness and emptiness across {@link CharSequence}
  * and general {@link Object} inputs, along with a whitespace‑insensitive equality
- * comparison. All operations avoid unnecessary allocations and optimize for
- * {@link String} instances where possible.
+ * comparison.
  *
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
  */
 public final class TextTools {
 
-    private static final Pattern WHITESPACE = Pattern.compile("\\s");
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
 
     private TextTools() {
         // no-op
@@ -45,21 +44,19 @@ public final class TextTools {
      *
      * @param strings the character sequences to compare
      * @return {@code true} if all character sequences are equivalent when whitespace is ignored,
-     * {@code false} otherwise
+     * {@code false} otherwise. Returns {@code false} if {@code null} or fewer than 2 elements
+     * @implNote {@code null} elements within the array are treated as empty strings, so
+     * {@code equalsIgnoreWhitespace(null, "")} returns {@code true}.
      * @since 1.0
      */
     public static boolean equalsIgnoreWhitespace(@Nullable CharSequence... strings) {
         if (strings == null || strings.length < 2) {
             return false;
         }
-        var first = WHITESPACE.matcher(strings[0] == null ? "" : strings[0]).replaceAll("");
-        for (var i = 1; i < strings.length; i++) {
-            var next = WHITESPACE.matcher(strings[i] == null ? "" : strings[i]).replaceAll("");
-            if (!first.equals(next)) {
-                return false;
-            }
-        }
-        return true;
+        var first = removeWhitespace(strings[0]);
+        return Arrays.stream(strings, 1, strings.length)
+                .map(TextTools::removeWhitespace)
+                .allMatch(first::equals);
     }
 
     /**
@@ -71,19 +68,7 @@ public final class TextTools {
      * @since 1.0
      */
     public static boolean isBlank(@Nullable CharSequence str) {
-        if (str == null) {
-            return true;
-        }
-        if (str instanceof String s) {
-            return s.isBlank();
-        }
-        int len = str.length();
-        for (int i = 0; i < len; i++) {
-            if (!Character.isWhitespace(str.charAt(i))) {
-                return false;
-            }
-        }
-        return true;
+        return str == null || str.toString().isBlank();
     }
 
     /**
@@ -91,35 +76,36 @@ public final class TextTools {
      *
      * @param strings the character sequences to check
      * @return {@code true} if all character sequences are {@code null}, empty, or whitespace-only;
-     * {@code false} otherwise
+     * {@code false} otherwise. Returns {@code true} for {@code null} or empty array (vacuous truth)
      * @since 1.0
      */
     public static boolean isBlank(@Nullable CharSequence... strings) {
-        return (strings == null || strings.length == 0)
+        return strings == null || strings.length == 0
                 || Arrays.stream(strings).allMatch(TextTools::isBlank);
     }
 
     /**
-     * Checks if all string objects are {@code null}, empty, or contain only whitespace characters.
+     * Checks if all objects are {@code null}, empty, or contain only whitespace characters.
+     * <p>
+     * {@link CharSequence} instances are checked directly; all other objects are checked via
+     * their {@link Object#toString()} representation. This varargs overload exists to support
+     * mixed-type arrays — prefer the {@code CharSequence...} overload for homogeneous inputs.
      *
-     * @param strings the string objects to check
-     * @return {@code true} if all string objects are {@code null}, their string representations are empty,
+     * @param objects the objects to check
+     * @return {@code true} if all objects are {@code null}, their string representations are empty,
      * or their string representations are whitespace-only; {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isBlank(@Nullable Object... strings) {
-        if (strings == null) {
+    public static boolean isBlank(@Nullable Object... objects) {
+        if (objects == null) {
             return true;
         }
-        for (var obj : strings) {
-            if (obj == null) {
-                continue;
-            }
+        for (var obj : objects) {
             if (obj instanceof CharSequence cs) {
                 if (!isBlank(cs)) {
                     return false;
                 }
-            } else if (!isBlank(obj.toString())) {
+            } else if (obj != null && !isBlank(obj.toString())) {
                 return false;
             }
         }
@@ -134,48 +120,44 @@ public final class TextTools {
      * @since 1.0
      */
     public static boolean isEmpty(@Nullable CharSequence str) {
-        if (str == null) {
-            return true;
-        }
-        if (str instanceof String s) {
-            return s.isEmpty();
-        }
-        return str.isEmpty();
+        return str == null || str.isEmpty(); // CharSequence.isEmpty() since Java 15
     }
 
     /**
      * Checks if all character sequences are {@code null} or empty.
      *
      * @param strings the character sequences to check
-     * @return {@code true} if all character sequences are {@code null} or empty; {@code false} otherwise
+     * @return {@code true} if all character sequences are {@code null} or empty; {@code false} otherwise.
+     * Returns {@code true} for {@code null} or empty array (vacuous truth)
      * @since 1.0
      */
     public static boolean isEmpty(@Nullable CharSequence... strings) {
-        return (strings == null || strings.length == 0)
+        return strings == null || strings.length == 0
                 || Arrays.stream(strings).allMatch(TextTools::isEmpty);
     }
 
     /**
-     * Checks if all string objects are {@code null} or their string representations are empty.
+     * Checks if all objects are {@code null} or their string representations are empty.
+     * <p>
+     * {@link CharSequence} instances are checked directly; all other objects are checked via
+     * their {@link Object#toString()} representation. This varargs overload exists to support
+     * mixed-type arrays — prefer the {@code CharSequence...} overload for homogeneous inputs.
      *
-     * @param strings the string objects to check
+     * @param objects the objects to check
      * @return {@code true} if all objects are {@code null} or their string representations are empty;
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isEmpty(@Nullable Object... strings) {
-        if (strings == null) {
+    public static boolean isEmpty(@Nullable Object... objects) {
+        if (objects == null) {
             return true;
         }
-        for (var obj : strings) {
-            if (obj == null) {
-                continue;
-            }
+        for (var obj : objects) {
             if (obj instanceof CharSequence cs) {
                 if (!isEmpty(cs)) {
                     return false;
                 }
-            } else if (!isEmpty(obj.toString())) {
+            } else if (obj != null && !isEmpty(obj.toString())) {
                 return false;
             }
         }
@@ -199,28 +181,32 @@ public final class TextTools {
      *
      * @param strings the character sequences to check
      * @return {@code true} if all character sequences are not {@code null}, not empty, and not whitespace-only;
-     * {@code false} otherwise
+     * {@code false} otherwise. Returns {@code false} for {@code null} or empty array
      * @since 1.0
      */
     public static boolean isNotBlank(@Nullable CharSequence... strings) {
-        return (strings != null && strings.length > 0)
+        return strings != null && strings.length > 0
                 && Arrays.stream(strings).noneMatch(TextTools::isBlank);
     }
 
     /**
-     * Checks if all string objects are not {@code null}, not empty, and not whitespace-only.
+     * Checks if all objects are not {@code null}, not empty, and not whitespace-only.
+     * <p>
+     * {@link CharSequence} instances are checked directly; all other objects are checked via
+     * their {@link Object#toString()} representation. This varargs overload exists to support
+     * mixed-type arrays — prefer the {@code CharSequence...} overload for homogeneous inputs.
      *
-     * @param strings the string objects to check
+     * @param objects the objects to check
      * @return {@code true} if all objects are not {@code null}, their string representations
      * are not empty, and their string representations are not whitespace-only;
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isNotBlank(@Nullable Object... strings) {
-        if (strings == null || strings.length == 0) {
+    public static boolean isNotBlank(@Nullable Object... objects) {
+        if (objects == null || objects.length == 0) {
             return false;
         }
-        for (var obj : strings) {
+        for (var obj : objects) {
             if (obj == null) {
                 return false;
             }
@@ -250,34 +236,32 @@ public final class TextTools {
      * Checks if all character sequences are not {@code null} and not empty.
      *
      * @param strings the character sequences to check
-     * @return {@code true} if all character sequences are not {@code null} and not empty; {@code false} otherwise
+     * @return {@code true} if all character sequences are not {@code null} and not empty; {@code false} otherwise.
+     * Returns {@code false} for {@code null} or empty array
      * @since 1.0
      */
     public static boolean isNotEmpty(@Nullable CharSequence... strings) {
-        if (strings == null || strings.length == 0) {
-            return false;
-        }
-        for (var str : strings) {
-            if (isEmpty(str)) {
-                return false;
-            }
-        }
-        return true;
+        return strings != null && strings.length > 0
+                && Arrays.stream(strings).noneMatch(TextTools::isEmpty);
     }
 
     /**
-     * Checks if all string objects are not {@code null} and their string representations are not empty.
+     * Checks if all objects are not {@code null} and their string representations are not empty.
+     * <p>
+     * {@link CharSequence} instances are checked directly; all other objects are checked via
+     * their {@link Object#toString()} representation. This varargs overload exists to support
+     * mixed-type arrays — prefer the {@code CharSequence...} overload for homogeneous inputs.
      *
-     * @param strings the string objects to check
-     * @return {@code true} if all string objects are not {@code null} and their string representations are not empty;
+     * @param objects the objects to check
+     * @return {@code true} if all objects are not {@code null} and their string representations are not empty;
      * {@code false} otherwise
      * @since 1.0
      */
-    public static boolean isNotEmpty(@Nullable Object... strings) {
-        if (strings == null || strings.length == 0) {
+    public static boolean isNotEmpty(@Nullable Object... objects) {
+        if (objects == null || objects.length == 0) {
             return false;
         }
-        for (var obj : strings) {
+        for (var obj : objects) {
             if (obj == null) {
                 return false;
             }
@@ -290,5 +274,9 @@ public final class TextTools {
             }
         }
         return true;
+    }
+
+    private static String removeWhitespace(@Nullable CharSequence cs) {
+        return cs == null ? "" : WHITESPACE_PATTERN.matcher(cs).replaceAll("");
     }
 }

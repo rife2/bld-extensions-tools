@@ -50,13 +50,15 @@ public class ToolsBuild extends Project {
 
         var junit = version(6, 1, 0);
         scope(provided)
+                .include(dependency("com.uwyn.rife2", "bld-extensions-testing-helpers",
+                        version(1, 1, 0, "SNAPSHOT")))
                 .include(dependency("com.github.spotbugs", "spotbugs-annotations",
                         version(4, 9, 8)));
         scope(test)
-                .include(dependency("com.uwyn.rife2", "bld-extensions-testing-helpers",
-                        version(1, 0, 1)))
                 .include(dependency("org.junit.jupiter", "junit-jupiter", junit))
-                .include(dependency("org.junit.platform", "junit-platform-console-standalone", junit));
+                .include(dependency("org.junit.platform", "junit-platform-console-standalone", junit))
+                .include(dependency("org.mockito", "mockito-junit-jupiter",
+                        version(5, 23, 0)));
 
         javadocOperation()
                 .javadocOptions()

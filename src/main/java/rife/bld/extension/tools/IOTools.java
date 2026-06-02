@@ -66,18 +66,20 @@ public final class IOTools {
     }
 
     /**
-     * createDirs
      * Determines if the file at the specified path string exists, is a regular file, and is executable.
      *
      * @param path the path string to be checked
      * @return {@code true} if the path exists, is a regular file, and can be executed;
-     * {@code false} otherwise
+     * {@code false} otherwise, including when the path is {@code null}, blank, or invalid
      * @since 1.0
      */
     public static boolean canExecute(@Nullable String path) {
+        if (TextTools.isBlank(path)) {
+            return false;
+        }
         try {
-            return TextTools.isNotBlank(path) && canExecute(Path.of(path));
-        } catch (InvalidPathException | SecurityException e) {
+            return canExecute(Path.of(path));
+        } catch (InvalidPathException e) {
             return false;
         }
     }
@@ -114,6 +116,7 @@ public final class IOTools {
      * @param file the directory to create, may be {@code null}
      * @return {@code true} if the directory exists after the call, {@code false} if {@code file} is {@code null}
      * @throws java.nio.file.FileAlreadyExistsException if {@code file} exists and is not a directory
+     * @throws java.nio.file.AccessDeniedException      if the process does not have permission to create the directory
      * @throws IOException                              if an I/O error occurs while creating the directory
      * @throws SecurityException                        if a security manager denies write access
      * @since 1.3
@@ -132,6 +135,7 @@ public final class IOTools {
      * @return {@code true} if the directory exists after the call, {@code false} if {@code path} is {@code null} or blank
      * @throws java.nio.file.InvalidPathException       if {@code path} cannot be converted to a {@code Path}
      * @throws java.nio.file.FileAlreadyExistsException if {@code path} exists and is not a directory
+     * @throws java.nio.file.AccessDeniedException      if the process does not have permission to create the directory
      * @throws IOException                              if an I/O error occurs while creating the directory
      * @throws SecurityException                        if a security manager denies write access
      * @since 1.3
@@ -169,13 +173,16 @@ public final class IOTools {
      *
      * @param path the file system path to check for existence
      * @return {@code true} if the path is not {@code null} and a file or directory
-     * exists at the specified path; {@code false} otherwise
+     * exists at the specified path; {@code false} otherwise, including when the path is blank or invalid
      * @since 1.0
      */
     public static boolean exists(@Nullable String path) {
+        if (TextTools.isBlank(path)) {
+            return false;
+        }
         try {
-            return TextTools.isNotBlank(path) && Files.exists(Path.of(path));
-        } catch (InvalidPathException | SecurityException e) {
+            return Files.exists(Path.of(path));
+        } catch (InvalidPathException e) {
             return false;
         }
     }
@@ -207,7 +214,7 @@ public final class IOTools {
      *
      * @param path the path string to be checked; if {@code null} or blank, returns {@code false}
      * @return {@code true} if the specified path exists and is a directory;
-     * {@code false} otherwise (including when the path string is invalid)
+     * {@code false} otherwise, including when the path string is invalid
      * @since 1.0
      */
     public static boolean isDirectory(@Nullable String path) {
@@ -216,27 +223,41 @@ public final class IOTools {
         }
         try {
             return Files.isDirectory(Path.of(path));
-        } catch (InvalidPathException | SecurityException e) {
+        } catch (InvalidPathException e) {
             return false;
         }
     }
 
     /**
-     * Creates the directory specified by the given path string, including any
+     * Creates the directory specified by the given file, including any
      * nonexistent parent directories as necessary.
+     *
+     * <p>Unlike {@link #createDirs(File)}, this method catches all exceptions
+     * and returns {@code false} on failure instead of throwing.
      *
      * @param file the directory to be created
      * @return {@code true} if the directory was created successfully or already exists;
-     * {@code false} if the directory could not be created or {@code path} is {@code null} or blank
+     * {@code false} if the directory could not be created or {@code file} is {@code null}
      * @since 1.0
      */
     public static boolean mkdirs(@Nullable File file) {
-        return file != null && mkdirs(file.toPath());
+        if (file == null) {
+            return false;
+        }
+        try {
+            Files.createDirectories(file.toPath());
+            return true;
+        } catch (IOException | SecurityException e) {
+            return false;
+        }
     }
 
     /**
-     * Creates the directory specified by the given path string, including any
+     * Creates the directory specified by the given path, including any
      * nonexistent parent directories as necessary.
+     *
+     * <p>Unlike {@link #createDirs(Path)}, this method catches all exceptions
+     * and returns {@code false} on failure instead of throwing.
      *
      * @param path the directory to be created
      * @return {@code true} if the directory was created successfully or already exists;
@@ -248,9 +269,9 @@ public final class IOTools {
             return false;
         }
         try {
-            createDirs(path);
+            Files.createDirectories(path);
             return true;
-        } catch (IOException e) {
+        } catch (IOException | SecurityException e) {
             return false;
         }
     }
@@ -259,21 +280,33 @@ public final class IOTools {
      * Creates the directory specified by the given path string, including any
      * nonexistent parent directories as necessary.
      *
+     * <p>Unlike {@link #createDirs(String)}, this method catches all exceptions
+     * and returns {@code false} on failure instead of throwing.
+     *
      * @param path the directory to be created
      * @return {@code true} if the directory was created successfully or already exists;
-     * {@code false} if the directory could not be created or {@code path} is {@code null}
+     * {@code false} if the directory could not be created or {@code path} is {@code null}, blank, or invalid
      * @since 1.0
      */
     public static boolean mkdirs(@Nullable String path) {
+        if (TextTools.isBlank(path)) {
+            return false;
+        }
         try {
-            return TextTools.isNotBlank(path) && mkdirs(Path.of(path));
-        } catch (InvalidPathException | SecurityException e) {
+            // InvalidPathException is not caught by mkdirs(Path), so handle it here
+            return mkdirs(Path.of(path));
+        } catch (InvalidPathException e) {
             return false;
         }
     }
 
     /**
      * Checks if the specified file does not exist.
+     *
+     * <p><b>Note:</b> This method returns {@code true} for both {@code null} input and
+     * non-existent files. This diverges from {@link Files#notExists(Path, java.nio.file.LinkOption...)}
+     * which returns {@code false} when existence cannot be determined. The behavior here
+     * is a deliberate choice to simplify null-checking call sites.</p>
      *
      * @param file the file to check for non-existence
      * @return {@code true} if the file is {@code null} or does not exist;
@@ -287,6 +320,11 @@ public final class IOTools {
     /**
      * Checks if the specified path does not exist.
      *
+     * <p><b>Note:</b> This method returns {@code true} for both {@code null} input and
+     * non-existent paths. This diverges from {@link Files#notExists(Path, java.nio.file.LinkOption...)}
+     * which returns {@code false} when existence cannot be determined. The behavior here
+     * is a deliberate choice to simplify null-checking call sites.</p>
+     *
      * @param path the path to check for non-existence
      * @return {@code true} if the path is {@code null} or does not exist;
      * {@code false} otherwise
@@ -298,6 +336,11 @@ public final class IOTools {
 
     /**
      * Checks whether a file or directory does not exist at the specified path.
+     *
+     * <p><b>Note:</b> This method returns {@code true} for {@code null}, blank, invalid,
+     * or non-existent paths. This diverges from {@link Files#notExists(Path, java.nio.file.LinkOption...)}
+     * which returns {@code false} when existence cannot be determined. The behavior here
+     * is a deliberate choice to simplify null-checking call sites.</p>
      *
      * @param path the file system path to check for non-existence
      * @return {@code true} if the path is {@code null} or no file or directory
@@ -312,13 +355,19 @@ public final class IOTools {
      * Resolves a file path by joining a base file with additional path segments.
      *
      * <p>This method constructs a file path by appending one or more path segments
-     * to a base file. {@code null} segments are silently skipped. The resulting
-     * {@link File} object represents the complete path but does not create an actual
-     * file on the filesystem.</p>
+     * to a base file. {@code null} or empty segments are silently skipped. To keep
+     * resolution relative to {@code base}, segments starting with {@code "/"} have
+     * the leading slash stripped before resolving. This is a deliberate design choice
+     * that prevents absolute segments from resetting the path to the filesystem root,
+     * which would violate the expectation that resolution is relative to the base.
+     * Callers passing absolute Unix paths should pre-strip the slash themselves if
+     * they intend root-relative semantics.</p>
+     * <p>If {@code base} is {@code null}, this behaves like {@code new File("")}:
+     * segments are resolved against the current directory.</p>
      *
      * @param base     the base file path to start from; may be {@code null}
      * @param segments additional path segments to append, in order; may be {@code null},
-     *                 and individual {@code null} segments are silently skipped
+     *                 and individual {@code null} or empty segments are silently skipped
      * @return a {@link File} representing the resolved path
      * @since 1.0
      */
@@ -328,8 +377,12 @@ public final class IOTools {
         if (segments != null) {
             for (var segment : segments) {
                 if (segment != null && !segment.isEmpty()) {
-                    final String normalized = segment.startsWith("/") ? segment.substring(1) : segment;
-                    path = path.resolve(normalized);
+                    // Strip leading "/" to ensure segments are always resolved relatively
+                    // and don't reset to filesystem root
+                    var normalized = segment.startsWith("/") ? segment.substring(1) : segment;
+                    if (!normalized.isEmpty()) {
+                        path = path.resolve(normalized);
+                    }
                 }
             }
         }

@@ -19,6 +19,7 @@ package rife.bld.extension.tools;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import rife.bld.extension.testing.VisibleForTesting;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -32,6 +33,8 @@ import java.util.function.Consumer;
  * <p>
  * Framework-agnostic utility that can be composed by any extension.
  * Handles process tree cleanup and stream management for Windows compatibility.
+ * <p>
+ * This class is not thread-safe. Configure and execute from a single thread.
  *
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
@@ -55,10 +58,11 @@ public class ProcessExecutor {
     /**
      * Sets the command and arguments to be executed, replacing any previously configured command.
      *
-     * @param args one or more arguments, must not be null or contain null/empty elements
+     * @param args one or more arguments, must not be null or contain null/empty elements.
+     *             The first element must be a non-blank program name.
      * @return this instance
      * @throws NullPointerException     if args is null
-     * @throws IllegalArgumentException if args contains null or empty elements
+     * @throws IllegalArgumentException if args contains null/empty elements.
      */
     public ProcessExecutor command(@NonNull String... args) {
         ObjectTools.requireNotEmpty(args, "command");
@@ -79,10 +83,11 @@ public class ProcessExecutor {
     /**
      * Sets the command and arguments to be executed, replacing any previously configured command.
      *
-     * @param args the list of arguments, must not be null or contain null/empty elements
+     * @param args the list of arguments, must not be null or contain null/empty elements.
+     *             The first element must be a non-blank program name.
      * @return this instance
      * @throws NullPointerException     if args is null
-     * @throws IllegalArgumentException if args contains null or empty elements
+     * @throws IllegalArgumentException if args contains null/empty elements
      */
     public ProcessExecutor command(@NonNull Collection<String> args) {
         ObjectTools.requireNotEmpty(args, "command");
@@ -114,7 +119,7 @@ public class ProcessExecutor {
      * @throws NullPointerException if vars is null
      */
     public ProcessExecutor env(@NonNull Map<String, String> vars) {
-        Objects.requireNonNull(vars, "environment variables map must not be null");
+        ObjectTools.requireNonNull(vars, "environment variables");
         env_.putAll(vars);
         return this;
     }
@@ -153,7 +158,7 @@ public class ProcessExecutor {
 
             boolean finished;
             if (timeout_ < 0) {
-                proc.waitFor(); // wait indefinitely
+                proc.waitFor();
                 finished = true;
             } else {
                 finished = proc.waitFor(timeout_, TimeUnit.SECONDS);
@@ -164,11 +169,17 @@ public class ProcessExecutor {
             }
 
             if (outputThread != null) {
-                outputThread.join(timedOut ? 500 : 10_000);
+                outputThread.join(timedOut ? 5_000 : 10_000);
             }
 
-            int exitCode = timedOut ? -1 : proc.exitValue();
-            return new ProcessResult(exitCode, joinLines(outputLines), timedOut);
+            int exitCode;
+            try {
+                exitCode = proc.exitValue();
+            } catch (IllegalThreadStateException e) {
+                exitCode = -1;
+                timedOut = true;
+            }
+            return new ProcessResult(exitCode, String.join(System.lineSeparator(), outputLines), timedOut);
         } finally {
             cleanupProcess(proc);
             cleanupThread(outputThread);
@@ -208,6 +219,9 @@ public class ProcessExecutor {
      * <p>
      * Only effective when {@link #inheritIO()} is {@code false}. The consumer is called from a
      * background thread. Setting this implies output should be captured, not inherited.
+     * <p>
+     * Exceptions thrown by the consumer are silently ignored to protect the output reader thread.
+     * Ensure the consumer handles its own errors if reliable delivery is required.
      *
      * @param consumer the output consumer, or null to disable
      * @return this instance
@@ -224,7 +238,7 @@ public class ProcessExecutor {
      * <p>
      * A value of 0 is invalid as it would cause the process to fail immediately if not completed instantly.
      * <p>
-     * The default is {@link #DEFAULT_TIMEOUT_SECONDS}
+     * Default: {@link #DEFAULT_TIMEOUT_SECONDS}
      *
      * @param timeout the timeout in seconds; use negative value for no timeout
      * @return this instance
@@ -295,37 +309,72 @@ public class ProcessExecutor {
         return workDir_;
     }
 
-    private void cleanupProcess(Process proc) {
-        if (proc != null) {
-            var handle = proc.toHandle();
-            handle.descendants().forEach(ProcessHandle::destroyForcibly);
-            handle.destroyForcibly();
-            closeQuietly(proc.getInputStream());
-            closeQuietly(proc.getErrorStream());
-            closeQuietly(proc.getOutputStream());
+    // Internal helpers. Package-private to allow unit testing and keep execute() readable.
+
+    /**
+     * Cleans up the process and its descendants.
+     * <p>
+     * Destroys the process tree and closes all standard streams. Safe to call with null.
+     */
+    @VisibleForTesting
+    void cleanupProcess(@Nullable Process proc) {
+        if (proc == null) {
+            return;
         }
+        destroyProcessTree(proc.toHandle());
+        closeAllStreams(proc);
     }
 
-    private void cleanupThread(Thread outputThread) {
+    /**
+     * Interrupts and joins the output reader thread if still alive.
+     * <p>
+     * Used during cleanup to ensure background threads don't leak.
+     */
+    @VisibleForTesting
+    void cleanupThread(Thread outputThread) {
         if (outputThread != null && outputThread.isAlive()) {
             outputThread.interrupt();
             try {
                 outputThread.join(100);
             } catch (InterruptedException ignored) {
-                Thread.currentThread().interrupt();
+                restoreInterruptFlag();
             }
         }
     }
 
-    private void closeQuietly(Closeable closeable) {
+    /**
+     * Closes all standard streams of the given process.
+     * <p>
+     * Safe to call even if streams are already closed.
+     */
+    @VisibleForTesting
+    void closeAllStreams(Process proc) {
+        closeQuietly(proc.getInputStream());
+        closeQuietly(proc.getErrorStream());
+        closeQuietly(proc.getOutputStream());
+    }
+
+    /**
+     * Closes a {@code Closeable}, ignoring any {@code IOException}.
+     */
+    @VisibleForTesting
+    void closeQuietly(Closeable closeable) {
         try {
             closeable.close();
         } catch (IOException ignored) {
         }
     }
 
-    @SuppressFBWarnings("COMMAND_INJECTION")
-    private ProcessBuilder createProcessBuilder() {
+    /**
+     * Creates a configured {@code ProcessBuilder} from the current state.
+     * <p>
+     * Applies command, working directory, environment variables, and I/O redirection.
+     * Returns a new instance on each call. Do not mutate the result.
+     */
+    @VisibleForTesting
+    @SuppressFBWarnings(value = "COMMAND_INJECTION",
+            justification = "command is caller-supplied and validated non-empty; injection risk accepted by caller")
+    ProcessBuilder createProcessBuilder() {
         var pb = new ProcessBuilder();
         pb.command(command_);
         pb.directory(workDir_);
@@ -338,17 +387,85 @@ public class ProcessExecutor {
             pb.inheritIO();
         } else {
             pb.redirectErrorStream(true);
-            pb.redirectInput(ProcessBuilder.Redirect.from(new File(
-                    SystemTools.isWindows() ? "NUL" : "/dev/null")));
+            pb.redirectInput(ProcessBuilder.Redirect.from(new File(nullDevicePath())));
         }
         return pb;
     }
 
-    private String joinLines(Collection<String> lines) {
-        return String.join(System.lineSeparator(), lines);
+    /**
+     * Destroys a process handle forcibly, ignoring {@code UnsupportedOperationException}.
+     * <p>
+     * Some platforms may not support process tree operations.
+     */
+    @VisibleForTesting
+    void destroyHandleQuietly(ProcessHandle handle) {
+        try {
+            handle.destroyForcibly();
+        } catch (UnsupportedOperationException ignored) {
+        }
     }
 
-    private Thread startOutputReader(Process proc, Collection<String> outputLines) {
+    /**
+     * Destroys the process and all its descendants.
+     * <p>
+     * Attempts graceful cleanup on platforms that support it.
+     */
+    @VisibleForTesting
+    void destroyProcessTree(ProcessHandle handle) {
+        try {
+            handle.descendants().forEach(this::destroyHandleQuietly);
+            destroyHandleQuietly(handle);
+        } catch (UnsupportedOperationException ignored) {
+        }
+    }
+
+    /**
+     * Notifies the output consumer of a new line, if configured.
+     * <p>
+     * Consumer exceptions are swallowed to protect the reader thread.
+     */
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    @VisibleForTesting
+    void notifyOutputConsumer(String line) {
+        if (outputConsumer_ != null) {
+            try {
+                outputConsumer_.accept(line);
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    /**
+     * Returns the platform-specific null device path.
+     * <p>
+     * Used to redirect stdin when output is captured.
+     */
+    @VisibleForTesting
+    String nullDevicePath() {
+        return SystemTools.isWindows() ? "NUL" : "/dev/null";
+    }
+
+    /**
+     * Restores the current thread's interrupt flag.
+     */
+    @VisibleForTesting
+    void restoreInterruptFlag() {
+        Thread.currentThread().interrupt();
+    }
+
+    /**
+     * Starts the background thread that reads process output.
+     * <p>
+     * Returns {@code null} if {@link #inheritIO()} is {@code true}. Otherwise reads
+     * stdout/stderr line by line, appending to {@code outputLines} and notifying
+     * the {@link #outputConsumer(Consumer)} if set.
+     *
+     * @param proc        the process to read from
+     * @param outputLines collection to append captured lines to
+     * @return the started thread, or null if I/O is inherited
+     */
+    @VisibleForTesting
+    Thread startOutputReader(Process proc, Collection<String> outputLines) {
         if (inheritIO_) {
             return null;
         }
@@ -356,26 +473,33 @@ public class ProcessExecutor {
         var thread = new Thread(() -> {
             try (var reader = new BufferedReader(
                     new InputStreamReader(proc.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
+                reader.lines().forEach(line -> {
                     outputLines.add(line);
-                    if (outputConsumer_ != null) {
-                        outputConsumer_.accept(line);
-                    }
-                }
+                    notifyOutputConsumer(line);
+                });
             } catch (IOException ignored) {
             }
-        });
+        }, "process-executor-output");
         thread.setDaemon(true);
         thread.start();
         return thread;
     }
 
-    private void validatePreconditions() {
+    /**
+     * Validates preconditions before process execution.
+     * <p>
+     * Ensures a command is set, the working directory exists if specified,
+     * and I/O configuration is valid.
+     *
+     * @throws IllegalStateException if preconditions are not met
+     */
+    @VisibleForTesting
+    void validatePreconditions() {
         if (ObjectTools.isEmpty(command_)) {
             throw new IllegalStateException("A command must be specified.");
         }
-        if (!IOTools.isDirectory(workDir_)) {
+
+        if (workDir_ != null && !IOTools.isDirectory(workDir_)) {
             throw new IllegalStateException("A valid working directory must be specified.");
         }
         if (inheritIO_ && outputConsumer_ != null) {
@@ -386,7 +510,7 @@ public class ProcessExecutor {
     /**
      * Result of a process execution.
      *
-     * @param exitCode the exit code, or -1 if timed out
+     * @param exitCode the exit code, or -1 if timed out or process did not terminate
      * @param output   the captured stdout/stderr joined with the system line separator;
      *                 empty string when {@link #inheritIO()} was {@code true}
      * @param timedOut true if the process exceeded the timeout

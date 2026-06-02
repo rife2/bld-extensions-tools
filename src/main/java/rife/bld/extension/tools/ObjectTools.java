@@ -18,6 +18,8 @@ package rife.bld.extension.tools;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import rife.bld.extension.testing.VisibleForTesting;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
@@ -45,17 +47,23 @@ import java.util.logging.Logger;
  * This means a map with such keys will never report all keys as empty, which
  * can affect the result of {@link #allEmpty(Object)} and {@link #anyEmpty(Object)}.</p>
  *
+ * <p><b>Validation order:</b> All {@code require*} methods throw {@link NullPointerException}
+ * first if the value or any nested element is {@code null}, then {@link IllegalArgumentException}
+ * if the value is empty or blank.</p>
+ *
  * <p><b>Logging:</b> This class uses {@code java.util.logging} (JUL) to warn
  * about malformed format strings. In applications that bridge JUL to another
  * framework (e.g. SLF4J, Log4j2), warnings will route through that bridge.</p>
- *
- * <p><b>Note:</b> As of 1.3, the API was simplified. {@code requireEmpty}
- * no longer has a context-based overload.</p>
  *
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
  */
 public final class ObjectTools {
+
+    @VisibleForTesting
+    static final Predicate<Object> isEmptyPredicate = ObjectTools::isEmpty;
+    @VisibleForTesting
+    static final Predicate<Object> isNotEmptyPredicate = ObjectTools::isNotEmpty;
 
     private static final Logger logger = Logger.getLogger(ObjectTools.class.getName());
 
@@ -80,7 +88,7 @@ public final class ObjectTools {
      * <p>Example with an empty list:</p>
      * <pre>{@code
      * List<String> empty = List.of();
-     * allEmpty(empty)    // true  (vacuously: no non-empty elements)
+     * allEmpty(empty) // true (vacuously: no non-empty elements)
      * allNotEmpty(empty) // false (no non-empty elements to satisfy the condition)
      * }</pre>
      *
@@ -111,11 +119,11 @@ public final class ObjectTools {
      * <p>For a {@link Map}, both keys and values are checked. See the class-level
      * note on map key checking.</p>
      *
-     * <p>Example with an empty list:</p>
+     * <p>Example with a non-empty list:</p>
      * <pre>{@code
-     * List<String> empty = List.of();
-     * allEmpty(empty)    // true  (vacuously: no non-empty elements)
-     * allNotEmpty(empty) // false (no non-empty elements to satisfy the condition)
+     * List<String> items = List.of("foo", "bar");
+     * allNotEmpty(items) // true (all elements are non-null and non-empty)
+     * allEmpty(items) // false (elements are present and non-empty)
      * }</pre>
      *
      * @param value the value to inspect; may be {@code null}
@@ -195,6 +203,25 @@ public final class ObjectTools {
         return forEachElement(container, predicate, false);
     }
 
+    private static boolean forEachBoxedPrimitiveArray(Object container, Predicate<Object> predicate, boolean allMode) {
+        int len = Array.getLength(container);
+        for (int i = 0; i < len; i++) {
+            if (predicate.test(Array.get(container, i)) != allMode) {
+                return !allMode;
+            }
+        }
+        return allMode;
+    }
+
+    private static boolean forEachCollection(Collection<?> c, Predicate<Object> predicate, boolean allMode) {
+        for (Object v : c) {
+            if (predicate.test(v) != allMode) {
+                return !allMode;
+            }
+        }
+        return allMode;
+    }
+
     /**
      * Shared iteration logic for {@link #checkAll} and {@link #checkAny}.
      *
@@ -204,38 +231,55 @@ public final class ObjectTools {
      *                  (all-match semantics); if {@code false}, returns {@code true} on the
      *                  first predicate success (any-match semantics)
      * @return the result of the all-match or any-match traversal
+     * @implNote The fast path for primitive arrays using reference-identity comparison
+     * ({@code predicate == isEmptyPredicate}) relies on callers passing the cached field
+     * references directly. This assumption holds for all internal callers. Custom predicates
+     * passed from outside always take the slow (boxing) path. For the built-in predicates,
+     * primitives are never considered empty, so the length alone determines the result without
+     * reading elements.
      */
     private static boolean forEachElement(Object container, Predicate<Object> predicate, boolean allMode) {
         if (container instanceof Object[] arr) {
-            for (Object v : arr) {
-                if (predicate.test(v) != allMode) {
-                    return !allMode;
-                }
+            return forEachObjectArray(arr, predicate, allMode);
+        }
+        if (container instanceof Collection<?> c) {
+            return forEachCollection(c, predicate, allMode);
+        }
+        if (container instanceof Map<?, ?> m) {
+            return forEachMap(m, predicate, allMode);
+        }
+        if (container.getClass().isArray()) {
+            return forEachPrimitiveArray(container, predicate, allMode);
+        }
+        throw new AssertionError("forEachElement called on non-container: " + container.getClass());
+    }
+
+    private static boolean forEachMap(Map<?, ?> m, Predicate<Object> predicate, boolean allMode) {
+        for (var e : m.entrySet()) {
+            if (predicate.test(e.getKey()) != allMode) {
+                return !allMode;
             }
-        } else if (container instanceof Collection<?> c) {
-            for (Object v : c) {
-                if (predicate.test(v) != allMode) {
-                    return !allMode;
-                }
-            }
-        } else if (container instanceof Map<?, ?> m) {
-            for (var e : m.entrySet()) {
-                if (predicate.test(e.getKey()) != allMode) {
-                    return !allMode;
-                }
-                if (predicate.test(e.getValue()) != allMode) {
-                    return !allMode;
-                }
-            }
-        } else if (container.getClass().isArray()) {
-            int len = Array.getLength(container);
-            for (int i = 0; i < len; i++) {
-                if (predicate.test(Array.get(container, i)) != allMode) {
-                    return !allMode;
-                }
+            if (predicate.test(e.getValue()) != allMode) {
+                return !allMode;
             }
         }
         return allMode;
+    }
+
+    private static boolean forEachObjectArray(Object[] arr, Predicate<Object> predicate, boolean allMode) {
+        for (Object v : arr) {
+            if (predicate.test(v) != allMode) {
+                return !allMode;
+            }
+        }
+        return allMode;
+    }
+
+    private static boolean forEachPrimitiveArray(Object container, Predicate<Object> predicate, boolean allMode) {
+        if (isPrimitiveFastPath(predicate)) {
+            return handlePrimitiveFastPath(predicate, container, allMode);
+        }
+        return forEachBoxedPrimitiveArray(container, predicate, allMode);
     }
 
     /**
@@ -255,6 +299,16 @@ public final class ObjectTools {
         }
     }
 
+    @VisibleForTesting
+    static boolean handlePrimitiveFastPath(Predicate<Object> predicate, Object container, boolean allMode) {
+        int len = Array.getLength(container);
+        if (predicate.equals(isEmptyPredicate)) {
+            return allMode ? len == 0 : len > 0;
+        }
+        // isNotEmptyPredicate
+        return allMode ? len > 0 : len == 0;
+    }
+
     /**
      * Returns {@code true} if the value and all nested elements are non-{@code null}.
      *
@@ -267,9 +321,12 @@ public final class ObjectTools {
 
     /**
      * Returns {@code true} if {@code value} is an array, {@link Collection}, or {@link Map}.
-     * Covers both object arrays and primitive arrays.
+     * Covers both object arrays and primitive arrays. Returns {@code false} if {@code value} is {@code null}.
      */
     private static boolean isContainer(Object value) {
+        if (value == null) {
+            return false;
+        }
         return value.getClass().isArray()
                 || value instanceof Collection<?>
                 || value instanceof Map<?, ?>;
@@ -311,31 +368,29 @@ public final class ObjectTools {
         return !isEmpty(value);
     }
 
-    /**
-     * Builds a standard validation message of the form {@code "{context} {suffix}"}.
-     * Extracted to avoid coupling string constants to implicit concatenation semantics.
-     */
-    private static String messageFor(String context, String suffix) {
-        return context + " " + suffix;
+    private static boolean isPrimitiveFastPath(Predicate<Object> predicate) {
+        return predicate.equals(isEmptyPredicate) || predicate.equals(isNotEmptyPredicate);
     }
 
     /**
      * Requires the value to be empty.
      *
      * <p>If {@code value} is an array, {@link Collection}, or {@link Map},
-     * all elements/entries must be empty. A {@code null} value is considered
-     * empty and always passes.</p>
+     * all elements/entries must be empty. Throws {@link NullPointerException}
+     * if the value or any element is {@code null}.</p>
      *
-     * @param value   the value to validate and return; may be {@code null}
+     * @param value   the value to validate and return; must not be {@code null}
      * @param message the exception message; must not be {@code null}, empty, or blank
      * @param <T>     the value type
      * @return the validated value
+     * @throws NullPointerException     if the value or any element is {@code null}
      * @throws IllegalArgumentException if the value is not empty
      * @throws IllegalArgumentException if {@code message} is {@code null}, empty, or blank
      * @since 1.3
      */
-    public static <T> T requireEmpty(@Nullable T value, @NonNull String message) {
+    public static <T> T requireEmpty(@NonNull T value, @NonNull String message) {
         requireNonBlankMessage(message);
+        validateNullsFirst(value, message);
         if (!allEmpty(value)) {
             throw new IllegalArgumentException(message);
         }
@@ -346,22 +401,22 @@ public final class ObjectTools {
      * Requires the value to be empty.
      *
      * <p>If {@code value} is an array, {@link Collection}, or {@link Map},
-     * all elements/entries must be empty. A {@code null} value is considered
-     * empty and always passes. The message may contain
-     * {@link String#format(String, Object...)} placeholders resolved using
-     * the supplied {@code args}. If formatting fails, the raw message is used
-     * and a warning is logged.</p>
+     * all elements/entries must be empty. Throws {@link NullPointerException}
+     * if the value or any element is {@code null}. The message may contain
+     * {@link String#format(String, Object...)} placeholders resolved using the supplied
+     * {@code args}. If formatting fails, the raw message is used and a warning is logged.</p>
      *
-     * @param value   the value to validate and return; may be {@code null}
+     * @param value   the value to validate and return; must not be {@code null}
      * @param message the exception message or format string; must not be {@code null}, empty, or blank
      * @param args    optional arguments used to format the {@code message}
      * @param <T>     the value type
      * @return the validated value
+     * @throws NullPointerException     if the value or any element is {@code null}
      * @throws IllegalArgumentException if the value is not empty
      * @throws IllegalArgumentException if {@code message} is {@code null}, empty, or blank
      * @since 1.3
      */
-    public static <T> T requireEmpty(@Nullable T value, @NonNull String message, @Nullable Object... args) {
+    public static <T> T requireEmpty(@NonNull T value, @NonNull String message, @Nullable Object... args) {
         return requireEmpty(value, formatMessage(message, args));
     }
 
@@ -399,7 +454,7 @@ public final class ObjectTools {
      */
     public static <T> T requireNonNull(@NonNull T value, @NonNull String context) {
         requireNonBlankMessage(context);
-        return requireNonNull(value, messageFor(context, "must not be null"), new Object[0]);
+        return requireNonNull(value, context + " must not be null", new Object[0]);
     }
 
     /**
@@ -427,14 +482,10 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if {@code message} is {@code null}, empty, or blank
      * @since 1.3
      */
-    @SuppressWarnings("PMD.AvoidThrowingNullPointerException")
     public static <T> T requireNonNull(@NonNull T value, @NonNull String message, @Nullable Object... args) {
         requireNonBlankMessage(message);
         var formatted = formatMessage(message, args);
-        Objects.requireNonNull(value, formatted);
-        if (!isAllNonNull(value)) {
-            throw new NullPointerException(formatted);
-        }
+        validateNullsFirst(value, formatted);
         return value;
     }
 
@@ -448,16 +499,11 @@ public final class ObjectTools {
      * <p>Exception messages are constructed from {@code context} as
      * {@code "{context} must not be null"} and {@code "{context} must not be empty"}.</p>
      *
-     * <p><b>Note on element-level failures:</b> When an element is {@code null} (rather
-     * than merely empty), the exception thrown is still {@link IllegalArgumentException}
-     * with the {@code emptyMessage}. If you need to distinguish null elements from empty
-     * elements, validate with {@link #requireNonNull(Object, String)} first.</p>
-     *
      * @param value   the value to validate and return; must not be {@code null} or empty
      * @param context the context string used in exception messages; must not be {@code null}, empty, or blank
      * @param <T>     the value type
      * @return the validated value, never {@code null} or empty
-     * @throws NullPointerException     if the {@code value} is {@code null}
+     * @throws NullPointerException     if the {@code value} or any element is {@code null}
      * @throws IllegalArgumentException if the {@code value} is empty
      * @throws IllegalArgumentException if {@code context} is {@code null}, empty, or blank
      * @since 1.3
@@ -465,8 +511,8 @@ public final class ObjectTools {
     public static <T> T requireNotEmpty(@NonNull T value, @NonNull String context) {
         requireNonBlankMessage(context);
         return requireNotEmpty(value,
-                messageFor(context, "must not be null"),
-                messageFor(context, "must not be empty"));
+                context + " must not be null",
+                context + " must not be empty");
     }
 
     /**
@@ -474,19 +520,15 @@ public final class ObjectTools {
      *
      * <p>If {@code value} is an array, {@link Collection}, or {@link Map},
      * the container must be not empty and all elements/entries must be
-     * not {@code null} and not empty.</p>
-     *
-     * <p><b>Note on element-level failures:</b> When an element is {@code null} (rather
-     * than merely empty), the exception thrown is still {@link IllegalArgumentException}
-     * with the {@code emptyMessage}. If you need to distinguish null elements from empty
-     * elements, validate with {@link #requireNonNull(Object, String)} first.</p>
+     * not {@code null} and not empty. Throws {@link NullPointerException}
+     * if the value or any element is {@code null}.</p>
      *
      * @param value        the value to validate and return; must not be {@code null} or empty
      * @param nullMessage  the message for {@code NullPointerException}; must not be {@code null}, empty, or blank
      * @param emptyMessage the message for {@code IllegalArgumentException}; must not be {@code null}, empty, or blank
      * @param <T>          the value type
      * @return the validated value, never {@code null} or empty
-     * @throws NullPointerException     if the {@code value} is {@code null}
+     * @throws NullPointerException     if the {@code value} or any element is {@code null}
      * @throws IllegalArgumentException if the {@code value} is empty
      * @throws IllegalArgumentException if either message is {@code null}, empty, or blank
      * @since 1.3
@@ -494,7 +536,7 @@ public final class ObjectTools {
     public static <T> T requireNotEmpty(@NonNull T value, @NonNull String nullMessage, @NonNull String emptyMessage) {
         requireNonBlankMessage(nullMessage);
         requireNonBlankMessage(emptyMessage);
-        Objects.requireNonNull(value, nullMessage);
+        validateNullsFirst(value, nullMessage);
         if (!allNotEmpty(value)) {
             throw new IllegalArgumentException(emptyMessage);
         }
@@ -506,14 +548,10 @@ public final class ObjectTools {
      *
      * <p>If {@code value} is an array, {@link Collection}, or {@link Map},
      * the container must be not empty and all elements/entries must be
-     * not {@code null} and not empty. Both messages may contain
+     * not {@code null} and not empty. Throws {@link NullPointerException}
+     * if the value or any element is {@code null}. Both messages may contain
      * {@link String#format(String, Object...)} placeholders resolved using the supplied
      * {@code args}. If formatting fails, the raw message is used and a warning is logged.</p>
-     *
-     * <p><b>Note on element-level failures:</b> When an element is {@code null} (rather
-     * than merely empty), the exception thrown is still {@link IllegalArgumentException}
-     * with the {@code emptyMessage}. If you need to distinguish null elements from empty
-     * elements, validate with {@link #requireNonNull(Object, String)} first.</p>
      *
      * @param value        the value to validate and return; must not be {@code null} or empty
      * @param nullMessage  the message for {@code NullPointerException}; must not be {@code null}, empty, or blank
@@ -521,7 +559,7 @@ public final class ObjectTools {
      * @param args         optional arguments used to format the messages
      * @param <T>          the value type
      * @return the validated value, never {@code null} or empty
-     * @throws NullPointerException     if the {@code value} is {@code null}
+     * @throws NullPointerException     if the {@code value} or any element is {@code null}
      * @throws IllegalArgumentException if the {@code value} is empty
      * @throws IllegalArgumentException if either message is {@code null}, empty, or blank
      * @since 1.3
@@ -531,5 +569,21 @@ public final class ObjectTools {
                                         @NonNull String emptyMessage,
                                         @Nullable Object... args) {
         return requireNotEmpty(value, formatMessage(nullMessage, args), formatMessage(emptyMessage, args));
+    }
+
+    /**
+     * Validates that the value and all nested elements are non-{@code null}.
+     * Throws {@link NullPointerException} on first null encountered.
+     *
+     * <p><b>Note:</b> This method is recursive. Pathologically deep container nesting
+     * may cause {@link StackOverflowError}.</p>
+     */
+    @SuppressWarnings("PMD.AvoidThrowingNullPointerException")
+    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
+    private static void validateNullsFirst(@Nullable Object value, String message) {
+        Objects.requireNonNull(value, message);
+        if (isContainer(value) && !isAllNonNull(value)) {
+            throw new NullPointerException(message);
+        }
     }
 }
