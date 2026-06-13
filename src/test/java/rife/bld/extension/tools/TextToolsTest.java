@@ -20,11 +20,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("Text Tools Tests")
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
@@ -546,8 +546,7 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @NullSource
-        @ValueSource(strings = {""})
+        @NullAndEmptySource
         @DisplayName("should return true for null or empty strings")
         void shouldReturnTrueForEmptyStrings(String input) {
             var result = TextTools.isEmpty(input);
@@ -952,8 +951,7 @@ class TextToolsTest {
     class IsNotEmptyTests {
 
         @ParameterizedTest
-        @NullSource
-        @ValueSource(strings = {""})
+        @NullAndEmptySource
         @DisplayName("should return false for null or empty strings")
         void shouldReturnFalseForEmptyStrings(String input) {
             var result = TextTools.isNotEmpty(input);
@@ -1036,6 +1034,304 @@ class TextToolsTest {
             var buff = new StringBuffer(" ");
             var result = TextTools.isNotEmpty(sb, buff, "data");
             assertTrue(result);
+        }
+    }
+
+    @Nested
+    @DisplayName("requireNotBlank(CharSequence, String) Tests")
+    class RequireNotBlankContextTests {
+
+        @Test
+        @DisplayName("should return the original CharSequence type")
+        void shouldReturnOriginalCharSequenceType() {
+            var sb = new StringBuilder("hello");
+            assertSame(TextTools.requireNotBlank(sb, "value"), sb);
+        }
+
+        @Test
+        @DisplayName("should return the string when not blank")
+        void shouldReturnStringWhenNotBlank() {
+            assertEquals("hello", TextTools.requireNotBlank("hello", "value"));
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
+        @DisplayName("should throw IllegalArgumentException for blank string")
+        void shouldThrowIllegalArgumentExceptionForBlank(String input) {
+            var thrown = false;
+            try {
+                TextTools.requireNotBlank(input, "value");
+            } catch (IllegalArgumentException e) {
+                thrown = e.getMessage().equals("value must not be blank");
+            }
+            assertTrue(thrown);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"", " ", "  ", "\t"})
+        @DisplayName("should throw IllegalArgumentException for blank context")
+        void shouldThrowIllegalArgumentExceptionForBlankContext(String context) {
+            var thrown = false;
+            try {
+                TextTools.requireNotBlank("hello", context);
+            } catch (IllegalArgumentException e) {
+                thrown = e.getMessage().equals("context must not be empty, or blank");
+            }
+            assertTrue(thrown);
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException for null string")
+        void shouldThrowNullPointerExceptionForNull() {
+            var thrown = false;
+            try {
+                TextTools.requireNotBlank(null, "value");
+            } catch (NullPointerException e) {
+                thrown = e.getMessage().equals("value must not be null");
+            }
+            assertTrue(thrown);
+        }
+    }
+
+    @Nested
+    @DisplayName("requireNotBlank(CharSequence, String, String, Object...) Tests")
+    class RequireNotBlankMessagesTests {
+
+        @Test
+        @DisplayName("should format blank message with args")
+        void shouldFormatBlankMessageWithArgs() {
+            var thrown = false;
+            try {
+                TextTools.requireNotBlank("  ", "custom null msg", "%s must not be blank", "value");
+            } catch (IllegalArgumentException e) {
+                thrown = e.getMessage().equals("value must not be blank");
+            }
+            assertTrue(thrown);
+        }
+
+        @Test
+        @DisplayName("should format null message with args")
+        void shouldFormatNullMessageWithArgs() {
+            var thrown = false;
+            try {
+                TextTools.requireNotBlank(null, "%s must not be null", "custom blank msg", "value");
+            } catch (NullPointerException e) {
+                thrown = e.getMessage().equals("value must not be null");
+            }
+            assertTrue(thrown);
+        }
+
+        @Test
+        @DisplayName("should return the original CharSequence type")
+        void shouldReturnOriginalCharSequenceType() {
+            var sb = new StringBuilder("hello");
+            assertSame(TextTools.requireNotBlank(sb, "null msg", "blank msg"), sb);
+        }
+
+        @Test
+        @DisplayName("should return raw message when format args are invalid")
+        void shouldReturnRawMessageWhenFormatArgsAreInvalid() {
+            var thrown = false;
+            try {
+                TextTools.requireNotBlank(null, "invalid %q format", "blank msg");
+            } catch (NullPointerException e) {
+                thrown = e.getMessage().equals("invalid %q format");
+            }
+            assertTrue(thrown);
+        }
+
+        @Test
+        @DisplayName("should return the string when not blank")
+        void shouldReturnStringWhenNotBlank() {
+            assertEquals("hello",
+                    TextTools.requireNotBlank("hello", "null msg", "blank msg"));
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
+        @DisplayName("should throw IllegalArgumentException with custom message for blank string")
+        void shouldThrowIllegalArgumentExceptionWithCustomMessage(String input) {
+            var thrown = false;
+            try {
+                TextTools.requireNotBlank(input, "custom null msg", "custom blank msg");
+            } catch (IllegalArgumentException e) {
+                thrown = e.getMessage().equals("custom blank msg");
+            }
+            assertTrue(thrown);
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException with custom message for null string")
+        void shouldThrowNullPointerExceptionWithCustomMessage() {
+            var thrown = false;
+            try {
+                TextTools.requireNotBlank(null, "custom null msg", "custom blank msg");
+            } catch (NullPointerException e) {
+                thrown = e.getMessage().equals("custom null msg");
+            }
+            assertTrue(thrown);
+        }
+    }
+
+    @Nested
+    @DisplayName("requireNotEmpty(CharSequence, String) Tests")
+    class RequireNotEmptyContextTests {
+
+        @Test
+        @DisplayName("should return the original CharSequence type")
+        void shouldReturnOriginalCharSequenceType() {
+            var sb = new StringBuilder("hello");
+            assertSame(TextTools.requireNotEmpty(sb, "value"), sb);
+        }
+
+        @Test
+        @DisplayName("should return the string when not empty")
+        void shouldReturnStringWhenNotEmpty() {
+            assertEquals("hello", TextTools.requireNotEmpty("hello", "value"));
+        }
+
+        @Test
+        @DisplayName("should return non-empty whitespace-only string")
+        void shouldReturnWhitespaceOnlyString() {
+            assertEquals(" ", TextTools.requireNotEmpty(" ", "value"));
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"", " ", "  ", "\t"})
+        @DisplayName("should throw IllegalArgumentException for blank context")
+        void shouldThrowIllegalArgumentExceptionForBlankContext(String context) {
+            var thrown = false;
+            try {
+                TextTools.requireNotEmpty("hello", context);
+            } catch (IllegalArgumentException e) {
+                thrown = e.getMessage().equals("context must not be empty, or blank");
+            }
+            assertTrue(thrown);
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException for empty string")
+        void shouldThrowIllegalArgumentExceptionForEmpty() {
+            var thrown = false;
+            try {
+                TextTools.requireNotEmpty("", "value");
+            } catch (IllegalArgumentException e) {
+                thrown = e.getMessage().equals("value must not be empty");
+            }
+            assertTrue(thrown);
+        }
+
+        @ParameterizedTest
+        @NullSource
+        @DisplayName("should throw IllegalArgumentException for null context")
+        void shouldThrowIllegalArgumentExceptionForNullContext(String context) {
+            var thrown = false;
+            try {
+                TextTools.requireNotEmpty("hello", context);
+            } catch (NullPointerException e) {
+                thrown = e.getMessage().equals("context must not be null");
+            }
+            assertTrue(thrown);
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException for null string")
+        void shouldThrowNullPointerExceptionForNull() {
+            var thrown = false;
+            try {
+                TextTools.requireNotEmpty(null, "value");
+            } catch (NullPointerException e) {
+                thrown = e.getMessage().equals("value must not be null");
+            }
+            assertTrue(thrown);
+        }
+    }
+
+    @Nested
+    @DisplayName("requireNotEmpty(CharSequence, String, String, Object...) Tests")
+    class RequireNotEmptyMessagesTests {
+
+        @Test
+        @DisplayName("should format empty message with args")
+        void shouldFormatEmptyMessageWithArgs() {
+            var thrown = false;
+            try {
+                TextTools.requireNotEmpty("", "custom null msg",
+                        "%s must not be empty", "value");
+            } catch (IllegalArgumentException e) {
+                thrown = e.getMessage().equals("value must not be empty");
+            }
+            assertTrue(thrown);
+        }
+
+        @Test
+        @DisplayName("should format null message with args")
+        void shouldFormatNullMessageWithArgs() {
+            var thrown = false;
+            try {
+                TextTools.requireNotEmpty(null, "%s must not be null",
+                        "custom empty msg", "value");
+            } catch (NullPointerException e) {
+                thrown = e.getMessage().equals("value must not be null");
+            }
+            assertTrue(thrown);
+        }
+
+        @Test
+        @DisplayName("should return the original CharSequence type")
+        void shouldReturnOriginalCharSequenceType() {
+            var sb = new StringBuilder("hello");
+            assertSame(TextTools.requireNotEmpty(sb, "null msg", "empty msg"), sb);
+        }
+
+        @Test
+        @DisplayName("should return raw message when format args are invalid")
+        void shouldReturnRawMessageWhenFormatArgsAreInvalid() {
+            var thrown = false;
+            try {
+                TextTools.requireNotEmpty(null, "invalid %q format", "empty msg");
+            } catch (NullPointerException e) {
+                thrown = e.getMessage().equals("invalid %q format");
+            }
+            assertTrue(thrown);
+        }
+
+        @Test
+        @DisplayName("should return the string when not empty")
+        void shouldReturnStringWhenNotEmpty() {
+            assertEquals("hello",
+                    TextTools.requireNotEmpty("hello", "null msg", "empty msg"));
+        }
+
+        @Test
+        @DisplayName("should return non-empty whitespace-only string")
+        void shouldReturnWhitespaceOnlyString() {
+            assertEquals(" ",
+                    TextTools.requireNotEmpty(" ", "null msg", "empty msg"));
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException with custom message for empty string")
+        void shouldThrowIllegalArgumentExceptionWithCustomMessage() {
+            var thrown = false;
+            try {
+                TextTools.requireNotEmpty("", "custom null msg", "custom empty msg");
+            } catch (IllegalArgumentException e) {
+                thrown = e.getMessage().equals("custom empty msg");
+            }
+            assertTrue(thrown);
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException with custom message for null string")
+        void shouldThrowNullPointerExceptionWithCustomMessage() {
+            var thrown = false;
+            try {
+                TextTools.requireNotEmpty(null, "custom null msg", "custom empty msg");
+            } catch (NullPointerException e) {
+                thrown = e.getMessage().equals("custom null msg");
+            }
+            assertTrue(thrown);
         }
     }
 }

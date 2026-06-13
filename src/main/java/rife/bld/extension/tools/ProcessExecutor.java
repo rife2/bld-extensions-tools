@@ -293,7 +293,6 @@ public class ProcessExecutor {
      * @return this instance
      * @throws IllegalArgumentException if dir is null or empty
      */
-    @SuppressFBWarnings("PATH_TRAVERSAL_IN")
     public ProcessExecutor workDir(@NonNull String dir) {
         ObjectTools.requireNotEmpty(dir, "directory must not be null or empty");
         return workDir(new File(dir));
@@ -372,8 +371,6 @@ public class ProcessExecutor {
      * Returns a new instance on each call. Do not mutate the result.
      */
     @VisibleForTesting
-    @SuppressFBWarnings(value = "COMMAND_INJECTION",
-            justification = "command is caller-supplied and validated non-empty; injection risk accepted by caller")
     ProcessBuilder createProcessBuilder() {
         var pb = new ProcessBuilder();
         pb.command(command_);

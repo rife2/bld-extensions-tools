@@ -453,7 +453,7 @@ class ProcessExecutorTest {
     @DisplayName("Internals Tests")
     class InternalsTests {
 
-        ProcessExecutor exec = new ProcessExecutor();
+        final ProcessExecutor exec = new ProcessExecutor();
 
         @Nested
         @DisplayName("cleanupProcess branches")

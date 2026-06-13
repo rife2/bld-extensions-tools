@@ -20,11 +20,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.*;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.time.Duration;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -431,8 +432,8 @@ class ObjectToolsTest {
         }
 
         @ParameterizedTest
-        @NullAndEmptySource
-        @ValueSource(strings = " ")
+        @EmptySource
+        @ValueSource(strings = {" ", "  "})
         void throwsForBlankMessage(String message) {
             assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requireEmpty("", message));
@@ -443,6 +444,13 @@ class ObjectToolsTest {
             var ex = assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requireEmpty("x", "ctx"));
             assertEquals("ctx", ex.getMessage());
+        }
+
+        @ParameterizedTest
+        @NullSource
+        void throwsForNullMessage(String message) {
+            assertThrows(NullPointerException.class,
+                    () -> ObjectTools.requireEmpty("", message));
         }
 
         @Test
@@ -667,8 +675,8 @@ class ObjectToolsTest {
         }
 
         @ParameterizedTest
-        @NullAndEmptySource
-        @ValueSource(strings = " ")
+        @EmptySource
+        @ValueSource(strings = {" ", "  "})
         void throwsForBlankContext(String context) {
             assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requireNotEmpty("x", context));
@@ -716,6 +724,13 @@ class ObjectToolsTest {
             assertEquals("ctx must not be empty", ex.getMessage());
         }
 
+        @ParameterizedTest
+        @NullSource
+        void throwsForNullContext(String context) {
+            assertThrows(NullPointerException.class,
+                    () -> ObjectTools.requireNotEmpty("x", context));
+        }
+
         @Test
         void throwsNpeForArrayWithNullElement() {
             var ex = assertThrows(NullPointerException.class,
@@ -751,6 +766,138 @@ class ObjectToolsTest {
         void varArgsOverloadPassesThrough() {
             var x = "x";
             assertSame(x, ObjectTools.requireNotEmpty(x, "%s must not be null", "%s must not be empty", x));
+        }
+    }
+
+    @Nested
+    @DisplayName("requirePositive")
+    class RequirePositiveTest {
+
+        static Stream<Arguments> positiveNumbers() {
+            return Stream.of(
+                    Arguments.of(1),
+                    Arguments.of(42L),
+                    Arguments.of(0.1d),
+                    Arguments.of(0.001f),
+                    Arguments.of(BigInteger.ONE),
+                    Arguments.of(BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE)),
+                    Arguments.of(BigDecimal.valueOf(0.01)),
+                    Arguments.of(new BigDecimal("9999999999999999999999999999.1"))
+            );
+        }
+
+        static Stream<Arguments> unsupportedComparableTypes() {
+            return Stream.of(
+                    Arguments.of("string"),
+                    Arguments.of(LocalDate.now()),
+                    Arguments.of(UUID.randomUUID()),
+                    Arguments.of(Duration.ofSeconds(1))
+            );
+        }
+
+        static Stream<Arguments> zeroOrNegativeNumbers() {
+            return Stream.of(
+                    Arguments.of(0),
+                    Arguments.of(-1),
+                    Arguments.of(0L),
+                    Arguments.of(-42L),
+                    Arguments.of(0.0d),
+                    Arguments.of(-0.1d),
+                    Arguments.of(0.0f),
+                    Arguments.of(-0.001f),
+                    Arguments.of(BigInteger.ZERO),
+                    Arguments.of(BigInteger.valueOf(-1)),
+                    Arguments.of(BigDecimal.ZERO),
+                    Arguments.of(BigDecimal.valueOf(-0.01)),
+                    Arguments.of(new BigDecimal("-9999999999999999.1"))
+            );
+        }
+
+        @ParameterizedTest(name = "allows positive: {0}")
+        @MethodSource("positiveNumbers")
+        <T extends Comparable<T>> void allowsPositiveValues(T value) {
+            assertSame(value, ObjectTools.requirePositive(value, "value"));
+        }
+
+        @Test
+        void defaultMessageUsesLabelAndValue() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requirePositive(-5, "age"));
+            assertEquals("age must be positive, got: -5", ex.getMessage());
+        }
+
+        @Test
+        void formattingFailureFallsBack() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requirePositive(-1, "%s %s must be > 0", "onlyOne"));
+            assertEquals("%s %s must be > 0", ex.getMessage());
+        }
+
+        @Test
+        void returnsSameInstance() {
+            var bd = new BigDecimal("42.5");
+            assertSame(bd, ObjectTools.requirePositive(bd, "bd"));
+        }
+
+        @SuppressWarnings({"rawtypes"})
+        @ParameterizedTest(name = "throws IAE for unsupported type: {0}")
+        @MethodSource("unsupportedComparableTypes")
+        void throwsForUnsupportedComparableType(Comparable value) {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requirePositive(value, "value"));
+            assertTrue(ex.getMessage().startsWith("Unsupported type for requirePositive: "));
+        }
+
+        @ParameterizedTest(name = "throws IAE for zero or negative: {0}")
+        @MethodSource("zeroOrNegativeNumbers")
+        <T extends Comparable<T>> void throwsForZeroOrNegative(T value) {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requirePositive(value, "value"));
+            assertEquals("value must be positive, got: " + value, ex.getMessage());
+        }
+
+        @ParameterizedTest
+        @EmptySource
+        @ValueSource(strings = {" ", "  "})
+        void throwsIaeForBlankMessage(String message) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requirePositive(1, message));
+        }
+
+        @ParameterizedTest
+        @NullSource
+        void throwsIaeForNullMessage(String message) {
+            assertThrows(NullPointerException.class,
+                    () -> ObjectTools.requirePositive(1, message));
+        }
+
+        @Test
+        @SuppressWarnings("DataFlowIssue")
+        void throwsNpeForNullContext() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> ObjectTools.requirePositive(1, null));
+            assertEquals("context must not be null", ex.getMessage());
+        }
+
+        @Test
+        @SuppressWarnings("DataFlowIssue")
+        void throwsNpeForNullValue() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> ObjectTools.requirePositive(null, "value"));
+            assertEquals("value must not be null", ex.getMessage());
+        }
+
+        @Test
+        void varArgsOverloadFormatsAndPasses() {
+            var val = 5;
+            assertSame(val, ObjectTools.requirePositive(val, "%s %s must be > 0", "input", "value"));
+        }
+
+        @Test
+        void varArgsOverloadFormatsAndThrows() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requirePositive(-1, "%s %s must be > 0", "input", "value"));
+            assertEquals("input value must be > 0", ex.getMessage());
         }
     }
 }

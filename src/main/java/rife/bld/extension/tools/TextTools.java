@@ -16,9 +16,13 @@
 
 package rife.bld.extension.tools;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import rife.bld.extension.tools.internal.ToolsSupport;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
@@ -278,5 +282,95 @@ public final class TextTools {
 
     private static String removeWhitespace(@Nullable CharSequence cs) {
         return cs == null ? "" : WHITESPACE_PATTERN.matcher(cs).replaceAll("");
+    }
+
+    /**
+     * Checks that the specified character sequence is not {@code null}, not empty, and not whitespace-only.
+     *
+     * @param str     the character sequence to check
+     * @param context the context description used in the exception messages
+     * @param <T>     the type of the character sequence
+     * @return {@code str} if not blank
+     * @throws NullPointerException     if {@code str} is {@code null}
+     * @throws IllegalArgumentException if {@code str} is empty or whitespace-only
+     * @since 1.0
+     */
+    public static <T extends CharSequence> T requireNotBlank(@Nullable T str, @NonNull String context) {
+        ToolsSupport.requireContext(context);
+        return requireNotBlank(str,
+                context + " must not be null",
+                context + " must not be blank");
+    }
+
+    /**
+     * Checks that the specified character sequence is not {@code null}, not empty, and not whitespace-only,
+     * and throws a customized exception if it is.
+     *
+     * @param str          the character sequence to check
+     * @param nullMessage  detail message if {@code str} is {@code null}
+     * @param blankMessage detail message if {@code str} is empty or whitespace-only
+     * @param args         optional format arguments for the messages
+     * @param <T>          the type of the character sequence
+     * @return {@code str} if not blank
+     * @throws NullPointerException     if {@code str} is {@code null}
+     * @throws IllegalArgumentException if {@code str} is empty or whitespace-only
+     * @since 1.0
+     */
+    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
+    public static <T extends CharSequence> T requireNotBlank(@Nullable T str,
+                                                             @NonNull String nullMessage,
+                                                             @NonNull String blankMessage,
+                                                             @Nullable Object... args) {
+        Objects.requireNonNull(str, ToolsSupport.formatMessage(nullMessage, args));
+
+        if (str.toString().isBlank()) {
+            throw new IllegalArgumentException(ToolsSupport.formatMessage(blankMessage, args));
+        }
+        return str;
+    }
+
+    /**
+     * Checks that the specified character sequence is not {@code null} and not empty.
+     *
+     * @param str     the character sequence to check
+     * @param context the context description used in the exception messages
+     * @param <T>     the type of the character sequence
+     * @return {@code str} if not empty
+     * @throws NullPointerException     if {@code str} is {@code null}
+     * @throws IllegalArgumentException if {@code str} is empty
+     * @since 1.0
+     */
+    public static <T extends CharSequence> T requireNotEmpty(@Nullable T str, @NonNull String context) {
+        ToolsSupport.requireContext(context);
+        return requireNotEmpty(str,
+                context + " must not be null",
+                context + " must not be empty");
+    }
+
+    /**
+     * Checks that the specified character sequence is not {@code null} and not empty,
+     * and throws a customized exception if it is.
+     *
+     * @param str          the character sequence to check
+     * @param nullMessage  detail message if {@code str} is {@code null}
+     * @param emptyMessage detail message if {@code str} is empty
+     * @param args         optional format arguments for the messages
+     * @param <T>          the type of the character sequence
+     * @return {@code str} if not empty
+     * @throws NullPointerException     if {@code str} is {@code null}
+     * @throws IllegalArgumentException if {@code str} is empty
+     * @since 1.0
+     */
+    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
+    public static <T extends CharSequence> T requireNotEmpty(@Nullable T str,
+                                                             @NonNull String nullMessage,
+                                                             @NonNull String emptyMessage,
+                                                             @Nullable Object... args) {
+        Objects.requireNonNull(str, ToolsSupport.formatMessage(nullMessage, args));
+
+        if (str.isEmpty()) {
+            throw new IllegalArgumentException(ToolsSupport.formatMessage(emptyMessage, args));
+        }
+        return str;
     }
 }

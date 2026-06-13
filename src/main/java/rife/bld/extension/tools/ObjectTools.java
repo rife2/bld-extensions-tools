@@ -20,14 +20,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import rife.bld.extension.testing.VisibleForTesting;
+import rife.bld.extension.tools.internal.ToolsSupport;
 
 import java.lang.reflect.Array;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Collection;
-import java.util.IllegalFormatException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.logging.Logger;
 
 /**
  * Object Tools.
@@ -64,8 +65,6 @@ public final class ObjectTools {
     static final Predicate<Object> isEmptyPredicate = ObjectTools::isEmpty;
     @VisibleForTesting
     static final Predicate<Object> isNotEmptyPredicate = ObjectTools::isNotEmpty;
-
-    private static final Logger logger = Logger.getLogger(ObjectTools.class.getName());
 
     private ObjectTools() {
     }
@@ -282,23 +281,6 @@ public final class ObjectTools {
         return forEachBoxedPrimitiveArray(container, predicate, allMode);
     }
 
-    /**
-     * Formats a message with optional args. Falls back to the raw message if formatting
-     * fails, logging a warning so callers are aware of the mismatched format string.
-     */
-    private static String formatMessage(String message, Object... args) {
-        if (args == null || args.length == 0) {
-            return message;
-        }
-        try {
-            return String.format(message, args);
-        } catch (IllegalFormatException e) {
-            logger.warning(() -> "ObjectTools: message formatting failed for pattern \""
-                    + message + "\": " + e.getMessage());
-            return message;
-        }
-    }
-
     @VisibleForTesting
     static boolean handlePrimitiveFastPath(Predicate<Object> predicate, Object container, boolean allMode) {
         int len = Array.getLength(container);
@@ -389,7 +371,7 @@ public final class ObjectTools {
      * @since 1.3
      */
     public static <T> T requireEmpty(@NonNull T value, @NonNull String message) {
-        requireNonBlankMessage(message);
+        ToolsSupport.requireMessage(message);
         validateNullsFirst(value, message);
         if (!allEmpty(value)) {
             throw new IllegalArgumentException(message);
@@ -417,16 +399,7 @@ public final class ObjectTools {
      * @since 1.3
      */
     public static <T> T requireEmpty(@NonNull T value, @NonNull String message, @Nullable Object... args) {
-        return requireEmpty(value, formatMessage(message, args));
-    }
-
-    /**
-     * Validates that a message string is not {@code null}, empty, or blank (whitespace-only).
-     */
-    private static void requireNonBlankMessage(String message) {
-        if (TextTools.isBlank(message)) {
-            throw new IllegalArgumentException("message must not be null, empty, or blank");
-        }
+        return requireEmpty(value, ToolsSupport.formatMessage(message, args));
     }
 
     /**
@@ -449,11 +422,12 @@ public final class ObjectTools {
      * @param <T>     the value type
      * @return the validated value, never {@code null}
      * @throws NullPointerException     if the {@code value} is {@code null} or contains {@code null} elements
-     * @throws IllegalArgumentException if {@code context} is {@code null}, empty, or blank
+     * @throws NullPointerException     if {@code context} is {@code null}
+     * @throws IllegalArgumentException if {@code context} is empty, or blank
      * @since 1.3
      */
     public static <T> T requireNonNull(@NonNull T value, @NonNull String context) {
-        requireNonBlankMessage(context);
+        ToolsSupport.requireContext(context);
         return requireNonNull(value, context + " must not be null", new Object[0]);
     }
 
@@ -483,8 +457,8 @@ public final class ObjectTools {
      * @since 1.3
      */
     public static <T> T requireNonNull(@NonNull T value, @NonNull String message, @Nullable Object... args) {
-        requireNonBlankMessage(message);
-        var formatted = formatMessage(message, args);
+        ToolsSupport.requireMessage(message);
+        var formatted = ToolsSupport.formatMessage(message, args);
         validateNullsFirst(value, formatted);
         return value;
     }
@@ -505,11 +479,12 @@ public final class ObjectTools {
      * @return the validated value, never {@code null} or empty
      * @throws NullPointerException     if the {@code value} or any element is {@code null}
      * @throws IllegalArgumentException if the {@code value} is empty
-     * @throws IllegalArgumentException if {@code context} is {@code null}, empty, or blank
+     * @throws NullPointerException     if {@code context} is {@code null}
+     * @throws IllegalArgumentException if {@code context} is empty, or blank
      * @since 1.3
      */
     public static <T> T requireNotEmpty(@NonNull T value, @NonNull String context) {
-        requireNonBlankMessage(context);
+        ToolsSupport.requireContext(context);
         return requireNotEmpty(value,
                 context + " must not be null",
                 context + " must not be empty");
@@ -534,8 +509,8 @@ public final class ObjectTools {
      * @since 1.3
      */
     public static <T> T requireNotEmpty(@NonNull T value, @NonNull String nullMessage, @NonNull String emptyMessage) {
-        requireNonBlankMessage(nullMessage);
-        requireNonBlankMessage(emptyMessage);
+        ToolsSupport.requireMessage(nullMessage);
+        ToolsSupport.requireMessage(emptyMessage);
         validateNullsFirst(value, nullMessage);
         if (!allNotEmpty(value)) {
             throw new IllegalArgumentException(emptyMessage);
@@ -568,7 +543,60 @@ public final class ObjectTools {
                                         @NonNull String nullMessage,
                                         @NonNull String emptyMessage,
                                         @Nullable Object... args) {
-        return requireNotEmpty(value, formatMessage(nullMessage, args), formatMessage(emptyMessage, args));
+        return requireNotEmpty(value, ToolsSupport.formatMessage(nullMessage, args), ToolsSupport.formatMessage(emptyMessage, args));
+    }
+
+    /**
+     * Checks that the specified value is strictly positive.
+     *
+     * <p>This method is generic and works with any {@link Comparable} type that has a natural
+     * zero value, including {@link Integer}, {@link Long}, {@link Double}, {@link Float},
+     * {@link BigInteger}, and {@link BigDecimal}.
+     *
+     * @param <T>     the type of the value, must implement {@link Comparable}
+     * @param value   the value to check for positivity; must not be {@code null}
+     * @param context the context string used in exception messages; must not be {@code null}, empty, or blank
+     * @return the validated value if it is greater than zero
+     * @throws NullPointerException     if {@code value} is {@code null}
+     * @throws NullPointerException     if {@code context} is {@code null}
+     * @throws IllegalArgumentException if {@code context} is empty, or blank
+     * @throws IllegalArgumentException if {@code value} is zero or negative
+     * @throws IllegalArgumentException if {@code value} is of an unsupported type
+     * @since 1.3
+     */
+    public static <T extends Comparable<T>> T requirePositive(@NonNull T value, @NonNull String context) {
+        ToolsSupport.requireContext(context);
+        return requirePositive(value, "%s must be positive, got: %s", context, value);
+    }
+
+    /**
+     * Checks that the specified value is strictly positive.
+     *
+     * <p>The message may contain {@link String#format(String, Object...)} placeholders
+     * resolved using the supplied {@code args}. If formatting fails, the raw message is used
+     * and a warning is logged.
+     *
+     * @param <T>     the type of the value, must implement {@link Comparable}
+     * @param value   the value to check for positivity; must not be {@code null}
+     * @param message the exception message or format string; must not be {@code null}, empty, or blank
+     * @param args    optional arguments used to format the {@code message}
+     * @return the validated value if it is greater than zero
+     * @throws NullPointerException     if {@code value} or {@code context} is {@code null}
+     * @throws IllegalArgumentException if {@code value} is zero or negative
+     * @throws IllegalArgumentException if {@code message} is {@code null}, empty, or blank
+     * @throws IllegalArgumentException if {@code value} is of an unsupported type
+     * @since 1.3
+     */
+    public static <T extends Comparable<T>> T requirePositive(@NonNull T value,
+                                                              @NonNull String message,
+                                                              @Nullable Object... args) {
+        ToolsSupport.requireMessage(message);
+        requireNonNull(value, "value");
+
+        if (value.compareTo(zeroOf(value)) <= 0) {
+            throw new IllegalArgumentException(ToolsSupport.formatMessage(message, args));
+        }
+        return value;
     }
 
     /**
@@ -585,5 +613,36 @@ public final class ObjectTools {
         if (isContainer(value) && !isAllNonNull(value)) {
             throw new NullPointerException(message);
         }
+    }
+
+    /**
+     * Returns the zero value for the given type.
+     *
+     * @param <T>   the type of the value
+     * @param value instance used to determine the type
+     * @return the zero value corresponding to {@code value}'s type
+     * @throws IllegalArgumentException if the type is not supported
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> T zeroOf(T value) {
+        if (value instanceof Integer) {
+            return (T) (Object) 0;
+        }
+        if (value instanceof Long) {
+            return (T) (Object) 0L;
+        }
+        if (value instanceof Double) {
+            return (T) (Object) 0.0d;
+        }
+        if (value instanceof Float) {
+            return (T) (Object) 0.0f;
+        }
+        if (value instanceof BigInteger) {
+            return (T) BigInteger.ZERO;
+        }
+        if (value instanceof BigDecimal) {
+            return (T) BigDecimal.ZERO;
+        }
+        throw new IllegalArgumentException("Unsupported type for requirePositive: " + value.getClass().getName());
     }
 }
