@@ -403,6 +403,114 @@ public final class ObjectTools {
     }
 
     /**
+     * Checks that the specified value is strictly negative.
+     *
+     * <p>This method is generic and works with any {@link Comparable} type that has a natural
+     * zero value, including {@link Integer}, {@link Long}, {@link Double}, {@link Float},
+     * {@link BigInteger}, and {@link BigDecimal}.
+     *
+     * @param <T>     the type of the value, must implement {@link Comparable}
+     * @param value   the value to check for negativity; must not be {@code null}
+     * @param context the context string used in exception messages; must not be {@code null}, empty, or blank
+     * @return the validated value if it is less than zero
+     * @throws NullPointerException     if {@code value} is {@code null}
+     * @throws NullPointerException     if {@code context} is {@code null}
+     * @throws IllegalArgumentException if {@code context} is empty, or blank
+     * @throws IllegalArgumentException if {@code value} is zero or positive
+     * @throws IllegalArgumentException if {@code value} is of an unsupported type
+     * @since 1.3
+     */
+    public static <T extends Comparable<T>> T requireNegative(@NonNull T value, @NonNull String context) {
+        ToolsSupport.requireContext(context);
+        return requireNegative(value, "%s must be negative, got: %s", context, value);
+    }
+
+    /**
+     * Checks that the specified value is strictly negative.
+     *
+     * <p>The message may contain {@link String#format(String, Object...)} placeholders
+     * resolved using the supplied {@code args}. If formatting fails, the raw message is used
+     * and a warning is logged.
+     *
+     * @param <T>     the type of the value, must implement {@link Comparable}
+     * @param value   the value to check for negativity; must not be {@code null}
+     * @param message the exception message or format string; must not be {@code null}, empty, or blank
+     * @param args    optional arguments used to format the {@code message}
+     * @return the validated value if it is less than zero
+     * @throws NullPointerException     if {@code value} is {@code null}
+     * @throws NullPointerException     if {@code message} is {@code null}
+     * @throws IllegalArgumentException if {@code value} is zero or positive
+     * @throws IllegalArgumentException if {@code message} is empty, or blank
+     * @throws IllegalArgumentException if {@code value} is of an unsupported type
+     * @since 1.3
+     */
+    public static <T extends Comparable<T>> T requireNegative(@NonNull T value,
+                                                              @NonNull String message,
+                                                              @Nullable Object... args) {
+        ToolsSupport.requireMessage(message);
+        requireNonNull(value, "value");
+
+        if (value.compareTo(zeroOf(value)) >= 0) {
+            throw new IllegalArgumentException(ToolsSupport.formatMessage(message, args));
+        }
+        return value;
+    }
+
+    /**
+     * Checks that the specified value is non-negative.
+     *
+     * <p>This method is generic and works with any {@link Comparable} type that has a natural
+     * zero value, including {@link Integer}, {@link Long}, {@link Double}, {@link Float},
+     * {@link BigInteger}, and {@link BigDecimal}.
+     *
+     * @param <T>     the type of the value, must implement {@link Comparable}
+     * @param value   the value to check for non-negativity; must not be {@code null}
+     * @param context the context string used in exception messages; must not be {@code null}, empty, or blank
+     * @return the validated value if it is greater than or equal to zero
+     * @throws NullPointerException     if {@code value} is {@code null}
+     * @throws NullPointerException     if {@code context} is {@code null}
+     * @throws IllegalArgumentException if {@code context} is empty, or blank
+     * @throws IllegalArgumentException if {@code value} is negative
+     * @throws IllegalArgumentException if {@code value} is of an unsupported type
+     * @since 1.3
+     */
+    public static <T extends Comparable<T>> T requireNonNegative(@NonNull T value, @NonNull String context) {
+        ToolsSupport.requireContext(context);
+        return requireNonNegative(value, "%s must be non-negative, got: %s", context, value);
+    }
+
+    /**
+     * Checks that the specified value is non-negative.
+     *
+     * <p>The message may contain {@link String#format(String, Object...)} placeholders
+     * resolved using the supplied {@code args}. If formatting fails, the raw message is used
+     * and a warning is logged.
+     *
+     * @param <T>     the type of the value, must implement {@link Comparable}
+     * @param value   the value to check for non-negativity; must not be {@code null}
+     * @param message the exception message or format string; must not be {@code null}, empty, or blank
+     * @param args    optional arguments used to format the {@code message}
+     * @return the validated value if it is greater than or equal to zero
+     * @throws NullPointerException     if {@code value} is {@code null}
+     * @throws NullPointerException     if {@code message} is {@code null}
+     * @throws IllegalArgumentException if {@code value} is negative
+     * @throws IllegalArgumentException if {@code message} is empty, or blank
+     * @throws IllegalArgumentException if {@code value} is of an unsupported type
+     * @since 1.3
+     */
+    public static <T extends Comparable<T>> T requireNonNegative(@NonNull T value,
+                                                                 @NonNull String message,
+                                                                 @Nullable Object... args) {
+        ToolsSupport.requireMessage(message);
+        requireNonNull(value, "value");
+
+        if (value.compareTo(zeroOf(value)) < 0) {
+            throw new IllegalArgumentException(ToolsSupport.formatMessage(message, args));
+        }
+        return value;
+    }
+
+    /**
      * Requires the value to be not {@code null}, and all elements/entries to be not {@code null}.
      *
      * <p>If {@code value} is an array, {@link Collection}, or {@link Map},
@@ -543,7 +651,8 @@ public final class ObjectTools {
                                         @NonNull String nullMessage,
                                         @NonNull String emptyMessage,
                                         @Nullable Object... args) {
-        return requireNotEmpty(value, ToolsSupport.formatMessage(nullMessage, args), ToolsSupport.formatMessage(emptyMessage, args));
+        return requireNotEmpty(value, ToolsSupport.formatMessage(nullMessage, args),
+                ToolsSupport.formatMessage(emptyMessage, args));
     }
 
     /**
@@ -643,6 +752,6 @@ public final class ObjectTools {
         if (value instanceof BigDecimal) {
             return (T) BigDecimal.ZERO;
         }
-        throw new IllegalArgumentException("Unsupported type for requirePositive: " + value.getClass().getName());
+        throw new IllegalArgumentException("Unsupported type: " + value.getClass().getName());
     }
 }

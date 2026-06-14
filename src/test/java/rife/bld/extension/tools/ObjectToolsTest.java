@@ -490,6 +490,271 @@ class ObjectToolsTest {
     }
 
     @Nested
+    @DisplayName("requireNegative")
+    class RequireNegativeTest {
+
+        static Stream<Arguments> negativeNumbers() {
+            return Stream.of(
+                    Arguments.of(-1),
+                    Arguments.of(-42L),
+                    Arguments.of(-0.1d),
+                    Arguments.of(-0.001f),
+                    Arguments.of(BigInteger.valueOf(-1)),
+                    Arguments.of(BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.ONE)),
+                    Arguments.of(BigDecimal.valueOf(-0.01)),
+                    Arguments.of(new BigDecimal("-9999999999999999999999999999.1"))
+            );
+        }
+
+        static Stream<Arguments> unsupportedComparableTypes() {
+            return Stream.of(
+                    Arguments.of("string"),
+                    Arguments.of(LocalDate.now()),
+                    Arguments.of(UUID.randomUUID()),
+                    Arguments.of(Duration.ofSeconds(1))
+            );
+        }
+
+        static Stream<Arguments> zeroOrPositiveNumbers() {
+            return Stream.of(
+                    Arguments.of(0),
+                    Arguments.of(1),
+                    Arguments.of(0L),
+                    Arguments.of(42L),
+                    Arguments.of(0.0d),
+                    Arguments.of(0.1d),
+                    Arguments.of(0.0f),
+                    Arguments.of(0.001f),
+                    Arguments.of(BigInteger.ZERO),
+                    Arguments.of(BigInteger.ONE),
+                    Arguments.of(BigDecimal.ZERO),
+                    Arguments.of(BigDecimal.valueOf(0.01)),
+                    Arguments.of(new BigDecimal("9999999999999999.1"))
+            );
+        }
+
+        @ParameterizedTest(name = "allows negative: {0}")
+        @MethodSource("negativeNumbers")
+        <T extends Comparable<T>> void allowsNegativeValues(T value) {
+            assertSame(value, ObjectTools.requireNegative(value, "value"));
+        }
+
+        @Test
+        void defaultMessageUsesLabelAndValue() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNegative(5, "age"));
+            assertEquals("age must be negative, got: 5", ex.getMessage());
+        }
+
+        @Test
+        void formattingFailureFallsBack() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNegative(1, "%s %s must be < 0", "onlyOne"));
+            assertEquals("%s %s must be < 0", ex.getMessage());
+        }
+
+        @Test
+        void returnsSameInstance() {
+            var bd = new BigDecimal("-42.5");
+            assertSame(bd, ObjectTools.requireNegative(bd, "bd"));
+        }
+
+        @SuppressWarnings({"rawtypes"})
+        @ParameterizedTest(name = "throws IAE for unsupported type: {0}")
+        @MethodSource("unsupportedComparableTypes")
+        void throwsForUnsupportedComparableType(Comparable value) {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNegative(value, "value"));
+            assertTrue(ex.getMessage().startsWith("Unsupported type: " + value.getClass().getName()));
+        }
+
+        @ParameterizedTest(name = "throws IAE for zero or positive: {0}")
+        @MethodSource("zeroOrPositiveNumbers")
+        <T extends Comparable<T>> void throwsForZeroOrPositive(T value) {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNegative(value, "value"));
+            assertEquals("value must be negative, got: " + value, ex.getMessage());
+        }
+
+        @ParameterizedTest
+        @EmptySource
+        @ValueSource(strings = {" ", "  "})
+        void throwsIaeForBlankMessage(String message) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNegative(-1, message));
+        }
+
+        @ParameterizedTest
+        @NullSource
+        void throwsIaeForNullMessage(String message) {
+            assertThrows(NullPointerException.class,
+                    () -> ObjectTools.requireNegative(-1, message));
+        }
+
+        @Test
+        @SuppressWarnings("DataFlowIssue")
+        void throwsNpeForNullContext() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> ObjectTools.requireNegative(-1, null));
+            assertEquals("context must not be null", ex.getMessage());
+        }
+
+        @Test
+        @SuppressWarnings("DataFlowIssue")
+        void throwsNpeForNullValue() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> ObjectTools.requireNegative(null, "value"));
+            assertEquals("value must not be null", ex.getMessage());
+        }
+
+        @Test
+        void varArgsOverloadFormatsAndPasses() {
+            var val = -5;
+            assertSame(val, ObjectTools.requireNegative(val, "%s %s must be < 0", "input", "value"));
+        }
+
+        @Test
+        void varArgsOverloadFormatsAndThrows() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNegative(1, "%s %s must be < 0", "input", "value"));
+            assertEquals("input value must be < 0", ex.getMessage());
+        }
+    }
+
+    @Nested
+    @DisplayName("requireNonNegative")
+    class RequireNonNegativeTest {
+
+        static Stream<Arguments> negativeNumbers() {
+            return Stream.of(
+                    Arguments.of(-1),
+                    Arguments.of(-42L),
+                    Arguments.of(-0.1d),
+                    Arguments.of(-0.001f),
+                    Arguments.of(BigInteger.valueOf(-1)),
+                    Arguments.of(BigDecimal.valueOf(-0.01)),
+                    Arguments.of(new BigDecimal("-9999999999999999.1"))
+            );
+        }
+
+        static Stream<Arguments> nonNegativeNumbers() {
+            return Stream.of(
+                    Arguments.of(0),
+                    Arguments.of(1),
+                    Arguments.of(0L),
+                    Arguments.of(42L),
+                    Arguments.of(0.0d),
+                    Arguments.of(0.1d),
+                    Arguments.of(0.0f),
+                    Arguments.of(0.001f),
+                    Arguments.of(BigInteger.ZERO),
+                    Arguments.of(BigInteger.ONE),
+                    Arguments.of(BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE)),
+                    Arguments.of(BigDecimal.ZERO),
+                    Arguments.of(BigDecimal.valueOf(0.01)),
+                    Arguments.of(new BigDecimal("9999999999999999999999999999.1"))
+            );
+        }
+
+        static Stream<Arguments> unsupportedComparableTypes() {
+            return Stream.of(
+                    Arguments.of("string"),
+                    Arguments.of(LocalDate.now()),
+                    Arguments.of(UUID.randomUUID()),
+                    Arguments.of(Duration.ofSeconds(1))
+            );
+        }
+
+        @ParameterizedTest(name = "allows non-negative: {0}")
+        @MethodSource("nonNegativeNumbers")
+        <T extends Comparable<T>> void allowsNonNegativeValues(T value) {
+            assertSame(value, ObjectTools.requireNonNegative(value, "value"));
+        }
+
+        @Test
+        void defaultMessageUsesLabelAndValue() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNonNegative(-5, "age"));
+            assertEquals("age must be non-negative, got: -5", ex.getMessage());
+        }
+
+        @Test
+        void formattingFailureFallsBack() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNonNegative(-1, "%s %s must be >= 0", "onlyOne"));
+            assertEquals("%s %s must be >= 0", ex.getMessage());
+        }
+
+        @Test
+        void returnsSameInstance() {
+            var bd = BigDecimal.ZERO;
+            assertSame(bd, ObjectTools.requireNonNegative(bd, "bd"));
+        }
+
+        @ParameterizedTest(name = "throws IAE for negative: {0}")
+        @MethodSource("negativeNumbers")
+        <T extends Comparable<T>> void throwsForNegative(T value) {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNonNegative(value, "value"));
+            assertEquals("value must be non-negative, got: " + value, ex.getMessage());
+        }
+
+        @SuppressWarnings({"rawtypes"})
+        @ParameterizedTest(name = "throws IAE for unsupported type: {0}")
+        @MethodSource("unsupportedComparableTypes")
+        void throwsForUnsupportedComparableType(Comparable value) {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNonNegative(value, "value"));
+            System.out.println(ex.getMessage());
+            assertTrue(ex.getMessage().startsWith("Unsupported type: " + value.getClass().getName()));
+        }
+
+        @ParameterizedTest
+        @EmptySource
+        @ValueSource(strings = {" ", "  "})
+        void throwsIaeForBlankMessage(String message) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNonNegative(0, message));
+        }
+
+        @ParameterizedTest
+        @NullSource
+        void throwsIaeForNullMessage(String message) {
+            assertThrows(NullPointerException.class,
+                    () -> ObjectTools.requireNonNegative(0, message));
+        }
+
+        @Test
+        @SuppressWarnings("DataFlowIssue")
+        void throwsNpeForNullContext() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> ObjectTools.requireNonNegative(0, null));
+            assertEquals("context must not be null", ex.getMessage());
+        }
+
+        @Test
+        @SuppressWarnings("DataFlowIssue")
+        void throwsNpeForNullValue() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> ObjectTools.requireNonNegative(null, "value"));
+            assertEquals("value must not be null", ex.getMessage());
+        }
+
+        @Test
+        void varArgsOverloadFormatsAndPasses() {
+            var val = 0;
+            assertSame(val, ObjectTools.requireNonNegative(val, "%s %s must be >= 0", "input", "value"));
+        }
+
+        @Test
+        void varArgsOverloadFormatsAndThrows() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNonNegative(-1, "%s %s must be >= 0", "input", "value"));
+            assertEquals("input value must be >= 0", ex.getMessage());
+        }
+    }
+
+    @Nested
     @DisplayName("requireNonNull")
     class RequireNonNullTest {
 
@@ -845,7 +1110,7 @@ class ObjectToolsTest {
         void throwsForUnsupportedComparableType(Comparable value) {
             var ex = assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requirePositive(value, "value"));
-            assertTrue(ex.getMessage().startsWith("Unsupported type for requirePositive: "));
+            assertTrue(ex.getMessage().startsWith("Unsupported type: " + value.getClass().getName()));
         }
 
         @ParameterizedTest(name = "throws IAE for zero or negative: {0}")
