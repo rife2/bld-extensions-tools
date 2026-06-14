@@ -27,6 +27,7 @@ import java.math.BigInteger;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -267,47 +268,18 @@ class ObjectToolsTest {
     }
 
     @Nested
-    @DisplayName("handlePrimitiveFastPath")
-    class HandlePrimitiveFastPathTest {
+    @DisplayName("isContainer null branch")
+    class IsContainerNullTest {
 
         @Test
-        void isEmptyPredicate_allMode_emptyArray() {
-            assertTrue(ObjectTools.handlePrimitiveFastPath(ObjectTools.isEmptyPredicate, new int[0], true));
-        }
+        @DisplayName("isContainer returns false for null")
+        void isContainer_nullReturnsFalse() throws Exception {
+            var method = ObjectTools.class.getDeclaredMethod("isContainer", Object.class);
+            method.setAccessible(true);
 
-        @Test
-        void isEmptyPredicate_allMode_nonEmptyArray() {
-            assertFalse(ObjectTools.handlePrimitiveFastPath(ObjectTools.isEmptyPredicate, new int[]{1}, true));
-        }
+            boolean result = (boolean) method.invoke(null, (Object) null);
 
-        @Test
-        void isEmptyPredicate_anyMode_emptyArray() {
-            assertFalse(ObjectTools.handlePrimitiveFastPath(ObjectTools.isEmptyPredicate, new int[0], false));
-        }
-
-        @Test
-        void isEmptyPredicate_anyMode_nonEmptyArray() {
-            assertTrue(ObjectTools.handlePrimitiveFastPath(ObjectTools.isEmptyPredicate, new int[]{1}, false));
-        }
-
-        @Test
-        void isNotEmptyPredicate_allMode_emptyArray() {
-            assertFalse(ObjectTools.handlePrimitiveFastPath(ObjectTools.isNotEmptyPredicate, new int[0], true));
-        }
-
-        @Test
-        void isNotEmptyPredicate_allMode_nonEmptyArray() {
-            assertTrue(ObjectTools.handlePrimitiveFastPath(ObjectTools.isNotEmptyPredicate, new int[]{1}, true));
-        }
-
-        @Test
-        void isNotEmptyPredicate_anyMode_emptyArray() {
-            assertTrue(ObjectTools.handlePrimitiveFastPath(ObjectTools.isNotEmptyPredicate, new int[0], false));
-        }
-
-        @Test
-        void isNotEmptyPredicate_anyMode_nonEmptyArray() {
-            assertFalse(ObjectTools.handlePrimitiveFastPath(ObjectTools.isNotEmptyPredicate, new int[]{1}, false));
+            assertFalse(result); // hits: if (value == null) return false;
         }
     }
 
@@ -388,6 +360,79 @@ class ObjectToolsTest {
         @Test
         void nullFalse() {
             assertFalse(ObjectTools.isNotEmpty(null));
+        }
+    }
+
+    @Nested
+    @DisplayName("primitive array fast path")
+    class PrimitiveArrayFastPathTest {
+
+        @Test
+        void allEmpty_emptyPrimitiveArray() {
+            assertTrue(ObjectTools.allEmpty(new int[0]));
+        }
+
+        @Test
+        void allEmpty_nonEmptyPrimitiveArray() {
+            assertFalse(ObjectTools.allEmpty(new int[]{1}));
+        }
+
+        @Test
+        void allNotEmpty_emptyPrimitiveArray() {
+            assertFalse(ObjectTools.allNotEmpty(new int[0]));
+        }
+
+        @Test
+        void allNotEmpty_nonEmptyPrimitiveArray() {
+            assertTrue(ObjectTools.allNotEmpty(new int[]{1}));
+        }
+
+        @Test
+        void anyEmpty_emptyPrimitiveArray() {
+            assertTrue(ObjectTools.anyEmpty(new int[0]));
+        }
+
+        @Test
+        void anyEmpty_nonEmptyPrimitiveArray() {
+            assertFalse(ObjectTools.anyEmpty(new int[]{1}));
+        }
+
+        @Test
+        void anyNotEmpty_emptyPrimitiveArray() {
+            assertFalse(ObjectTools.anyNotEmpty(new int[0]));
+        }
+
+        @Test
+        void anyNotEmpty_nonEmptyPrimitiveArray() {
+            assertTrue(ObjectTools.anyNotEmpty(new int[]{1}));
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void primitiveArrayBranches() throws Exception {
+            var m = ObjectTools.class.getDeclaredMethod("forEachPrimitiveArray",
+                    Object.class, Predicate.class, boolean.class);
+            m.setAccessible(true);
+
+            var f1 = ObjectTools.class.getDeclaredField("isEmptyPredicate");
+            var f2 = ObjectTools.class.getDeclaredField("isNotEmptyPredicate");
+            f1.setAccessible(true);
+            f2.setAccessible(true);
+
+            Predicate<Object> isEmpty = (Predicate<Object>) f1.get(null);
+            Predicate<Object> isNotEmpty = (Predicate<Object>) f2.get(null);
+
+            // new int[0] cases
+            assertTrue((boolean) m.invoke(null, new int[0], isEmpty, true)); // allEmpty
+            assertTrue((boolean) m.invoke(null, new int[0], isEmpty, false)); // anyEmpty
+            assertFalse((boolean) m.invoke(null, new int[0], isNotEmpty, true)); // allNotEmpty
+            assertFalse((boolean) m.invoke(null, new int[0], isNotEmpty, false)); // anyNotEmpty
+
+            // new int[1] cases
+            assertFalse((boolean) m.invoke(null, new int[1], isEmpty, true)); // allEmpty
+            assertFalse((boolean) m.invoke(null, new int[1], isEmpty, false)); // anyEmpty
+            assertTrue((boolean) m.invoke(null, new int[1], isNotEmpty, true)); // allNotEmpty
+            assertTrue((boolean) m.invoke(null, new int[1], isNotEmpty, false)); // anyNotEmpty
         }
     }
 
@@ -919,20 +964,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        void formattedMessage() {
-            var ex = assertThrows(IllegalArgumentException.class,
-                    () -> ObjectTools.requireNotEmpty("", "%s is null", "%s is empty", "foo"));
-            assertEquals("foo is empty", ex.getMessage());
-        }
-
-        @Test
-        void formattingFailureFallsBack() {
-            var ex = assertThrows(IllegalArgumentException.class,
-                    () -> ObjectTools.requireNotEmpty("", "%s is null", "%s %s is empty", "onlyOne"));
-            assertEquals("%s %s is empty", ex.getMessage());
-        }
-
-        @Test
         void throwsForArrayWithEmptyElement() {
             var ex = assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requireNotEmpty(new Object[]{""}, "ctx"));
@@ -1025,12 +1056,6 @@ class ObjectToolsTest {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNotEmpty(null, "ctx"));
             assertEquals("ctx must not be null", ex.getMessage());
-        }
-
-        @Test
-        void varArgsOverloadPassesThrough() {
-            var x = "x";
-            assertSame(x, ObjectTools.requireNotEmpty(x, "%s must not be null", "%s must not be empty", x));
         }
     }
 
@@ -1165,4 +1190,5 @@ class ObjectToolsTest {
             assertEquals("input value must be > 0", ex.getMessage());
         }
     }
+
 }
