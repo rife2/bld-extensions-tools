@@ -22,6 +22,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import rife.bld.extension.tools.internal.ToolsSupport;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
@@ -37,6 +38,9 @@ import java.util.regex.Pattern;
  */
 public final class TextTools {
 
+    private static final String MUST_NOT_BE_BLANK = " must not be blank";
+    private static final String MUST_NOT_BE_EMPTY = " must not be empty";
+    private static final String MUST_NOT_BE_NULL = " must not be null";
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
 
     private TextTools() {
@@ -136,8 +140,7 @@ public final class TextTools {
      * @since 1.0
      */
     public static boolean isEmpty(@Nullable CharSequence... strings) {
-        return strings == null || strings.length == 0
-                || Arrays.stream(strings).allMatch(TextTools::isEmpty);
+        return strings == null || strings.length == 0 || Arrays.stream(strings).allMatch(TextTools::isEmpty);
     }
 
     /**
@@ -297,9 +300,7 @@ public final class TextTools {
      */
     public static <T extends CharSequence> T requireNotBlank(@Nullable T str, @NonNull String context) {
         ToolsSupport.requireContext(context);
-        return requireNotBlank(str,
-                context + " must not be null",
-                context + " must not be blank");
+        return requireNotBlank(str, context + MUST_NOT_BE_NULL, context + MUST_NOT_BE_BLANK);
     }
 
     /**
@@ -330,6 +331,74 @@ public final class TextTools {
     }
 
     /**
+     * Checks that the specified collection of character sequences is not {@code null}, not empty,
+     * and contains no {@code null}, empty, or whitespace-only elements.
+     *
+     * @param coll    the collection to check
+     * @param context the context description used in the exception messages
+     * @param <T>     the type of the character sequence
+     * @return {@code coll} if valid
+     * @throws NullPointerException     if {@code coll} is {@code null} or contains {@code null} elements
+     * @throws IllegalArgumentException if {@code coll} is empty or contains blank elements
+     * @since 1.0
+     */
+    public static <T extends CharSequence> Collection<T> requireNotBlank(
+            @Nullable Collection<T> coll, @NonNull String context) {
+        ToolsSupport.requireContext(context);
+        return requireNotBlank(coll,
+                context + MUST_NOT_BE_NULL,
+                context + MUST_NOT_BE_EMPTY,
+                context + " must not contain null elements",
+                context + " must not contain blank elements");
+    }
+
+    /**
+     * Checks that the specified collection of character sequences is not {@code null}, not empty,
+     * and contains no {@code null}, empty, or whitespace-only elements,
+     * and throws customized exceptions if validation fails.
+     *
+     * @param coll               the collection to check
+     * @param nullMessage        detail message if {@code coll} is {@code null}
+     * @param emptyMessage       detail message if {@code coll} is empty
+     * @param nullElementMessage detail message if {@code coll} contains {@code null} elements
+     * @param blankMessage       detail message if {@code coll} contains empty or whitespace-only elements
+     * @param args               optional format arguments for the messages
+     * @param <T>                the type of the character sequence
+     * @return {@code coll} if valid
+     * @throws NullPointerException     if {@code coll} is {@code null} or contains {@code null} elements
+     * @throws IllegalArgumentException if {@code coll} is empty or contains blank elements
+     * @since 1.0
+     */
+    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
+    public static <T extends CharSequence> Collection<T> requireNotBlank(
+            @Nullable Collection<T> coll,
+            @NonNull String nullMessage,
+            @NonNull String emptyMessage,
+            @NonNull String nullElementMessage,
+            @NonNull String blankMessage,
+            @Nullable Object... args) {
+
+        Objects.requireNonNull(nullMessage, "nullMessage" + MUST_NOT_BE_NULL);
+        Objects.requireNonNull(emptyMessage, "emptyMessage" + MUST_NOT_BE_NULL);
+        Objects.requireNonNull(nullElementMessage, "nullElementMessage" + MUST_NOT_BE_NULL);
+        Objects.requireNonNull(blankMessage, "blankMessage" + MUST_NOT_BE_NULL);
+
+        Objects.requireNonNull(coll, () -> ToolsSupport.formatMessage(nullMessage, args));
+
+        if (coll.isEmpty()) {
+            throw new IllegalArgumentException(ToolsSupport.formatMessage(emptyMessage, args));
+        }
+
+        for (T element : coll) {
+            Objects.requireNonNull(element, () -> ToolsSupport.formatMessage(nullElementMessage, args));
+            if (element.toString().isBlank()) {
+                throw new IllegalArgumentException(ToolsSupport.formatMessage(blankMessage, args));
+            }
+        }
+        return coll;
+    }
+
+    /**
      * Checks that the specified character sequence is not {@code null} and not empty.
      *
      * @param str     the character sequence to check
@@ -342,9 +411,7 @@ public final class TextTools {
      */
     public static <T extends CharSequence> T requireNotEmpty(@Nullable T str, @NonNull String context) {
         ToolsSupport.requireContext(context);
-        return requireNotEmpty(str,
-                context + " must not be null",
-                context + " must not be empty");
+        return requireNotEmpty(str, context + MUST_NOT_BE_NULL, context + MUST_NOT_BE_EMPTY);
     }
 
     /**
@@ -372,5 +439,72 @@ public final class TextTools {
             throw new IllegalArgumentException(ToolsSupport.formatMessage(emptyMessage, args));
         }
         return str;
+    }
+
+    /**
+     * Checks that the specified collection of character sequences is not {@code null}, not empty,
+     * and contains no {@code null} or empty elements.
+     *
+     * @param coll    the collection to check
+     * @param context the context description used in the exception messages
+     * @param <T>     the type of the character sequence
+     * @return {@code coll} if valid
+     * @throws NullPointerException     if {@code coll} is {@code null} or contains {@code null} elements
+     * @throws IllegalArgumentException if {@code coll} is empty or contains empty elements
+     * @since 1.0
+     */
+    public static <T extends CharSequence> Collection<T> requireNotEmpty(
+            @Nullable Collection<T> coll, @NonNull String context) {
+        ToolsSupport.requireContext(context);
+        return requireNotEmpty(coll,
+                context + MUST_NOT_BE_NULL,
+                context + MUST_NOT_BE_EMPTY,
+                context + " must not contain null elements",
+                context + " must not contain empty elements");
+    }
+
+    /**
+     * Checks that the specified collection of character sequences is not {@code null}, not empty,
+     * and contains no {@code null} or empty elements, and throws customized exceptions if validation fails.
+     *
+     * @param coll                the collection to check
+     * @param nullMessage         detail message if {@code coll} is {@code null}
+     * @param emptyMessage        detail message if {@code coll} is empty
+     * @param nullElementMessage  detail message if {@code coll} contains {@code null} elements
+     * @param emptyElementMessage detail message if {@code coll} contains empty elements
+     * @param args                optional format arguments for the messages
+     * @param <T>                 the type of the character sequence
+     * @return {@code coll} if valid
+     * @throws NullPointerException     if {@code coll} is {@code null} or contains {@code null} elements
+     * @throws IllegalArgumentException if {@code coll} is empty or contains empty elements
+     * @since 1.0
+     */
+    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
+    public static <T extends CharSequence> Collection<T> requireNotEmpty(
+            @Nullable Collection<T> coll,
+            @NonNull String nullMessage,
+            @NonNull String emptyMessage,
+            @NonNull String nullElementMessage,
+            @NonNull String emptyElementMessage,
+            @Nullable Object... args) {
+
+        Objects.requireNonNull(nullMessage, "nullMessage" + MUST_NOT_BE_NULL);
+        Objects.requireNonNull(emptyMessage, "emptyMessage" + MUST_NOT_BE_NULL);
+        Objects.requireNonNull(nullElementMessage, "nullElementMessage" + MUST_NOT_BE_NULL);
+        Objects.requireNonNull(emptyElementMessage, "emptyElementMessage" + MUST_NOT_BE_NULL);
+
+        Objects.requireNonNull(coll, () -> ToolsSupport.formatMessage(nullMessage, args));
+
+        if (coll.isEmpty()) {
+            throw new IllegalArgumentException(ToolsSupport.formatMessage(emptyMessage, args));
+        }
+
+        for (T element : coll) {
+            Objects.requireNonNull(element, () -> ToolsSupport.formatMessage(nullElementMessage, args));
+            if (element.isEmpty()) {
+                throw new IllegalArgumentException(ToolsSupport.formatMessage(emptyElementMessage, args));
+            }
+        }
+        return coll;
     }
 }

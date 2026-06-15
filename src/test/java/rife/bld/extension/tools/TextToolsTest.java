@@ -24,6 +24,11 @@ import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("Text Tools Tests")
@@ -1038,6 +1043,205 @@ class TextToolsTest {
     }
 
     @Nested
+    @DisplayName("requireNotBlank(Collection<? extends CharSequence>, String) Tests")
+    class RequireNotBlankCollectionContextTests {
+
+        @Test
+        @DisplayName("should fail fast on first blank element")
+        void shouldFailFastOnFirstBlank() {
+            var list = List.of("  ", "hello");
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotBlank(list, "values"));
+            assertEquals("values must not contain blank elements", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should fail fast on first null element")
+        void shouldFailFastOnFirstNull() {
+            var list = Arrays.asList(null, "  ", "world");
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotBlank(list, "values"));
+            assertEquals("values must not contain null elements", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should return the original collection when all elements valid")
+        void shouldReturnOriginalCollection() {
+            var list = List.of("hello", "world", "test");
+            assertSame(list, TextTools.requireNotBlank(list, "values"));
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"", " ", "  ", "\t"})
+        @DisplayName("should throw IllegalArgumentException for blank context")
+        void shouldThrowIllegalArgumentExceptionForBlankContext(String context) {
+            var list = List.of("hello");
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotBlank(list, context));
+            assertEquals("context must not be empty, or blank", ex.getMessage());
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
+        @DisplayName("should throw IllegalArgumentException when collection contains blank element")
+        void shouldThrowIllegalArgumentExceptionForBlankElement(String blank) {
+            var list = List.of("hello", blank, "world");
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotBlank(list, "values"));
+            assertEquals("values must not contain blank elements", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException for empty collection")
+        void shouldThrowIllegalArgumentExceptionForEmptyCollection() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotBlank(List.of(), "values"));
+            assertEquals("values must not be empty", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException for null collection")
+        void shouldThrowNullPointerExceptionForNullCollection() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotBlank((Collection<String>) null, "values"));
+            assertEquals("values must not be null", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException for null context")
+        @SuppressWarnings("DataFlowIssue")
+        void shouldThrowNullPointerExceptionForNullContext() {
+            var list = List.of("hello");
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotBlank(list, null));
+            assertEquals("context must not be null", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException when collection contains null element")
+        void shouldThrowNullPointerExceptionForNullElement() {
+            var list = Arrays.asList("hello", null, "world");
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotBlank(list, "values"));
+            assertEquals("values must not contain null elements", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should work with Set and other Collection types")
+        void shouldWorkWithSet() {
+            var set = Set.of("alpha", "beta", "gamma");
+            assertSame(set, TextTools.requireNotBlank(set, "values"));
+        }
+
+        @Test
+        @DisplayName("should work with StringBuilder and other CharSequence types")
+        void shouldWorkWithStringBuilder() {
+            var list = List.of(new StringBuilder("hello"), new StringBuffer("world"));
+            var result = TextTools.requireNotBlank(list, "values");
+            assertSame(list, result);
+        }
+    }
+
+    @Nested
+    @DisplayName("requireNotBlank(Collection, String, String, String, String, Object...) Tests")
+    class RequireNotBlankCollectionMessagesTests {
+
+        @Test
+        @DisplayName("should format blank message with args")
+        void shouldFormatBlankMessageWithArgs() {
+            var list = List.of("hello", "  ");
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotBlank(list,
+                            "null", "empty", "null elem", "%s cannot be blank", "fields"));
+            assertEquals("fields cannot be blank", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should format empty message with args")
+        void shouldFormatEmptyMessageWithArgs() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotBlank(List.of(),
+                            "null", "%s must not be empty", "null elem", "blank", "tags"));
+            assertEquals("tags must not be empty", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should format null element message with args")
+        void shouldFormatNullElementMessageWithArgs() {
+            var list = Arrays.asList("hello", null);
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotBlank(list,
+                            "null", "empty", "%s cannot contain nulls", "blank", "items"));
+            assertEquals("items cannot contain nulls", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should format null message with args")
+        void shouldFormatNullMessageWithArgs() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotBlank((Collection<String>) null,
+                            "%s must not be null", "empty", "null elem", "blank", "usernames"));
+            assertEquals("usernames must not be null", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should return the original collection when all elements valid")
+        void shouldReturnOriginalCollection() {
+            var list = List.of("hello", "world");
+            var result = TextTools.requireNotBlank(list,
+                    "null msg", "empty msg", "null elem msg", "blank msg");
+            assertSame(list, result);
+        }
+
+        @Test
+        @DisplayName("should return raw message when format args are invalid")
+        void shouldReturnRawMessageWhenFormatArgsAreInvalid() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotBlank((Collection<String>) null,
+                            "invalid %q format", "empty", "null elem", "blank"));
+            assertEquals("invalid %q format", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException with custom message for blank element")
+        void shouldThrowIllegalArgumentExceptionForBlankElementWithCustomMessage() {
+            var list = List.of("hello", "  ");
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotBlank(list,
+                            "custom null msg", "custom empty msg", "custom null elem msg", "custom blank msg"));
+            assertEquals("custom blank msg", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException with custom message for empty collection")
+        void shouldThrowIllegalArgumentExceptionWithCustomMessage() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotBlank(List.of(),
+                            "custom null msg", "custom empty msg", "custom null elem msg", "custom blank msg"));
+            assertEquals("custom empty msg", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException with custom message for null element")
+        void shouldThrowNullPointerExceptionForNullElementWithCustomMessage() {
+            var list = Arrays.asList("hello", null);
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotBlank(list,
+                            "custom null msg", "custom empty msg", "custom null elem msg", "custom blank msg"));
+            assertEquals("custom null elem msg", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException with custom message for null collection")
+        void shouldThrowNullPointerExceptionWithCustomMessage() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotBlank((Collection<String>) null,
+                            "custom null msg", "custom empty msg", "custom null elem msg", "custom blank msg"));
+            assertEquals("custom null msg", ex.getMessage());
+        }
+    }
+
+    @Nested
     @DisplayName("requireNotBlank(CharSequence, String) Tests")
     class RequireNotBlankContextTests {
 
@@ -1085,7 +1289,7 @@ class TextToolsTest {
         void shouldThrowNullPointerExceptionForNull() {
             var thrown = false;
             try {
-                TextTools.requireNotBlank(null, "value");
+                TextTools.requireNotBlank((String) null, "value");
             } catch (NullPointerException e) {
                 thrown = e.getMessage().equals("value must not be null");
             }
@@ -1174,6 +1378,211 @@ class TextToolsTest {
     }
 
     @Nested
+    @DisplayName("requireNotEmpty(Collection<? extends CharSequence>, String) Tests")
+    class RequireNotEmptyCollectionContextTests {
+
+        @Test
+        @DisplayName("should allow whitespace-only elements")
+        void shouldAllowWhitespaceOnlyElements() {
+            var list = List.of("hello", "  ", "\t", "world");
+            assertSame(list, TextTools.requireNotEmpty(list, "values"));
+        }
+
+        @Test
+        @DisplayName("should fail fast on first empty element")
+        void shouldFailFastOnFirstEmpty() {
+            var list = List.of("", "hello");
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotEmpty(list, "values"));
+            assertEquals("values must not contain empty elements", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should fail fast on first null element")
+        void shouldFailFastOnFirstNull() {
+            var list = Arrays.asList(null, "", "world");
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotEmpty(list, "values"));
+            assertEquals("values must not contain null elements", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should return the original collection when all elements valid")
+        void shouldReturnOriginalCollection() {
+            var list = List.of("hello", " ", "world");
+            assertSame(list, TextTools.requireNotEmpty(list, "values"));
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"", " ", "  ", "\t"})
+        @DisplayName("should throw IllegalArgumentException for blank context")
+        void shouldThrowIllegalArgumentExceptionForBlankContext(String context) {
+            var list = List.of("hello");
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotEmpty(list, context));
+            assertEquals("context must not be empty, or blank", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException for empty collection")
+        void shouldThrowIllegalArgumentExceptionForEmptyCollection() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotEmpty(List.of(), "values"));
+            assertEquals("values must not be empty", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException when collection contains empty element")
+        void shouldThrowIllegalArgumentExceptionForEmptyElement() {
+            var list = List.of("hello", "", "world");
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotEmpty(list, "values"));
+            assertEquals("values must not contain empty elements", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException for null collection")
+        void shouldThrowNullPointerExceptionForNullCollection() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotEmpty((Collection<String>) null, "values"));
+            assertEquals("values must not be null", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException for null context")
+        @SuppressWarnings("DataFlowIssue")
+        void shouldThrowNullPointerExceptionForNullContext() {
+            var list = List.of("hello");
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotEmpty(list, null));
+            assertEquals("context must not be null", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException when collection contains null element")
+        void shouldThrowNullPointerExceptionForNullElement() {
+            var list = Arrays.asList("hello", null, "world");
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotEmpty(list, "values"));
+            assertEquals("values must not contain null elements", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should work with Set and other Collection types")
+        void shouldWorkWithSet() {
+            var set = Set.of("alpha", "beta", "gamma");
+            assertSame(set, TextTools.requireNotEmpty(set, "values"));
+        }
+
+        @Test
+        @DisplayName("should work with StringBuilder and other CharSequence types")
+        void shouldWorkWithStringBuilder() {
+            var list = List.of(new StringBuilder("hello"), new StringBuffer(" "));
+            var result = TextTools.requireNotEmpty(list, "values");
+            assertSame(list, result);
+        }
+    }
+
+    @Nested
+    @DisplayName("requireNotEmpty(Collection, String, String, String, String, Object...) Tests")
+    class RequireNotEmptyCollectionMessagesTests {
+
+        @Test
+        @DisplayName("should format empty element message with args")
+        void shouldFormatEmptyElementMessageWithArgs() {
+            var list = List.of("hello", "");
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotEmpty(list,
+                            "null", "empty", "null elem", "%s cannot be empty", "fields"));
+            assertEquals("fields cannot be empty", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should format empty message with args")
+        void shouldFormatEmptyMessageWithArgs() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotEmpty(List.of(),
+                            "null", "%s must not be empty", "null elem", "empty elem", "tags"));
+            assertEquals("tags must not be empty", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should format null element message with args")
+        void shouldFormatNullElementMessageWithArgs() {
+            var list = Arrays.asList("hello", null);
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotEmpty(list,
+                            "null", "empty", "%s cannot contain nulls", "empty elem", "items"));
+            assertEquals("items cannot contain nulls", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should format null message with args")
+        void shouldFormatNullMessageWithArgs() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotEmpty((Collection<String>) null,
+                            "%s must not be null", "empty", "null elem", "empty elem", "usernames"));
+            assertEquals("usernames must not be null", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should return the original collection when all elements valid")
+        void shouldReturnOriginalCollection() {
+            var list = List.of("hello", " ");
+            var result = TextTools.requireNotEmpty(list,
+                    "null msg", "empty msg", "null elem msg", "empty elem msg");
+            assertSame(list, result);
+        }
+
+        @Test
+        @DisplayName("should return raw message when format args are invalid")
+        void shouldReturnRawMessageWhenFormatArgsAreInvalid() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotEmpty((Collection<String>) null,
+                            "invalid %q format", "empty", "null elem", "empty elem"));
+            assertEquals("invalid %q format", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException with custom message for empty element")
+        void shouldThrowIllegalArgumentExceptionForEmptyElementWithCustomMessage() {
+            var list = List.of("hello", "");
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotEmpty(list,
+                            "custom null msg", "custom empty msg", "custom null elem msg", "custom empty elem msg"));
+            assertEquals("custom empty elem msg", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException with custom message for empty collection")
+        void shouldThrowIllegalArgumentExceptionWithCustomMessage() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotEmpty(List.of(),
+                            "custom null msg", "custom empty msg", "custom null elem msg", "custom empty elem msg"));
+            assertEquals("custom empty msg", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException with custom message for null element")
+        void shouldThrowNullPointerExceptionForNullElementWithCustomMessage() {
+            var list = Arrays.asList("hello", null);
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotEmpty(list,
+                            "custom null msg", "custom empty msg", "custom null elem msg", "custom empty elem msg"));
+            assertEquals("custom null elem msg", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException with custom message for null collection")
+        void shouldThrowNullPointerExceptionWithCustomMessage() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotEmpty((Collection<String>) null,
+                            "custom null msg", "custom empty msg", "custom null elem msg", "custom empty elem msg"));
+            assertEquals("custom null msg", ex.getMessage());
+        }
+    }
+
+    @Nested
     @DisplayName("requireNotEmpty(CharSequence, String) Tests")
     class RequireNotEmptyContextTests {
 
@@ -1239,7 +1648,7 @@ class TextToolsTest {
         void shouldThrowNullPointerExceptionForNull() {
             var thrown = false;
             try {
-                TextTools.requireNotEmpty(null, "value");
+                TextTools.requireNotEmpty((String) null, "value");
             } catch (NullPointerException e) {
                 thrown = e.getMessage().equals("value must not be null");
             }
@@ -1334,4 +1743,5 @@ class TextToolsTest {
             assertTrue(thrown);
         }
     }
+
 }
