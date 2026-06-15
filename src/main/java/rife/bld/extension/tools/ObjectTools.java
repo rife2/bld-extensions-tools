@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -51,10 +52,6 @@ import java.util.logging.Logger;
  * first if the value or any nested element is {@code null}, then {@link IllegalArgumentException}
  * if the value is empty or blank.</p>
  *
- * <p><b>Logging:</b> This class uses {@code java.util.logging} (JUL) to warn
- * about malformed format strings. In applications that bridge JUL to another
- * framework (e.g. SLF4J, Log4j2), warnings will route through that bridge.</p>
- *
  * <p>For text-specific operations like blank-checking, see {@link TextTools}.</p>
  *
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
@@ -67,7 +64,10 @@ public final class ObjectTools {
      * deeper than this limit are not traversed, preventing {@link StackOverflowError}
      * on pathologically deep structures.
      */
-    private static final int MAX_NESTING_DEPTH = 64;
+    private static final int MAX_NESTING_DEPTH = 128;
+    private static final String MESSAGE_SUPPLIER = "messageSupplier";
+    private static final String MUST_NOT_BE_NULL = " must not be null";
+
     /**
      * Zero values keyed by boxed numeric type, used by {@link #zeroOf(Object)}.
      */
@@ -96,11 +96,6 @@ public final class ObjectTools {
      * For arrays, {@link Collection}, or {@link Map}, all elements/entries
      * must be {@code null} or empty.</p>
      *
-     * <p><b>Note:</b> An empty container (size 0) vacuously satisfies this
-     * condition and returns {@code true}. This is the logical complement of
-     * requiring <em>any</em> element to be non-empty, not the inverse of
-     * {@link #allNotEmpty(Object)} for empty containers.</p>
-     *
      * <p>For a {@link Map}, both keys and values are checked. See the class-level
      * note on map key checking.</p>
      *
@@ -113,6 +108,10 @@ public final class ObjectTools {
      *
      * @param value the value to inspect; may be {@code null}
      * @return {@code true} if the value and all elements are empty
+     * @apiNote An empty container (size 0) vacuously satisfies this
+     * condition and returns {@code true}. This is the logical complement of
+     * requiring <em>any</em> element to be non-empty, not the inverse of
+     * {@link #allNotEmpty(Object)} for empty containers.
      * @since 1.3
      */
     public static boolean allEmpty(@Nullable Object value) {
@@ -131,10 +130,6 @@ public final class ObjectTools {
      * For arrays, {@link Collection}, or {@link Map}, the container must be
      * not empty and all elements/entries must be not {@code null} and not empty.</p>
      *
-     * <p><b>Note:</b> An empty container returns {@code false} because there
-     * are no non-empty elements to satisfy the condition. This is intentionally
-     * asymmetric with {@link #allEmpty(Object)} for empty containers.</p>
-     *
      * <p>For a {@link Map}, both keys and values are checked. See the class-level
      * note on map key checking.</p>
      *
@@ -147,6 +142,9 @@ public final class ObjectTools {
      *
      * @param value the value to inspect; may be {@code null}
      * @return {@code true} if the value and all elements are not empty
+     * @apiNote An empty container returns {@code false} because there
+     * are no non-empty elements to satisfy the condition. This is intentionally
+     * asymmetric with {@link #allEmpty(Object)} for empty containers.</p>
      * @since 1.3
      */
     public static boolean allNotEmpty(@Nullable Object value) {
@@ -230,8 +228,8 @@ public final class ObjectTools {
      * levels deep to prevent {@link StackOverflowError}.</p>
      */
     @SuppressWarnings("PMD.AvoidThrowingNullPointerException")
-    // intentionally nullable — we perform the null check and throw NPE ourselves
-    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
+    @SuppressFBWarnings(value = "NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE",
+            justification = "intentionally nullable — we perform the null check and throw NPE ourselves")
     private static void checkForNulls(@Nullable Object value, String message) {
         Objects.requireNonNull(value, message);
         if (isContainer(value) && !isAllNonNull(value)) {
@@ -276,6 +274,10 @@ public final class ObjectTools {
      * result without reading elements.
      */
     private static boolean forEachElement(Object container, Predicate<Object> predicate, boolean allMode) {
+        if (container == null) {
+            return predicate.test(null) == allMode;
+        }
+
         if (container instanceof Object[] arr) {
             return forEachObjectArray(arr, predicate, allMode);
         }
@@ -379,7 +381,7 @@ public final class ObjectTools {
      * Returns {@code true} if {@code value} is an array, {@link Collection}, or {@link Map}.
      * Covers both object arrays and primitive arrays. Returns {@code false} if {@code value} is {@code null}.
      * <p>
-     * {@link CharSequence} is not a container use {@link TextTools}
+     * {@link CharSequence} is not a container; use {@link TextTools}.
      */
     private static boolean isContainer(Object value) {
         if (value == null) {
@@ -509,23 +511,20 @@ public final class ObjectTools {
      *
      * <p>If {@code value} is an array, {@link Collection}, or {@link Map},
      * all elements/entries must be empty. Throws {@link NullPointerException}
-     * if the value or any element is {@code null}. The message may contain
-     * {@link String#format(String, Object...)} placeholders resolved using the supplied
-     * {@code args}. If formatting fails, the raw message is used and a warning is logged.</p>
+     * if the value or any element is {@code null}.</p>
      *
-     * @param value   the value to validate and return; must not be {@code null}
-     * @param message the exception message or format string; must not be {@code null}, empty, or blank
-     * @param args    optional arguments used to format the {@code message}; pass {@code (Object) null} if a single
-     *                {@code null} argument is intended
-     * @param <T>     the value type
+     * @param <T>             the value type
+     * @param value           the value to validate and return; must not be {@code null}
+     * @param messageSupplier the supplier of the exception message; must not be {@code null}
      * @return the validated value
      * @throws NullPointerException     if the value or any element is {@code null}
      * @throws IllegalArgumentException if the value is not empty
-     * @throws IllegalArgumentException if {@code message} is {@code null}, empty, or blank
+     * @throws IllegalArgumentException if {@code messageSupplier} is {@code null}, empty, or blank
      * @since 1.3
      */
-    public static <T> T requireEmpty(@NonNull T value, @NonNull String message, @Nullable Object... args) {
-        return requireEmpty(value, ToolsSupport.formatMessage(message, args));
+    public static <T> T requireEmpty(@NonNull T value, @NonNull Supplier<String> messageSupplier) {
+        Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
+        return requireEmpty(value, messageSupplier.get());
     }
 
     /**
@@ -547,36 +546,29 @@ public final class ObjectTools {
      */
     public static <T extends Comparable<T>> T requireNegative(@NonNull T value, @NonNull String context) {
         ToolsSupport.requireContext(context);
-        return requireNegative(value, "%s must be negative, got: %s", context, value);
+        return requireNegative(value, () -> context + " must be negative, got: " + value);
     }
 
     /**
      * Checks that the specified value is strictly negative.
      *
-     * <p>The message may contain {@link String#format(String, Object...)} placeholders
-     * resolved using the supplied {@code args}. If formatting fails, the raw message is used
-     * and a warning is logged.
-     *
-     * @param <T>     the type of the value, must implement {@link Comparable}
-     * @param value   the value to check for negativity; must not be {@code null}
-     * @param message the exception message or format string; must not be {@code null}, empty, or blank
-     * @param args    optional arguments used to format the {@code message}; pass {@code (Object) null}
-     *                if a single {@code null} argument is intended
+     * @param <T>             the type of the value, must implement {@link Comparable}
+     * @param value           the value to check for negativity; must not be {@code null}
+     * @param messageSupplier the supplier of the exception message; must not be {@code null}
      * @return the validated value if it is less than zero
-     * @throws NullPointerException     if {@code value} or {@code message} is {@code null}
+     * @throws NullPointerException     if {@code value} or {@code messageSupplier} is {@code null}
      * @throws IllegalArgumentException if {@code value} is zero or positive
-     * @throws IllegalArgumentException if {@code message} is empty, or blank
+     * @throws IllegalArgumentException if {@code messageSupplier} is empty, or blank
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
     public static <T extends Comparable<T>> T requireNegative(@NonNull T value,
-                                                              @NonNull String message,
-                                                              @Nullable Object... args) {
-        ToolsSupport.requireMessage(message);
+                                                              @NonNull Supplier<String> messageSupplier) {
+        Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
         requireNonNull(value, "value");
 
         if (value.compareTo(zeroOf(value)) >= 0) {
-            throw new IllegalArgumentException(ToolsSupport.formatMessage(message, args));
+            throw new IllegalArgumentException(messageSupplier.get());
         }
         return value;
     }
@@ -600,36 +592,29 @@ public final class ObjectTools {
      */
     public static <T extends Comparable<T>> T requireNonNegative(@NonNull T value, @NonNull String context) {
         ToolsSupport.requireContext(context);
-        return requireNonNegative(value, "%s must be non-negative, got: %s", context, value);
+        return requireNonNegative(value, () -> context + " must be non-negative, got: " + value);
     }
 
     /**
      * Checks that the specified value is non-negative.
      *
-     * <p>The message may contain {@link String#format(String, Object...)} placeholders
-     * resolved using the supplied {@code args}. If formatting fails, the raw message is used
-     * and a warning is logged.
-     *
-     * @param <T>     the type of the value, must implement {@link Comparable}
-     * @param value   the value to check for non-negativity; must not be {@code null}
-     * @param message the exception message or format string; must not be {@code null}, empty, or blank
-     * @param args    optional arguments used to format the {@code message}; pass {@code (Object) null}
-     *                if a single {@code null} argument is intended
+     * @param <T>             the type of the value, must implement {@link Comparable}
+     * @param value           the value to check for non-negativity; must not be {@code null}
+     * @param messageSupplier the supplier of the exception message; must not be {@code null}
      * @return the validated value if it is greater than or equal to zero
-     * @throws NullPointerException     if {@code value} or {@code message} is {@code null}
+     * @throws NullPointerException     if {@code value} or {@code messageSupplier} is {@code null}
      * @throws IllegalArgumentException if {@code value} is negative
-     * @throws IllegalArgumentException if {@code message} is empty, or blank
+     * @throws IllegalArgumentException if {@code messageSupplier} is empty, or blank
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
     public static <T extends Comparable<T>> T requireNonNegative(@NonNull T value,
-                                                                 @NonNull String message,
-                                                                 @Nullable Object... args) {
-        ToolsSupport.requireMessage(message);
+                                                                 @NonNull Supplier<String> messageSupplier) {
+        Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
         requireNonNull(value, "value");
 
         if (value.compareTo(zeroOf(value)) < 0) {
-            throw new IllegalArgumentException(ToolsSupport.formatMessage(message, args));
+            throw new IllegalArgumentException(messageSupplier.get());
         }
         return value;
     }
@@ -659,7 +644,9 @@ public final class ObjectTools {
      */
     public static <T> T requireNonNull(@NonNull T value, @NonNull String context) {
         ToolsSupport.requireContext(context);
-        return requireNonNull(value, context + " must not be null", (Object) null);
+        Objects.requireNonNull(value, context + MUST_NOT_BE_NULL);
+        checkForNulls(value, context + " must not contain null elements");
+        return value;
     }
 
     /**
@@ -670,28 +657,23 @@ public final class ObjectTools {
      * not {@code null}. Unlike {@link #requireNotEmpty(Object, String, String)},
      * this method allows empty containers as long as they contain no {@code null} elements.</p>
      *
-     * <p>The message may contain {@link String#format(String, Object...)} placeholders
-     * resolved using the supplied {@code args}. If formatting fails, the raw message is used
-     * and a warning is logged.</p>
-     *
      * <p><b>Note:</b> Nested containers are checked iteratively up to
      * {@value #MAX_NESTING_DEPTH} levels deep to prevent {@link StackOverflowError}.</p>
      *
-     * @param value   the value to validate and return; must not be {@code null}
-     * @param message the message for {@code NullPointerException}; must not be {@code null}, empty, or blank
-     * @param args    optional arguments used to format the {@code message}; pass {@code (Object) null}
-     *                if a single {@code null} argument is intended
-     * @param <T>     the value type
+     * @param value           the value to validate and return; must not be {@code null}
+     * @param messageSupplier the supplier of the exception message; must not be {@code null}
+     * @param <T>             the value type
      * @return the validated value, never {@code null}
      * @throws NullPointerException     if the {@code value} is {@code null} or contains {@code null} elements
-     * @throws NullPointerException     if {@code message} is {@code null}
-     * @throws IllegalArgumentException if {@code message} is empty, or blank
+     * @throws NullPointerException     if {@code messageSupplier} is {@code null}
+     * @throws IllegalArgumentException if {@code messageSupplier} is empty, or blank
      * @since 1.3
      */
-    public static <T> T requireNonNull(@NonNull T value, @NonNull String message, @Nullable Object... args) {
-        ToolsSupport.requireMessage(message);
-        var formatted = ToolsSupport.formatMessage(message, args);
-        checkForNulls(value, formatted);
+    public static <T> T requireNonNull(@NonNull T value, @NonNull Supplier<String> messageSupplier) {
+        Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
+        var message = messageSupplier.get();
+        Objects.requireNonNull(value, message);
+        checkForNulls(value, message);
         return value;
     }
 
@@ -718,7 +700,7 @@ public final class ObjectTools {
     public static <T> T requireNotEmpty(@NonNull T value, @NonNull String context) {
         ToolsSupport.requireContext(context);
         return requireNotEmpty(value,
-                context + " must not be null",
+                context + MUST_NOT_BE_NULL,
                 context + " must not be empty");
     }
 
@@ -769,36 +751,29 @@ public final class ObjectTools {
      */
     public static <T extends Comparable<T>> T requirePositive(@NonNull T value, @NonNull String context) {
         ToolsSupport.requireContext(context);
-        return requirePositive(value, "%s must be positive, got: %s", context, value);
+        return requirePositive(value, () -> context + " must be positive, got: " + value);
     }
 
     /**
      * Checks that the specified value is strictly positive.
      *
-     * <p>The message may contain {@link String#format(String, Object...)} placeholders
-     * resolved using the supplied {@code args}. If formatting fails, the raw message is used
-     * and a warning is logged.
-     *
-     * @param <T>     the type of the value, must implement {@link Comparable}
-     * @param value   the value to check for positivity; must not be {@code null}
-     * @param message the exception message or format string; must not be {@code null}, empty, or blank
-     * @param args    optional arguments used to format the {@code message}; pass {@code (Object) null}
-     *                if a single {@code null} argument is intended
+     * @param <T>             the type of the value, must implement {@link Comparable}
+     * @param value           the value to check for positivity; must not be {@code null}
+     * @param messageSupplier the supplier of the exception message; must not be {@code null}
      * @return the validated value if it is greater than zero
-     * @throws NullPointerException     if {@code value} or {@code message} is {@code null}
+     * @throws NullPointerException     if {@code value} or {@code messageSupplier} is {@code null}
      * @throws IllegalArgumentException if {@code value} is zero or negative
-     * @throws IllegalArgumentException if {@code message} is empty, or blank
+     * @throws IllegalArgumentException if {@code messageSupplier} is empty, or blank
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
     public static <T extends Comparable<T>> T requirePositive(@NonNull T value,
-                                                              @NonNull String message,
-                                                              @Nullable Object... args) {
-        ToolsSupport.requireMessage(message);
+                                                              @NonNull Supplier<String> messageSupplier) {
+        Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
         requireNonNull(value, "value");
 
         if (value.compareTo(zeroOf(value)) <= 0) {
-            throw new IllegalArgumentException(ToolsSupport.formatMessage(message, args));
+            throw new IllegalArgumentException(messageSupplier.get());
         }
         return value;
     }

@@ -452,7 +452,7 @@ class ObjectToolsTest {
         @Test
         void formattedMessage() {
             var ex = assertThrows(IllegalArgumentException.class,
-                    () -> ObjectTools.requireEmpty("x", "Value %s must be empty", "foo"));
+                    () -> ObjectTools.requireEmpty("x", () -> String.format("Value %s must be empty", "foo")));
             assertEquals("Value foo must be empty", ex.getMessage());
         }
 
@@ -523,13 +523,13 @@ class ObjectToolsTest {
         @Test
         void varArgsOverloadFormatsAndPasses() {
             var x = "";
-            assertSame(x, ObjectTools.requireEmpty(x, "value '%s' must be empty", "input"));
+            assertSame(x, ObjectTools.requireEmpty(x, () -> String.format("value '%s' must be empty", "input")));
         }
 
         @Test
         void varArgsOverloadFormatsAndThrows() {
             var ex = assertThrows(IllegalArgumentException.class,
-                    () -> ObjectTools.requireEmpty("x", "value '%s' must be empty", "input"));
+                    () -> ObjectTools.requireEmpty("x", () -> String.format("value '%s' must be empty", "input")));
             assertEquals("value 'input' must be empty", ex.getMessage());
         }
     }
@@ -592,13 +592,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        void formattingFailureFallsBack() {
-            var ex = assertThrows(IllegalArgumentException.class,
-                    () -> ObjectTools.requireNegative(1, "%s %s must be < 0", "onlyOne"));
-            assertEquals("%s %s must be < 0", ex.getMessage());
-        }
-
-        @Test
         void returnsSameInstance() {
             var bd = new BigDecimal("-42.5");
             assertSame(bd, ObjectTools.requireNegative(bd, "bd"));
@@ -640,7 +633,7 @@ class ObjectToolsTest {
         @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNullContext() {
             var ex = assertThrows(NullPointerException.class,
-                    () -> ObjectTools.requireNegative(-1, null));
+                    () -> ObjectTools.requireNegative(-1, (String) null));
             assertEquals("context must not be null", ex.getMessage());
         }
 
@@ -655,14 +648,14 @@ class ObjectToolsTest {
         @Test
         void varArgsOverloadFormatsAndPasses() {
             var val = -5;
-            assertSame(val, ObjectTools.requireNegative(val, "%s %s must be < 0", "input", "value"));
+            assertSame(val, ObjectTools.requireNegative(val, String.format("%s %s must be < 0", "input", "value")));
         }
 
         @Test
         void varArgsOverloadFormatsAndThrows() {
             var ex = assertThrows(IllegalArgumentException.class,
-                    () -> ObjectTools.requireNegative(1, "%s %s must be < 0", "input", "value"));
-            assertEquals("input value must be < 0", ex.getMessage());
+                    () -> ObjectTools.requireNegative(1, String.format("%s %s must be < 0", "input", "value")));
+            assertEquals("input value must be < 0 must be negative, got: 1", ex.getMessage());
         }
     }
 
@@ -724,13 +717,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        void formattingFailureFallsBack() {
-            var ex = assertThrows(IllegalArgumentException.class,
-                    () -> ObjectTools.requireNonNegative(-1, "%s %s must be >= 0", "onlyOne"));
-            assertEquals("%s %s must be >= 0", ex.getMessage());
-        }
-
-        @Test
         void returnsSameInstance() {
             var bd = BigDecimal.ZERO;
             assertSame(bd, ObjectTools.requireNonNegative(bd, "bd"));
@@ -773,7 +759,7 @@ class ObjectToolsTest {
         @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNullContext() {
             var ex = assertThrows(NullPointerException.class,
-                    () -> ObjectTools.requireNonNegative(0, null));
+                    () -> ObjectTools.requireNonNegative(0, (String) null));
             assertEquals("context must not be null", ex.getMessage());
         }
 
@@ -788,13 +774,13 @@ class ObjectToolsTest {
         @Test
         void varArgsOverloadFormatsAndPasses() {
             var val = 0;
-            assertSame(val, ObjectTools.requireNonNegative(val, "%s %s must be >= 0", "input", "value"));
+            assertSame(val, ObjectTools.requireNonNegative(val, () -> String.format("%s %s must be >= 0", "input", "value")));
         }
 
         @Test
         void varArgsOverloadFormatsAndThrows() {
             var ex = assertThrows(IllegalArgumentException.class,
-                    () -> ObjectTools.requireNonNegative(-1, "%s %s must be >= 0", "input", "value"));
+                    () -> ObjectTools.requireNonNegative(-1, () -> String.format("%s %s must be >= 0", "input", "value")));
             assertEquals("input value must be >= 0", ex.getMessage());
         }
     }
@@ -814,13 +800,14 @@ class ObjectToolsTest {
         }
 
         @Test
+        @SuppressWarnings("ConstantValue")
         void passesForEmptyCollection() {
             assertTrue(ObjectTools.requireNonNull(List.of(), "list").isEmpty());
         }
 
         @Test
         void passesForEmptyString() {
-            assertEquals("", ObjectTools.requireNonNull("", "value"));
+            assertEquals("", ObjectTools.requireNonNull("", () -> "value is empty, non-null"));
         }
 
         @Test
@@ -855,7 +842,7 @@ class ObjectToolsTest {
 
         @Test
         void throwsIaeForBlankMessage() {
-            assertThrows(IllegalArgumentException.class, () -> ObjectTools.requireNonNull("x", "", "arg"));
+            assertThrows(IllegalArgumentException.class, () -> ObjectTools.requireNonNull("x", ""));
         }
 
         @Test
@@ -863,7 +850,7 @@ class ObjectToolsTest {
             String[] arr = {"a", null, "c"};
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNonNull(arr, "array"));
-            assertEquals("array must not be null", ex.getMessage());
+            assertEquals("array must not contain null elements", ex.getMessage());
         }
 
         @Test
@@ -871,7 +858,7 @@ class ObjectToolsTest {
             List<String> list = Arrays.asList("a", null);
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNonNull(list, "list"));
-            assertEquals("list must not be null", ex.getMessage());
+            assertEquals("list must not contain null elements", ex.getMessage());
         }
 
         @Test
@@ -900,7 +887,7 @@ class ObjectToolsTest {
             map.put("key", null);
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNonNull(map, "map"));
-            assertEquals("map must not be null", ex.getMessage());
+            assertEquals("map must not contain null elements", ex.getMessage());
         }
 
         @Test
@@ -915,7 +902,7 @@ class ObjectToolsTest {
         @SuppressWarnings("DataFlowIssue")
         void throwsNpeWithFormattedMessage() {
             var ex = assertThrows(NullPointerException.class,
-                    () -> ObjectTools.requireNonNull(null, "user %s must not be null", "admin"));
+                    () -> ObjectTools.requireNonNull(null, () -> String.format("user %s must not be null", "admin")));
             assertEquals("user admin must not be null", ex.getMessage());
         }
     }
@@ -1117,13 +1104,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        void formattingFailureFallsBack() {
-            var ex = assertThrows(IllegalArgumentException.class,
-                    () -> ObjectTools.requirePositive(-1, "%s %s must be > 0", "onlyOne"));
-            assertEquals("%s %s must be > 0", ex.getMessage());
-        }
-
-        @Test
         void returnsSameInstance() {
             var bd = new BigDecimal("42.5");
             assertSame(bd, ObjectTools.requirePositive(bd, "bd"));
@@ -1165,7 +1145,7 @@ class ObjectToolsTest {
         @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNullContext() {
             var ex = assertThrows(NullPointerException.class,
-                    () -> ObjectTools.requirePositive(1, null));
+                    () -> ObjectTools.requirePositive(1, (String) null));
             assertEquals("context must not be null", ex.getMessage());
         }
 
@@ -1180,13 +1160,13 @@ class ObjectToolsTest {
         @Test
         void varArgsOverloadFormatsAndPasses() {
             var val = 5;
-            assertSame(val, ObjectTools.requirePositive(val, "%s %s must be > 0", "input", "value"));
+            assertSame(val, ObjectTools.requirePositive(val, () -> String.format("%s %s must be > 0", "input", "value")));
         }
 
         @Test
         void varArgsOverloadFormatsAndThrows() {
             var ex = assertThrows(IllegalArgumentException.class,
-                    () -> ObjectTools.requirePositive(-1, "%s %s must be > 0", "input", "value"));
+                    () -> ObjectTools.requirePositive(-1, () -> String.format("%s %s must be > 0", "input", "value")));
             assertEquals("input value must be > 0", ex.getMessage());
         }
     }

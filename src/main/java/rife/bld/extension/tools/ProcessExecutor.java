@@ -453,7 +453,7 @@ public class ProcessExecutor {
     /**
      * Starts the background thread that reads process output.
      * <p>
-     * Returns {@code null} if {@link #inheritIO()} is {@code true}. Otherwise reads
+     * Returns {@code null} if {@link #inheritIO()} is {@code true}. Otherwise, reads
      * stdout/stderr line by line, appending to {@code outputLines} and notifying
      * the {@link #outputConsumer(Consumer)} if set.
      *

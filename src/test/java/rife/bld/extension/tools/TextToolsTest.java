@@ -92,20 +92,20 @@ class TextToolsTest {
         @Test
         @DisplayName("should return true for empty and whitespace-only strings")
         void shouldReturnTrueForEmptyAndWhitespaceOnly() {
-            var result = TextTools.equalsIgnoreWhitespace("", "   ");
+            var result = TextTools.equalsIgnoreWhitespace("", " ");
             assertTrue(result);
         }
 
         @Test
         @DisplayName("should return true when all strings are equal ignoring whitespace")
         void shouldReturnTrueWhenAllEqualIgnoringWhitespace() {
-            assertTrue(TextTools.equalsIgnoreWhitespace("hello world", "hello  world", "helloworld"));
+            assertTrue(TextTools.equalsIgnoreWhitespace("hello world", "hello world", "helloworld"));
         }
 
         @Test
         @DisplayName("should return true when all strings are null or whitespace-only")
         void shouldReturnTrueWhenAllNullOrWhitespace() {
-            assertTrue(TextTools.equalsIgnoreWhitespace(null, "   ", "\t\n"));
+            assertTrue(TextTools.equalsIgnoreWhitespace(null, " ", "\t\n"));
         }
 
         @Test
@@ -124,7 +124,7 @@ class TextToolsTest {
         @Test
         @DisplayName("should return true when both strings are whitespace-only")
         void shouldReturnTrueWhenBothWhitespaceOnly() {
-            var result = TextTools.equalsIgnoreWhitespace("   ", "\t\n\r");
+            var result = TextTools.equalsIgnoreWhitespace(" ", "\t\n\r");
             assertTrue(result);
         }
 
@@ -184,7 +184,7 @@ class TextToolsTest {
         @DisplayName("isBlank(Object...) should continue when CharSequence is blank")
         @SuppressWarnings("PMD.UnnecessaryVarargsArrayCreation")
         void isBlankObjectArrayShouldContinueWhenCharSequenceIsBlank() {
-            CharSequence cs = new StringBuffer("  ");
+            CharSequence cs = new StringBuffer(" ");
             var result = TextTools.isBlank(new Object[]{cs, "", " "});
             assertTrue(result);
         }
@@ -195,7 +195,7 @@ class TextToolsTest {
             var obj = new Object() {
                 @Override
                 public String toString() {
-                    return "  ";
+                    return " ";
                 }
             };
             var result = TextTools.isBlank(obj, "", " ");
@@ -227,7 +227,7 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
+        @ValueSource(strings = {"a", "text", " text ", " text ", "\ttext\n", "123"})
         @DisplayName("should return false for non-blank string objects")
         void shouldReturnFalseForNonBlankStringObjects(String input) {
             var result = TextTools.isBlank((Object) input);
@@ -243,7 +243,7 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
+        @ValueSource(strings = {"a", "text", " text ", " text ", "\ttext\n", "123"})
         @DisplayName("should return false when at least one object is not blank")
         void shouldReturnFalseWhenAtLeastOneObjectIsNotBlank(String input) {
             var result = TextTools.isBlank("", " ", input, "\t");
@@ -251,7 +251,7 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
+        @ValueSource(strings = {"", " ", " ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return true for empty or whitespace-only string objects")
         void shouldReturnTrueForBlankStringObjects(String input) {
             var result = TextTools.isBlank((Object) input);
@@ -283,10 +283,10 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
+        @ValueSource(strings = {"", " ", " ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return true when all objects are blank")
         void shouldReturnTrueWhenAllObjectsAreBlank(String input) {
-            var result = TextTools.isBlank(input, "", "  ", "\t");
+            var result = TextTools.isBlank(input, "", " ", "\t");
             assertTrue(result);
         }
     }
@@ -298,7 +298,7 @@ class TextToolsTest {
         @Test
         @DisplayName("isBlank(CharSequence) should handle non-String blank CharSequence")
         void isBlankShouldHandleNonStringBlankCharSequence() {
-            CharSequence cs = new StringBuffer("   ");
+            CharSequence cs = new StringBuffer(" ");
             var result = TextTools.isBlank(cs);
             assertTrue(result);
         }
@@ -322,13 +322,13 @@ class TextToolsTest {
         @Test
         @DisplayName("should optimize for String instances")
         void shouldOptimizeForStringInstances() {
-            String str = "  ";
+            String str = " ";
             var result = TextTools.isBlank(str);
             assertTrue(result);
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
+        @ValueSource(strings = {"a", "text", " text ", " text ", "\ttext\n", "123"})
         @DisplayName("should return false for non-blank strings")
         void shouldReturnFalseForNonBlankStrings(String input) {
             var result = TextTools.isBlank(input);
@@ -337,7 +337,7 @@ class TextToolsTest {
 
         @ParameterizedTest
         @NullSource
-        @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
+        @ValueSource(strings = {"", " ", " ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return true for null, empty, or whitespace-only strings")
         void shouldReturnTrueForBlankStrings(String input) {
             var result = TextTools.isBlank(input);
@@ -347,7 +347,7 @@ class TextToolsTest {
         @Test
         @DisplayName("should work with blank StringBuilder")
         void shouldWorkWithBlankStringBuilder() {
-            var sb = new StringBuilder("   ");
+            var sb = new StringBuilder(" ");
             var result = TextTools.isBlank(sb);
             assertTrue(result);
         }
@@ -366,7 +366,7 @@ class TextToolsTest {
     class IsBlankVarargsTests {
 
         @ParameterizedTest
-        @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
+        @ValueSource(strings = {"a", "text", " text ", " text ", "\ttext\n", "123"})
         @DisplayName("should return false when all strings are not blank")
         void shouldReturnFalseWhenAllStringsAreNotBlank(String input) {
             var result = TextTools.isBlank(input, "text", "more");
@@ -374,7 +374,7 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
+        @ValueSource(strings = {"a", "text", " text ", " text ", "\ttext\n", "123"})
         @DisplayName("should return false when at least one string is not blank")
         void shouldReturnFalseWhenAtLeastOneStringIsNotBlank(String input) {
             var result = TextTools.isBlank("", " ", input, "\t");
@@ -398,10 +398,10 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
+        @ValueSource(strings = {"", " ", " ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return true when all strings are blank")
         void shouldReturnTrueWhenAllStringsAreBlank(String input) {
-            var result = TextTools.isBlank(input, "", "  ", "\t");
+            var result = TextTools.isBlank(input, "", " ", "\t");
             assertTrue(result);
         }
 
@@ -458,7 +458,7 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
+        @ValueSource(strings = {" ", " ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return false for non-empty string objects")
         void shouldReturnFalseForNonEmptyStringObjects(String input) {
             var result = TextTools.isEmpty((Object) input);
@@ -474,15 +474,15 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(ints = {0, 1, 42, -1})
+        @ValueSource(strings = {" ", " ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return false when all objects are not empty")
-        void shouldReturnFalseWhenAllObjectsAreNotEmpty(Integer input) {
-            var result = TextTools.isEmpty(input, 123, " ");
+        void shouldReturnFalseWhenAllObjectsAreNotEmpty(String input) {
+            var result = TextTools.isEmpty(input, "text", " ");
             assertFalse(result);
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
+        @ValueSource(strings = {" ", " ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return false when at least one object is not empty")
         void shouldReturnFalseWhenAtLeastOneObjectIsNotEmpty(String input) {
             var result = TextTools.isEmpty("", null, input);
@@ -543,7 +543,7 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
+        @ValueSource(strings = {" ", " ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return false for non-empty strings")
         void shouldReturnFalseForNonEmptyStrings(String input) {
             var result = TextTools.isEmpty(input);
@@ -580,7 +580,7 @@ class TextToolsTest {
     class IsEmptyVarargsTests {
 
         @ParameterizedTest
-        @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
+        @ValueSource(strings = {" ", " ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return false when all strings are not empty")
         void shouldReturnFalseWhenAllStringsAreNotEmpty(String input) {
             var result = TextTools.isEmpty(input, "text", " ");
@@ -588,7 +588,7 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
+        @ValueSource(strings = {" ", " ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return false when at least one string is not empty")
         void shouldReturnFalseWhenAtLeastOneStringIsNotEmpty(String input) {
             var result = TextTools.isEmpty("", null, input);
@@ -637,7 +637,7 @@ class TextToolsTest {
         @DisplayName("isNotBlank(Object...) should return false when CharSequence is blank")
         @SuppressWarnings("PMD.UnnecessaryVarargsArrayCreation")
         void isNotBlankObjectArrayShouldReturnFalseForBlankCharSequence() {
-            CharSequence cs = new StringBuffer("  ");
+            CharSequence cs = new StringBuffer(" ");
             var result = TextTools.isNotBlank(new Object[]{"text", cs});
             assertFalse(result);
         }
@@ -648,7 +648,7 @@ class TextToolsTest {
             var obj = new Object() {
                 @Override
                 public String toString() {
-                    return "  ";
+                    return " ";
                 }
             };
             var result = TextTools.isNotBlank("text", obj);
@@ -672,7 +672,7 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
+        @ValueSource(strings = {"", " ", " ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return false for empty or whitespace-only string objects")
         void shouldReturnFalseForBlankStringObjects(String input) {
             var result = TextTools.isNotBlank((Object) input);
@@ -704,15 +704,15 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
+        @ValueSource(strings = {"", " ", " ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return false when all objects are blank")
         void shouldReturnFalseWhenAllObjectsAreBlank(String input) {
-            var result = TextTools.isNotBlank(input, "", "  ", "\t");
+            var result = TextTools.isNotBlank(input, "", " ", "\t");
             assertFalse(result);
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
+        @ValueSource(strings = {"", " ", " ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return false when at least one object is blank")
         void shouldReturnFalseWhenAtLeastOneObjectIsBlank(String input) {
             var result = TextTools.isNotBlank(123, "text", input, "data");
@@ -728,7 +728,7 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
+        @ValueSource(strings = {"a", "text", " text ", " text ", "\ttext\n", "123"})
         @DisplayName("should return true for non-blank string objects")
         void shouldReturnTrueForNonBlankStringObjects(String input) {
             var result = TextTools.isNotBlank((Object) input);
@@ -736,7 +736,7 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
+        @ValueSource(strings = {"a", "text", " text ", " text ", "\ttext\n", "123"})
         @DisplayName("should return true when all objects are not blank")
         void shouldReturnTrueWhenAllObjectsAreNotBlank(String input) {
             var result = TextTools.isNotBlank(input, "text", 42);
@@ -750,7 +750,7 @@ class TextToolsTest {
 
         @ParameterizedTest
         @NullSource
-        @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
+        @ValueSource(strings = {"", " ", " ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return false for null, empty, or whitespace-only strings")
         void shouldReturnFalseForBlankStrings(String input) {
             var result = TextTools.isNotBlank(input);
@@ -758,7 +758,7 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
+        @ValueSource(strings = {"a", "text", " text ", " text ", "\ttext\n", "123"})
         @DisplayName("should return true for non-blank strings")
         void shouldReturnTrueForNonBlankStrings(String input) {
             var result = TextTools.isNotBlank(input);
@@ -768,7 +768,7 @@ class TextToolsTest {
         @Test
         @DisplayName("should work with blank StringBuilder")
         void shouldWorkWithBlankStringBuilder() {
-            var sb = new StringBuilder("   ");
+            var sb = new StringBuilder(" ");
             var result = TextTools.isNotBlank(sb);
             assertFalse(result);
         }
@@ -803,15 +803,15 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
+        @ValueSource(strings = {"", " ", " ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return false when all strings are blank")
         void shouldReturnFalseWhenAllStringsAreBlank(String input) {
-            var result = TextTools.isNotBlank(input, "", "  ", "\t");
+            var result = TextTools.isNotBlank(input, "", " ", "\t");
             assertFalse(result);
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
+        @ValueSource(strings = {"", " ", " ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should return false when at least one string is blank")
         void shouldReturnFalseWhenAtLeastOneStringIsBlank(String input) {
             var result = TextTools.isNotBlank("text", "more", input, "data");
@@ -819,7 +819,7 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"a", "text", " text ", "  text  ", "\ttext\n", "123"})
+        @ValueSource(strings = {"a", "text", " text ", " text ", "\ttext\n", "123"})
         @DisplayName("should return true when all strings are not blank")
         void shouldReturnTrueWhenAllStringsAreNotBlank(String input) {
             var result = TextTools.isNotBlank(input, "text", "more");
@@ -927,7 +927,7 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
+        @ValueSource(strings = {" ", " ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return true for non-empty string objects")
         void shouldReturnTrueForNonEmptyStringObjects(String input) {
             var result = TextTools.isNotEmpty((Object) input);
@@ -943,7 +943,7 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
+        @ValueSource(strings = {" ", " ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return true when all objects are not empty")
         void shouldReturnTrueWhenAllObjectsAreNotEmpty(String input) {
             var result = TextTools.isNotEmpty(input, "text", " ");
@@ -964,7 +964,7 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
+        @ValueSource(strings = {" ", " ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return true for non-empty strings")
         void shouldReturnTrueForNonEmptyStrings(String input) {
             var result = TextTools.isNotEmpty(input);
@@ -1025,7 +1025,7 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {" ", "  ", "\t", "\n", "text", " text ", "a"})
+        @ValueSource(strings = {" ", " ", "\t", "\n", "text", " text ", "a"})
         @DisplayName("should return true when all strings are not empty")
         void shouldReturnTrueWhenAllStringsAreNotEmpty(String input) {
             var result = TextTools.isNotEmpty(input, "text", " ");
@@ -1049,19 +1049,19 @@ class TextToolsTest {
         @Test
         @DisplayName("should fail fast on first blank element")
         void shouldFailFastOnFirstBlank() {
-            var list = List.of("  ", "hello");
+            var list = List.of(" ", "hello");
             var ex = assertThrows(IllegalArgumentException.class,
                     () -> TextTools.requireNotBlank(list, "values"));
-            assertEquals("values must not contain blank elements", ex.getMessage());
+            assertEquals("values must not be empty or contain blank elements", ex.getMessage());
         }
 
         @Test
         @DisplayName("should fail fast on first null element")
         void shouldFailFastOnFirstNull() {
-            var list = Arrays.asList(null, "  ", "world");
+            var list = Arrays.asList(null, " ", "world");
             var ex = assertThrows(NullPointerException.class,
                     () -> TextTools.requireNotBlank(list, "values"));
-            assertEquals("values must not contain null elements", ex.getMessage());
+            assertEquals("values must not be null", ex.getMessage());
         }
 
         @Test
@@ -1072,23 +1072,23 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"", " ", "  ", "\t"})
+        @ValueSource(strings = {"", " ", " ", "\t"})
         @DisplayName("should throw IllegalArgumentException for blank context")
         void shouldThrowIllegalArgumentExceptionForBlankContext(String context) {
             var list = List.of("hello");
             var ex = assertThrows(IllegalArgumentException.class,
                     () -> TextTools.requireNotBlank(list, context));
-            assertEquals("context must not be empty, or blank", ex.getMessage());
+            assertEquals("context must not be blank", ex.getMessage());
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
+        @ValueSource(strings = {"", " ", " ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should throw IllegalArgumentException when collection contains blank element")
         void shouldThrowIllegalArgumentExceptionForBlankElement(String blank) {
             var list = List.of("hello", blank, "world");
             var ex = assertThrows(IllegalArgumentException.class,
                     () -> TextTools.requireNotBlank(list, "values"));
-            assertEquals("values must not contain blank elements", ex.getMessage());
+            assertEquals("values must not be empty or contain blank elements", ex.getMessage());
         }
 
         @Test
@@ -1096,7 +1096,7 @@ class TextToolsTest {
         void shouldThrowIllegalArgumentExceptionForEmptyCollection() {
             var ex = assertThrows(IllegalArgumentException.class,
                     () -> TextTools.requireNotBlank(List.of(), "values"));
-            assertEquals("values must not be empty", ex.getMessage());
+            assertEquals("values must not be empty or contain blank elements", ex.getMessage());
         }
 
         @Test
@@ -1123,7 +1123,7 @@ class TextToolsTest {
             var list = Arrays.asList("hello", null, "world");
             var ex = assertThrows(NullPointerException.class,
                     () -> TextTools.requireNotBlank(list, "values"));
-            assertEquals("values must not contain null elements", ex.getMessage());
+            assertEquals("values must not be null", ex.getMessage());
         }
 
         @Test
@@ -1143,100 +1143,48 @@ class TextToolsTest {
     }
 
     @Nested
-    @DisplayName("requireNotBlank(Collection, String, String, String, String, Object...) Tests")
-    class RequireNotBlankCollectionMessagesTests {
-
-        @Test
-        @DisplayName("should format blank message with args")
-        void shouldFormatBlankMessageWithArgs() {
-            var list = List.of("hello", "  ");
-            var ex = assertThrows(IllegalArgumentException.class,
-                    () -> TextTools.requireNotBlank(list,
-                            "null", "empty", "null elem", "%s cannot be blank", "fields"));
-            assertEquals("fields cannot be blank", ex.getMessage());
-        }
-
-        @Test
-        @DisplayName("should format empty message with args")
-        void shouldFormatEmptyMessageWithArgs() {
-            var ex = assertThrows(IllegalArgumentException.class,
-                    () -> TextTools.requireNotBlank(List.of(),
-                            "null", "%s must not be empty", "null elem", "blank", "tags"));
-            assertEquals("tags must not be empty", ex.getMessage());
-        }
-
-        @Test
-        @DisplayName("should format null element message with args")
-        void shouldFormatNullElementMessageWithArgs() {
-            var list = Arrays.asList("hello", null);
-            var ex = assertThrows(NullPointerException.class,
-                    () -> TextTools.requireNotBlank(list,
-                            "null", "empty", "%s cannot contain nulls", "blank", "items"));
-            assertEquals("items cannot contain nulls", ex.getMessage());
-        }
-
-        @Test
-        @DisplayName("should format null message with args")
-        void shouldFormatNullMessageWithArgs() {
-            var ex = assertThrows(NullPointerException.class,
-                    () -> TextTools.requireNotBlank((Collection<String>) null,
-                            "%s must not be null", "empty", "null elem", "blank", "usernames"));
-            assertEquals("usernames must not be null", ex.getMessage());
-        }
+    @DisplayName("requireNotBlank(Collection, Supplier<String>) Tests")
+    class RequireNotBlankCollectionSupplierTests {
 
         @Test
         @DisplayName("should return the original collection when all elements valid")
         void shouldReturnOriginalCollection() {
             var list = List.of("hello", "world");
-            var result = TextTools.requireNotBlank(list,
-                    "null msg", "empty msg", "null elem msg", "blank msg");
+            var result = TextTools.requireNotBlank(list, () -> "null", () -> "empty");
             assertSame(list, result);
         }
 
         @Test
-        @DisplayName("should return raw message when format args are invalid")
-        void shouldReturnRawMessageWhenFormatArgsAreInvalid() {
-            var ex = assertThrows(NullPointerException.class,
-                    () -> TextTools.requireNotBlank((Collection<String>) null,
-                            "invalid %q format", "empty", "null elem", "blank"));
-            assertEquals("invalid %q format", ex.getMessage());
-        }
-
-        @Test
-        @DisplayName("should throw IllegalArgumentException with custom message for blank element")
-        void shouldThrowIllegalArgumentExceptionForBlankElementWithCustomMessage() {
-            var list = List.of("hello", "  ");
+        @DisplayName("should throw IllegalArgumentException with supplier message for blank element")
+        void shouldThrowIllegalArgumentExceptionForBlankElementWithSupplierMessage() {
+            var list = List.of("hello", " ");
             var ex = assertThrows(IllegalArgumentException.class,
-                    () -> TextTools.requireNotBlank(list,
-                            "custom null msg", "custom empty msg", "custom null elem msg", "custom blank msg"));
+                    () -> TextTools.requireNotBlank(list, () -> "null", () -> "custom blank msg"));
             assertEquals("custom blank msg", ex.getMessage());
         }
 
         @Test
-        @DisplayName("should throw IllegalArgumentException with custom message for empty collection")
-        void shouldThrowIllegalArgumentExceptionWithCustomMessage() {
+        @DisplayName("should throw IllegalArgumentException with supplier message for empty collection")
+        void shouldThrowIllegalArgumentExceptionWithSupplierMessage() {
             var ex = assertThrows(IllegalArgumentException.class,
-                    () -> TextTools.requireNotBlank(List.of(),
-                            "custom null msg", "custom empty msg", "custom null elem msg", "custom blank msg"));
+                    () -> TextTools.requireNotBlank(List.of(), () -> "null", () -> "custom empty msg"));
             assertEquals("custom empty msg", ex.getMessage());
         }
 
         @Test
-        @DisplayName("should throw NullPointerException with custom message for null element")
-        void shouldThrowNullPointerExceptionForNullElementWithCustomMessage() {
+        @DisplayName("should throw NullPointerException with supplier message for null element")
+        void shouldThrowNullPointerExceptionForNullElementWithSupplierMessage() {
             var list = Arrays.asList("hello", null);
             var ex = assertThrows(NullPointerException.class,
-                    () -> TextTools.requireNotBlank(list,
-                            "custom null msg", "custom empty msg", "custom null elem msg", "custom blank msg"));
+                    () -> TextTools.requireNotBlank(list, () -> "custom null elem msg", () -> "blank"));
             assertEquals("custom null elem msg", ex.getMessage());
         }
 
         @Test
-        @DisplayName("should throw NullPointerException with custom message for null collection")
-        void shouldThrowNullPointerExceptionWithCustomMessage() {
+        @DisplayName("should throw NullPointerException with supplier message for null collection")
+        void shouldThrowNullPointerExceptionWithSupplierMessage() {
             var ex = assertThrows(NullPointerException.class,
-                    () -> TextTools.requireNotBlank((Collection<String>) null,
-                            "custom null msg", "custom empty msg", "custom null elem msg", "custom blank msg"));
+                    () -> TextTools.requireNotBlank((Collection<String>) null, () -> "custom null msg", () -> "blank"));
             assertEquals("custom null msg", ex.getMessage());
         }
     }
@@ -1259,121 +1207,242 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
+        @ValueSource(strings = {"", " ", " ", "\t", "\n", "\r", " \t\n\r "})
         @DisplayName("should throw IllegalArgumentException for blank string")
         void shouldThrowIllegalArgumentExceptionForBlank(String input) {
-            var thrown = false;
-            try {
-                TextTools.requireNotBlank(input, "value");
-            } catch (IllegalArgumentException e) {
-                thrown = e.getMessage().equals("value must not be blank");
-            }
-            assertTrue(thrown);
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotBlank(input, "value"));
+            assertEquals("value must not be blank", ex.getMessage());
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"", " ", "  ", "\t"})
+        @ValueSource(strings = {"", " ", " ", "\t"})
         @DisplayName("should throw IllegalArgumentException for blank context")
         void shouldThrowIllegalArgumentExceptionForBlankContext(String context) {
-            var thrown = false;
-            try {
-                TextTools.requireNotBlank("hello", context);
-            } catch (IllegalArgumentException e) {
-                thrown = e.getMessage().equals("context must not be empty, or blank");
-            }
-            assertTrue(thrown);
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotBlank("hello", context));
+            assertEquals("context must not be blank", ex.getMessage());
         }
 
         @Test
         @DisplayName("should throw NullPointerException for null string")
         void shouldThrowNullPointerExceptionForNull() {
-            var thrown = false;
-            try {
-                TextTools.requireNotBlank((String) null, "value");
-            } catch (NullPointerException e) {
-                thrown = e.getMessage().equals("value must not be null");
-            }
-            assertTrue(thrown);
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotBlank((String) null, "value"));
+            assertEquals("value must not be null", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException for null context")
+        @SuppressWarnings("DataFlowIssue")
+        void shouldThrowNullPointerExceptionForNullContext() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotBlank("hello", (String) null));
+            assertEquals("context must not be null", ex.getMessage());
         }
     }
 
     @Nested
-    @DisplayName("requireNotBlank(CharSequence, String, String, Object...) Tests")
-    class RequireNotBlankMessagesTests {
-
-        @Test
-        @DisplayName("should format blank message with args")
-        void shouldFormatBlankMessageWithArgs() {
-            var thrown = false;
-            try {
-                TextTools.requireNotBlank("  ", "custom null msg", "%s must not be blank", "value");
-            } catch (IllegalArgumentException e) {
-                thrown = e.getMessage().equals("value must not be blank");
-            }
-            assertTrue(thrown);
-        }
-
-        @Test
-        @DisplayName("should format null message with args")
-        void shouldFormatNullMessageWithArgs() {
-            var thrown = false;
-            try {
-                TextTools.requireNotBlank(null, "%s must not be null", "custom blank msg", "value");
-            } catch (NullPointerException e) {
-                thrown = e.getMessage().equals("value must not be null");
-            }
-            assertTrue(thrown);
-        }
+    @DisplayName("requireNotBlank(CharSequence, Supplier<String>) Tests")
+    class RequireNotBlankSupplierTests {
 
         @Test
         @DisplayName("should return the original CharSequence type")
         void shouldReturnOriginalCharSequenceType() {
             var sb = new StringBuilder("hello");
-            assertSame(TextTools.requireNotBlank(sb, "null msg", "blank msg"), sb);
-        }
-
-        @Test
-        @DisplayName("should return raw message when format args are invalid")
-        void shouldReturnRawMessageWhenFormatArgsAreInvalid() {
-            var thrown = false;
-            try {
-                TextTools.requireNotBlank(null, "invalid %q format", "blank msg");
-            } catch (NullPointerException e) {
-                thrown = e.getMessage().equals("invalid %q format");
-            }
-            assertTrue(thrown);
+            assertSame(TextTools.requireNotBlank(sb, () -> "null", () -> "blank"), sb);
         }
 
         @Test
         @DisplayName("should return the string when not blank")
         void shouldReturnStringWhenNotBlank() {
-            assertEquals("hello",
-                    TextTools.requireNotBlank("hello", "null msg", "blank msg"));
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {"", " ", "  ", "\t", "\n", "\r", " \t\n\r "})
-        @DisplayName("should throw IllegalArgumentException with custom message for blank string")
-        void shouldThrowIllegalArgumentExceptionWithCustomMessage(String input) {
-            var thrown = false;
-            try {
-                TextTools.requireNotBlank(input, "custom null msg", "custom blank msg");
-            } catch (IllegalArgumentException e) {
-                thrown = e.getMessage().equals("custom blank msg");
-            }
-            assertTrue(thrown);
+            assertEquals("hello", TextTools.requireNotBlank("hello", () -> "null", () -> "blank"));
         }
 
         @Test
-        @DisplayName("should throw NullPointerException with custom message for null string")
-        void shouldThrowNullPointerExceptionWithCustomMessage() {
-            var thrown = false;
-            try {
-                TextTools.requireNotBlank(null, "custom null msg", "custom blank msg");
-            } catch (NullPointerException e) {
-                thrown = e.getMessage().equals("custom null msg");
-            }
-            assertTrue(thrown);
+        @DisplayName("should throw IllegalArgumentException with supplier message for blank string")
+        void shouldThrowIllegalArgumentExceptionWithSupplierMessage() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotBlank(" ", () -> "null", () -> "custom blank msg"));
+            assertEquals("custom blank msg", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException with supplier message for null string")
+        void shouldThrowNullPointerExceptionWithSupplierMessage() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotBlank((String) null, () -> "custom null msg", () -> "blank"));
+            assertEquals("custom null msg", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should not call supplier on success")
+        void supplierIsLazy() {
+            var called = new boolean[]{false};
+            TextTools.requireNotBlank("hello",
+                    () -> {
+                        called[0] = true;
+                        return "null";
+                    },
+                    () -> {
+                        called[0] = true;
+                        return "blank";
+                    });
+            assertFalse(called[0]);
+        }
+    }
+
+    @Nested
+    @DisplayName("requireNotBlank(String, T...) Tests")
+    class RequireNotBlankVarargsContextTests {
+
+        @Test
+        @DisplayName("should fail fast on first blank element")
+        void shouldFailFastOnFirstBlank() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotBlank("values", " ", "hello"));
+            assertEquals("values must not be empty or contain blank elements", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should fail fast on first null element")
+        void shouldFailFastOnFirstNull() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotBlank("values", null, " ", "world"));
+            assertEquals("values must not be null", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should return the original array when all elements valid")
+        void shouldReturnOriginalArray() {
+            var elements = new String[]{"hello", "world", "test"};
+            var result = TextTools.requireNotBlank("values", elements);
+            assertSame(elements, result);
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException for blank context")
+        void shouldThrowIllegalArgumentExceptionForBlankContext() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotBlank(" ", "hello"));
+            assertEquals("hello must not be blank", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException when array contains blank element")
+        void shouldThrowIllegalArgumentExceptionForBlankElement() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotBlank("values", "hello", " "));
+            assertEquals("values must not be empty or contain blank elements", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException for empty array")
+        void shouldThrowIllegalArgumentExceptionForEmptyArray() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotBlank("values"));
+            assertEquals("values must not be empty or contain blank elements", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException for null array")
+        void shouldThrowNullPointerExceptionForNullArray() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotBlank("values", (String[]) null));
+            assertEquals("values must not be null", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw IAE for null context")
+        void shouldThrowNullPointerExceptionForNullContext() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotBlank((String) null, "hello"));
+            assertEquals("hello must not be null", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException when array contains null element")
+        void shouldThrowNullPointerExceptionForNullElement() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotBlank("values", "hello", null));
+            assertEquals("values must not be null", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should work with StringBuilder and other CharSequence types")
+        void shouldWorkWithStringBuilder() {
+            var elements = new CharSequence[]{new StringBuilder("hello"), new StringBuffer("world")};
+            var result = TextTools.requireNotBlank("values", elements);
+            assertSame(elements, result);
+        }
+    }
+
+    @Nested
+    @DisplayName("requireNotBlank(Supplier<String>, T...) Tests")
+    class RequireNotBlankVarargsSupplierTests {
+
+        @Test
+        @DisplayName("should fail fast on first blank element")
+        void shouldFailFastOnFirstBlank() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotBlank(() -> "null", () -> "blank", " ", "hello"));
+            assertEquals("blank", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should fail fast on first null element")
+        void shouldFailFastOnFirstNull() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotBlank(() -> "null", () -> "blank", null, " ", "world"));
+            assertEquals("null", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should return the original array when all elements valid")
+        void shouldReturnOriginalArray() {
+            var elements = new String[]{"hello", "world", "test"};
+            var result = TextTools.requireNotBlank(() -> "null", () -> "blank", elements);
+            assertSame(elements, result);
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException with supplier message for blank element")
+        void shouldThrowIllegalArgumentExceptionForBlankElementWithSupplierMessage() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotBlank(() -> "null", () -> "custom blank msg", "hello", " "));
+            assertEquals("custom blank msg", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException with supplier message for empty array")
+        void shouldThrowIllegalArgumentExceptionWithSupplierMessage() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotBlank(() -> "null", () -> "custom empty msg"));
+            assertEquals("custom empty msg", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException with supplier message for null element")
+        void shouldThrowNullPointerExceptionForNullElementWithSupplierMessage() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotBlank(() -> "custom null elem msg", () -> "blank", "hello", null));
+            assertEquals("custom null elem msg", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException with supplier message for null array")
+        void shouldThrowNullPointerExceptionWithSupplierMessage() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotBlank(() -> "custom null msg", () -> "blank", (String[]) null));
+            assertEquals("custom null msg", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should work with StringBuilder and other CharSequence types")
+        void shouldWorkWithStringBuilder() {
+            var elements = new CharSequence[]{new StringBuilder("hello"), new StringBuffer("world")};
+            var result = TextTools.requireNotBlank(() -> "null", () -> "blank", elements);
+            assertSame(elements, result);
         }
     }
 
@@ -1384,7 +1453,7 @@ class TextToolsTest {
         @Test
         @DisplayName("should allow whitespace-only elements")
         void shouldAllowWhitespaceOnlyElements() {
-            var list = List.of("hello", "  ", "\t", "world");
+            var list = List.of("hello", " ", "\t", "world");
             assertSame(list, TextTools.requireNotEmpty(list, "values"));
         }
 
@@ -1394,7 +1463,7 @@ class TextToolsTest {
             var list = List.of("", "hello");
             var ex = assertThrows(IllegalArgumentException.class,
                     () -> TextTools.requireNotEmpty(list, "values"));
-            assertEquals("values must not contain empty elements", ex.getMessage());
+            assertEquals("values must not be empty or contain empty elements", ex.getMessage());
         }
 
         @Test
@@ -1403,7 +1472,7 @@ class TextToolsTest {
             var list = Arrays.asList(null, "", "world");
             var ex = assertThrows(NullPointerException.class,
                     () -> TextTools.requireNotEmpty(list, "values"));
-            assertEquals("values must not contain null elements", ex.getMessage());
+            assertEquals("values must not be null", ex.getMessage());
         }
 
         @Test
@@ -1414,13 +1483,13 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"", " ", "  ", "\t"})
+        @ValueSource(strings = {"", " ", " ", "\t"})
         @DisplayName("should throw IllegalArgumentException for blank context")
         void shouldThrowIllegalArgumentExceptionForBlankContext(String context) {
             var list = List.of("hello");
             var ex = assertThrows(IllegalArgumentException.class,
                     () -> TextTools.requireNotEmpty(list, context));
-            assertEquals("context must not be empty, or blank", ex.getMessage());
+            assertEquals("context must not be blank", ex.getMessage());
         }
 
         @Test
@@ -1428,7 +1497,7 @@ class TextToolsTest {
         void shouldThrowIllegalArgumentExceptionForEmptyCollection() {
             var ex = assertThrows(IllegalArgumentException.class,
                     () -> TextTools.requireNotEmpty(List.of(), "values"));
-            assertEquals("values must not be empty", ex.getMessage());
+            assertEquals("values must not be empty or contain empty elements", ex.getMessage());
         }
 
         @Test
@@ -1437,7 +1506,7 @@ class TextToolsTest {
             var list = List.of("hello", "", "world");
             var ex = assertThrows(IllegalArgumentException.class,
                     () -> TextTools.requireNotEmpty(list, "values"));
-            assertEquals("values must not contain empty elements", ex.getMessage());
+            assertEquals("values must not be empty or contain empty elements", ex.getMessage());
         }
 
         @Test
@@ -1464,7 +1533,7 @@ class TextToolsTest {
             var list = Arrays.asList("hello", null, "world");
             var ex = assertThrows(NullPointerException.class,
                     () -> TextTools.requireNotEmpty(list, "values"));
-            assertEquals("values must not contain null elements", ex.getMessage());
+            assertEquals("values must not be null", ex.getMessage());
         }
 
         @Test
@@ -1484,100 +1553,48 @@ class TextToolsTest {
     }
 
     @Nested
-    @DisplayName("requireNotEmpty(Collection, String, String, String, String, Object...) Tests")
-    class RequireNotEmptyCollectionMessagesTests {
-
-        @Test
-        @DisplayName("should format empty element message with args")
-        void shouldFormatEmptyElementMessageWithArgs() {
-            var list = List.of("hello", "");
-            var ex = assertThrows(IllegalArgumentException.class,
-                    () -> TextTools.requireNotEmpty(list,
-                            "null", "empty", "null elem", "%s cannot be empty", "fields"));
-            assertEquals("fields cannot be empty", ex.getMessage());
-        }
-
-        @Test
-        @DisplayName("should format empty message with args")
-        void shouldFormatEmptyMessageWithArgs() {
-            var ex = assertThrows(IllegalArgumentException.class,
-                    () -> TextTools.requireNotEmpty(List.of(),
-                            "null", "%s must not be empty", "null elem", "empty elem", "tags"));
-            assertEquals("tags must not be empty", ex.getMessage());
-        }
-
-        @Test
-        @DisplayName("should format null element message with args")
-        void shouldFormatNullElementMessageWithArgs() {
-            var list = Arrays.asList("hello", null);
-            var ex = assertThrows(NullPointerException.class,
-                    () -> TextTools.requireNotEmpty(list,
-                            "null", "empty", "%s cannot contain nulls", "empty elem", "items"));
-            assertEquals("items cannot contain nulls", ex.getMessage());
-        }
-
-        @Test
-        @DisplayName("should format null message with args")
-        void shouldFormatNullMessageWithArgs() {
-            var ex = assertThrows(NullPointerException.class,
-                    () -> TextTools.requireNotEmpty((Collection<String>) null,
-                            "%s must not be null", "empty", "null elem", "empty elem", "usernames"));
-            assertEquals("usernames must not be null", ex.getMessage());
-        }
+    @DisplayName("requireNotEmpty(Collection, Supplier<String>) Tests")
+    class RequireNotEmptyCollectionSupplierTests {
 
         @Test
         @DisplayName("should return the original collection when all elements valid")
         void shouldReturnOriginalCollection() {
             var list = List.of("hello", " ");
-            var result = TextTools.requireNotEmpty(list,
-                    "null msg", "empty msg", "null elem msg", "empty elem msg");
+            var result = TextTools.requireNotEmpty(list, () -> "null", () -> "empty");
             assertSame(list, result);
         }
 
         @Test
-        @DisplayName("should return raw message when format args are invalid")
-        void shouldReturnRawMessageWhenFormatArgsAreInvalid() {
-            var ex = assertThrows(NullPointerException.class,
-                    () -> TextTools.requireNotEmpty((Collection<String>) null,
-                            "invalid %q format", "empty", "null elem", "empty elem"));
-            assertEquals("invalid %q format", ex.getMessage());
-        }
-
-        @Test
-        @DisplayName("should throw IllegalArgumentException with custom message for empty element")
-        void shouldThrowIllegalArgumentExceptionForEmptyElementWithCustomMessage() {
+        @DisplayName("should throw IllegalArgumentException with supplier message for empty element")
+        void shouldThrowIllegalArgumentExceptionForEmptyElementWithSupplierMessage() {
             var list = List.of("hello", "");
             var ex = assertThrows(IllegalArgumentException.class,
-                    () -> TextTools.requireNotEmpty(list,
-                            "custom null msg", "custom empty msg", "custom null elem msg", "custom empty elem msg"));
+                    () -> TextTools.requireNotEmpty(list, () -> "null", () -> "custom empty elem msg"));
             assertEquals("custom empty elem msg", ex.getMessage());
         }
 
         @Test
-        @DisplayName("should throw IllegalArgumentException with custom message for empty collection")
-        void shouldThrowIllegalArgumentExceptionWithCustomMessage() {
+        @DisplayName("should throw IllegalArgumentException with supplier message for empty collection")
+        void shouldThrowIllegalArgumentExceptionWithSupplierMessage() {
             var ex = assertThrows(IllegalArgumentException.class,
-                    () -> TextTools.requireNotEmpty(List.of(),
-                            "custom null msg", "custom empty msg", "custom null elem msg", "custom empty elem msg"));
+                    () -> TextTools.requireNotEmpty(List.of(), () -> "null", () -> "custom empty msg"));
             assertEquals("custom empty msg", ex.getMessage());
         }
 
         @Test
-        @DisplayName("should throw NullPointerException with custom message for null element")
-        void shouldThrowNullPointerExceptionForNullElementWithCustomMessage() {
+        @DisplayName("should throw NullPointerException with supplier message for null element")
+        void shouldThrowNullPointerExceptionForNullElementWithSupplierMessage() {
             var list = Arrays.asList("hello", null);
             var ex = assertThrows(NullPointerException.class,
-                    () -> TextTools.requireNotEmpty(list,
-                            "custom null msg", "custom empty msg", "custom null elem msg", "custom empty elem msg"));
+                    () -> TextTools.requireNotEmpty(list, () -> "custom null elem msg", () -> "empty"));
             assertEquals("custom null elem msg", ex.getMessage());
         }
 
         @Test
-        @DisplayName("should throw NullPointerException with custom message for null collection")
-        void shouldThrowNullPointerExceptionWithCustomMessage() {
+        @DisplayName("should throw NullPointerException with supplier message for null collection")
+        void shouldThrowNullPointerExceptionWithSupplierMessage() {
             var ex = assertThrows(NullPointerException.class,
-                    () -> TextTools.requireNotEmpty((Collection<String>) null,
-                            "custom null msg", "custom empty msg", "custom null elem msg", "custom empty elem msg"));
+                    () -> TextTools.requireNotEmpty((Collection<String>) null, () -> "custom null msg", () -> "empty"));
             assertEquals("custom null msg", ex.getMessage());
         }
     }
@@ -1606,142 +1623,259 @@ class TextToolsTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"", " ", "  ", "\t"})
+        @ValueSource(strings = {"", " ", " ", "\t"})
         @DisplayName("should throw IllegalArgumentException for blank context")
         void shouldThrowIllegalArgumentExceptionForBlankContext(String context) {
-            var thrown = false;
-            try {
-                TextTools.requireNotEmpty("hello", context);
-            } catch (IllegalArgumentException e) {
-                thrown = e.getMessage().equals("context must not be empty, or blank");
-            }
-            assertTrue(thrown);
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotEmpty("hello", context));
+            assertEquals("context must not be blank", ex.getMessage());
         }
 
         @Test
         @DisplayName("should throw IllegalArgumentException for empty string")
         void shouldThrowIllegalArgumentExceptionForEmpty() {
-            var thrown = false;
-            try {
-                TextTools.requireNotEmpty("", "value");
-            } catch (IllegalArgumentException e) {
-                thrown = e.getMessage().equals("value must not be empty");
-            }
-            assertTrue(thrown);
-        }
-
-        @ParameterizedTest
-        @NullSource
-        @DisplayName("should throw IllegalArgumentException for null context")
-        void shouldThrowIllegalArgumentExceptionForNullContext(String context) {
-            var thrown = false;
-            try {
-                TextTools.requireNotEmpty("hello", context);
-            } catch (NullPointerException e) {
-                thrown = e.getMessage().equals("context must not be null");
-            }
-            assertTrue(thrown);
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotEmpty("", "value"));
+            assertEquals("value must not be empty", ex.getMessage());
         }
 
         @Test
         @DisplayName("should throw NullPointerException for null string")
         void shouldThrowNullPointerExceptionForNull() {
-            var thrown = false;
-            try {
-                TextTools.requireNotEmpty((String) null, "value");
-            } catch (NullPointerException e) {
-                thrown = e.getMessage().equals("value must not be null");
-            }
-            assertTrue(thrown);
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotEmpty((String) null, "value"));
+            assertEquals("value must not be null", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException for null context")
+        @SuppressWarnings("DataFlowIssue")
+        void shouldThrowNullPointerExceptionForNullContext() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotEmpty("hello", (String) null));
+            assertEquals("context must not be null", ex.getMessage());
         }
     }
 
     @Nested
-    @DisplayName("requireNotEmpty(CharSequence, String, String, Object...) Tests")
-    class RequireNotEmptyMessagesTests {
-
-        @Test
-        @DisplayName("should format empty message with args")
-        void shouldFormatEmptyMessageWithArgs() {
-            var thrown = false;
-            try {
-                TextTools.requireNotEmpty("", "custom null msg",
-                        "%s must not be empty", "value");
-            } catch (IllegalArgumentException e) {
-                thrown = e.getMessage().equals("value must not be empty");
-            }
-            assertTrue(thrown);
-        }
-
-        @Test
-        @DisplayName("should format null message with args")
-        void shouldFormatNullMessageWithArgs() {
-            var thrown = false;
-            try {
-                TextTools.requireNotEmpty(null, "%s must not be null",
-                        "custom empty msg", "value");
-            } catch (NullPointerException e) {
-                thrown = e.getMessage().equals("value must not be null");
-            }
-            assertTrue(thrown);
-        }
+    @DisplayName("requireNotEmpty(CharSequence, Supplier<String>) Tests")
+    class RequireNotEmptySupplierTests {
 
         @Test
         @DisplayName("should return the original CharSequence type")
         void shouldReturnOriginalCharSequenceType() {
             var sb = new StringBuilder("hello");
-            assertSame(TextTools.requireNotEmpty(sb, "null msg", "empty msg"), sb);
-        }
-
-        @Test
-        @DisplayName("should return raw message when format args are invalid")
-        void shouldReturnRawMessageWhenFormatArgsAreInvalid() {
-            var thrown = false;
-            try {
-                TextTools.requireNotEmpty(null, "invalid %q format", "empty msg");
-            } catch (NullPointerException e) {
-                thrown = e.getMessage().equals("invalid %q format");
-            }
-            assertTrue(thrown);
+            assertSame(TextTools.requireNotEmpty(sb, () -> "null", () -> "empty"), sb);
         }
 
         @Test
         @DisplayName("should return the string when not empty")
         void shouldReturnStringWhenNotEmpty() {
-            assertEquals("hello",
-                    TextTools.requireNotEmpty("hello", "null msg", "empty msg"));
+            assertEquals("hello", TextTools.requireNotEmpty("hello", () -> "null", () -> "empty"));
         }
 
         @Test
-        @DisplayName("should return non-empty whitespace-only string")
-        void shouldReturnWhitespaceOnlyString() {
-            assertEquals(" ",
-                    TextTools.requireNotEmpty(" ", "null msg", "empty msg"));
+        @DisplayName("should throw IllegalArgumentException with supplier message for empty string")
+        void shouldThrowIllegalArgumentExceptionWithSupplierMessage() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotEmpty("", () -> "null", () -> "custom empty msg"));
+            assertEquals("custom empty msg", ex.getMessage());
         }
 
         @Test
-        @DisplayName("should throw IllegalArgumentException with custom message for empty string")
-        void shouldThrowIllegalArgumentExceptionWithCustomMessage() {
-            var thrown = false;
-            try {
-                TextTools.requireNotEmpty("", "custom null msg", "custom empty msg");
-            } catch (IllegalArgumentException e) {
-                thrown = e.getMessage().equals("custom empty msg");
-            }
-            assertTrue(thrown);
+        @DisplayName("should throw NullPointerException with supplier message for null string")
+        void shouldThrowNullPointerExceptionWithSupplierMessage() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotEmpty((String) null, () -> "custom null msg", () -> "empty"));
+            assertEquals("custom null msg", ex.getMessage());
         }
 
         @Test
-        @DisplayName("should throw NullPointerException with custom message for null string")
-        void shouldThrowNullPointerExceptionWithCustomMessage() {
-            var thrown = false;
-            try {
-                TextTools.requireNotEmpty(null, "custom null msg", "custom empty msg");
-            } catch (NullPointerException e) {
-                thrown = e.getMessage().equals("custom null msg");
-            }
-            assertTrue(thrown);
+        @DisplayName("should not call supplier on success")
+        void supplierIsLazy() {
+            var called = new boolean[]{false};
+            TextTools.requireNotEmpty("hello",
+                    () -> {
+                        called[0] = true;
+                        return "null";
+                    },
+                    () -> {
+                        called[0] = true;
+                        return "empty";
+                    });
+            assertFalse(called[0]);
         }
     }
 
+    @Nested
+    @DisplayName("requireNotEmpty(String, T...) Tests")
+    class RequireNotEmptyVarargsContextTests {
+
+        @Test
+        @DisplayName("should allow whitespace-only elements")
+        void shouldAllowWhitespaceOnlyElements() {
+            var elements = new String[]{"hello", " ", "\t", "world"};
+            assertSame(elements, TextTools.requireNotEmpty("values", elements));
+        }
+
+        @Test
+        @DisplayName("should fail fast on first empty element")
+        void shouldFailFastOnFirstEmpty() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotEmpty("values", "", "hello"));
+            assertEquals("values must not be empty or contain empty elements", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should fail fast on first null element")
+        void shouldFailFastOnFirstNull() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotEmpty("values", null, "", "world"));
+            assertEquals("values must not be null", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should return the original array when all elements valid")
+        void shouldReturnOriginalArray() {
+            var elements = new String[]{"hello", " ", "world"};
+            var result = TextTools.requireNotEmpty("values", elements);
+            assertSame(elements, result);
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException for blank context")
+        void shouldThrowIllegalArgumentExceptionForBlankContext() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotEmpty(" ", " "));
+            assertEquals("context must not be blank", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException for empty array")
+        void shouldThrowIllegalArgumentExceptionForEmptyArray() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotEmpty("values"));
+            assertEquals("values must not be empty or contain empty elements", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException when array contains empty element")
+        void shouldThrowIllegalArgumentExceptionForEmptyElement() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotEmpty("values", "hello", ""));
+            assertEquals("values must not be empty or contain empty elements", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException for null arequireNotEmptyrray")
+        void shouldThrowNullPointerExceptionForNullArray() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotEmpty("values", (String[]) null));
+            assertEquals("values must not be null", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException for null context")
+        @SuppressWarnings("DataFlowIssue")
+        void shouldThrowNullPointerExceptionForNullContext() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotEmpty("hello", (String) null));
+            assertEquals("context must not be null", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException when array contains null element")
+        void shouldThrowNullPointerExceptionForNullElement() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotEmpty("values", "hello", null));
+            assertEquals("values must not be null", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should work with StringBuilder and other CharSequence types")
+        void shouldWorkWithStringBuilder() {
+            var elements = new CharSequence[]{new StringBuilder("hello"), new StringBuffer(" ")};
+            var result = TextTools.requireNotEmpty("values", elements);
+            assertSame(elements, result);
+        }
+    }
+
+    @Nested
+    @DisplayName("requireNotEmpty(Supplier<String>, T...) Tests")
+    class RequireNotEmptyVarargsSupplierTests {
+
+        @Test
+        @DisplayName("should allow whitespace-only elements")
+        void shouldAllowWhitespaceOnlyElements() {
+            var elements = new String[]{"hello", " ", "\t", "world"};
+            assertSame(elements, TextTools.requireNotEmpty(() -> "null", () -> "empty", elements));
+        }
+
+        @Test
+        @DisplayName("should fail fast on first empty element")
+        void shouldFailFastOnFirstEmpty() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotEmpty(() -> "null", () -> "empty", "", "hello"));
+            assertEquals("empty", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should fail fast on first null element")
+        void shouldFailFastOnFirstNull() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotEmpty(() -> "null", () -> "empty", null, "", "world"));
+            assertEquals("null", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should return the original array when all elements valid")
+        void shouldReturnOriginalArray() {
+            var elements = new String[]{"hello", " ", "world"};
+            var result = TextTools.requireNotEmpty(() -> "null", () -> "empty", elements);
+            assertSame(elements, result);
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException with supplier message for empty element")
+        void shouldThrowIllegalArgumentExceptionForEmptyElementWithSupplierMessage() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotEmpty(() -> "null", () -> "custom empty elem msg", "hello", ""));
+            assertEquals("custom empty elem msg", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException with supplier message for empty array")
+        void shouldThrowIllegalArgumentExceptionWithSupplierMessage() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> TextTools.requireNotEmpty(() -> "null", () -> "custom empty msg"));
+            assertEquals("custom empty msg", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException with supplier message for null element")
+        void shouldThrowNullPointerExceptionForNullElementWithSupplierMessage() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotEmpty(
+                            () -> "custom null elem msg",
+                            () -> "empty",
+                            "hello", null));
+            assertEquals("custom null elem msg", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw NullPointerException with supplier message for null array")
+        void shouldThrowNullPointerExceptionWithSupplierMessage() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> TextTools.requireNotEmpty(() -> "custom null msg", () -> "null", (String[]) null));
+            assertEquals("custom null msg", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("should work with StringBuilder and other CharSequence types")
+        void shouldWorkWithStringBuilder() {
+            var elements = new CharSequence[]{new StringBuilder("hello"), new StringBuffer(" ")};
+            var result = TextTools.requireNotEmpty(() -> "null", () -> "empty", elements);
+            assertSame(elements, result);
+        }
+    }
 }

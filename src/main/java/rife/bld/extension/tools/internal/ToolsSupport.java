@@ -18,9 +18,7 @@ package rife.bld.extension.tools.internal;
 
 import rife.bld.extension.tools.TextTools;
 
-import java.util.IllegalFormatException;
 import java.util.Objects;
-import java.util.logging.Logger;
 
 /**
  * Internal support utilities shared across tool classes.
@@ -32,32 +30,7 @@ import java.util.logging.Logger;
  */
 public final class ToolsSupport {
 
-    private static final Logger logger = Logger.getLogger(ToolsSupport.class.getName());
-
     private ToolsSupport() {
-    }
-
-    /**
-     * Formats a message with optional arguments using {@link String#format(String, Object...)}.
-     *
-     * <p>If {@code args} is {@code null} or empty, the raw {@code message} is returned unchanged.
-     * If formatting fails, the raw message is returned and a warning is logged.</p>
-     *
-     * @param message the message or format string; must not be {@code null}
-     * @param args    optional arguments used to format the {@code message}
-     * @return the formatted message, or the raw message if formatting fails or no args are supplied
-     */
-    public static String formatMessage(String message, Object... args) {
-        if (args == null || args.length == 0) {
-            return message;
-        }
-        try {
-            return String.format(message, args);
-        } catch (IllegalFormatException e) {
-            logger.warning(() -> "Message formatting failed for pattern \""
-                    + message + "\": " + e.getMessage());
-            return message;
-        }
     }
 
     /**
@@ -70,7 +43,7 @@ public final class ToolsSupport {
     public static void requireContext(String context) {
         Objects.requireNonNull(context, "context must not be null");
         if (TextTools.isBlank(context)) {
-            throw new IllegalArgumentException("context must not be empty, or blank");
+            throw new IllegalArgumentException("context must not be blank");
         }
     }
 
