@@ -18,22 +18,42 @@ package rife.bld.extension.tools;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
- * Classpath Tools.
+ * Path Tools.
+ * <p>
+ * Utility methods to facilitate paths and arguments handling.
  *
- * <p>Utility methods for assembling classpath strings from file and string
- * path entries. {@code null} arrays, {@code null} collections, and {@code null}
- * or blank individual entries are silently ignored in all methods.</p>
- *
- * @deprecated As of 1.0, use {@link PathTools} instead. This class will be removed in a future release.
+ * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
+ * @since 1.0
  */
-@Deprecated(since = "1.0", forRemoval = true)
-public final class ClasspathTools {
+public final class PathTools {
 
-    private ClasspathTools() {
+    private PathTools() {
         // no-op
+    }
+
+    /**
+     * Formats a list of command-line arguments into a single string suitable for logging, and copy/paste.
+     * <p>
+     * Arguments containing spaces are wrapped in double quotes so the resulting string
+     * can be safely copy-pasted into a shell. This method does not perform full shell
+     * escaping of special characters like quotes, backslashes, or {@code $}.
+     *
+     * @param args the list of command-line arguments to format; must not be {@code null}
+     * @return a space-separated string with arguments quoted if they contain spaces
+     * @since 1.0
+     */
+    public static String formatCommandLine(List<String> args) {
+        return args.stream()
+                .map(s -> s.contains(" ") ? "\"" + s + "\"" : s)
+                .collect(Collectors.joining(" "));
     }
 
     /**
@@ -54,12 +74,19 @@ public final class ClasspathTools {
      * @return a classpath string where the normalized absolute paths of all provided
      * files are joined by the system's path separator; an empty string if no valid
      * files are provided
-     * @deprecated Use {@link PathTools#joinClasspath(Collection[])} instead.
+     * @since 1.0
      */
-    @Deprecated(since = "1.0", forRemoval = true)
     @SafeVarargs
     public static String joinClasspath(@Nullable Collection<File>... files) {
-        return PathTools.joinClasspath(files);
+        if (files == null) {
+            return "";
+        }
+        return Stream.of(files)
+                .filter(Objects::nonNull)
+                .flatMap(Collection::stream)
+                .filter(Objects::nonNull)
+                .map(f -> Objects.requireNonNull(f).toPath().toAbsolutePath().normalize().toString())
+                .collect(Collectors.joining(File.pathSeparator));
     }
 
     /**
@@ -73,11 +100,14 @@ public final class ClasspathTools {
      *              are silently skipped
      * @return a string representing the concatenated classpath entries, separated by
      * the system's path separator; an empty string if no valid paths are provided
-     * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
-     * @deprecated Use {@link PathTools#joinClasspath(String...)} instead.
+     * @since 1.0
      */
-    @Deprecated(since = "1.0", forRemoval = true)
     public static String joinClasspath(@Nullable String... paths) {
-        return PathTools.joinClasspath(paths); // also fixed missing return
+        if (paths == null) {
+            return "";
+        }
+        return Arrays.stream(paths)
+                .filter(TextTools::isNotBlank)
+                .collect(Collectors.joining(File.pathSeparator));
     }
 }

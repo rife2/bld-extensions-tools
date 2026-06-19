@@ -23,6 +23,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.*;
+import rife.bld.extension.testing.BlankSource;
 
 import java.io.File;
 import java.io.IOException;
@@ -62,7 +63,7 @@ class ExistsTests {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"", " ", "   "})
+        @BlankSource
         @DisplayName("exists(String) should handle empty and whitespace strings")
         void existsStringShouldHandleEmptyStrings(String path) {
             var result = IOTools.exists(path);
@@ -617,8 +618,8 @@ class IOToolsTest {
             class NullOrBlankPath {
 
                 @ParameterizedTest
-                @NullAndEmptySource
-                @ValueSource(strings = {" ", "  ", "\t", "\n", " \t\n "})
+                @NullSource
+                @BlankSource
                 @DisplayName("Should return false and not throw")
                 void shouldReturnFalseAndNotThrow(String path) throws IOException {
                     assertFalse(IOTools.createDirs(path));
@@ -924,8 +925,8 @@ class IsDirectoryTest {
 
         @ParameterizedTest
         @DisplayName("should return false for blank strings")
-        @NullAndEmptySource
-        @ValueSource(strings = {"  ", "\t", "\n", "   \t\n  "})
+        @NullSource
+        @BlankSource
         void testBlankStrings(String path) {
             assertFalse(IOTools.isDirectory(path));
         }
@@ -1268,7 +1269,7 @@ class NotExistsTests {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"", " ", "   "})
+        @BlankSource
         @DisplayName("notExists(String) should handle empty and whitespace strings")
         void notExistsStringShouldHandleEmptyStrings(String path) {
             var result = IOTools.notExists(path);

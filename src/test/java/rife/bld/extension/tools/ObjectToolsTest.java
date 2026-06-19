@@ -20,7 +20,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.*;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullSource;
+import rife.bld.extension.testing.BlankSource;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -477,8 +480,7 @@ class ObjectToolsTest {
         }
 
         @ParameterizedTest
-        @EmptySource
-        @ValueSource(strings = {" ", "  "})
+        @BlankSource
         void throwsForBlankMessage(String message) {
             assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requireEmpty("", message));
@@ -615,8 +617,7 @@ class ObjectToolsTest {
         }
 
         @ParameterizedTest
-        @EmptySource
-        @ValueSource(strings = {" ", "  "})
+        @BlankSource
         void throwsIaeForBlankMessage(String message) {
             assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requireNegative(-1, message));
@@ -741,8 +742,7 @@ class ObjectToolsTest {
         }
 
         @ParameterizedTest
-        @EmptySource
-        @ValueSource(strings = {" ", "  "})
+        @BlankSource
         void throwsIaeForBlankMessage(String message) {
             assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requireNonNegative(0, message));
@@ -958,8 +958,7 @@ class ObjectToolsTest {
         }
 
         @ParameterizedTest
-        @EmptySource
-        @ValueSource(strings = {" ", "  "})
+        @BlankSource
         void throwsForBlankContext(String context) {
             assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requireNotEmpty("x", context));
@@ -1127,8 +1126,7 @@ class ObjectToolsTest {
         }
 
         @ParameterizedTest
-        @EmptySource
-        @ValueSource(strings = {" ", "  "})
+        @BlankSource
         void throwsIaeForBlankMessage(String message) {
             assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requirePositive(1, message));

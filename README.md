@@ -23,15 +23,6 @@ scope(compile).include(
 Please check the [documentation](https://rife2.github.io/bld-extensions-tools)
 for more information.
 
-## Classpath Tools
-
-The following static methods are provided:
-
-| Method                                                                                                                                                                           | Description                            |
-| :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------- |
-| [`joinClasspath(Collection<String>... files)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathTools.html#joinClasspath(java.util.Collection...)) | Joins lists of files into a classpath. |
-| [`joinClasspath(String... paths)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ClasspathTools.html#joinClasspath(java.lang.String...))                 | Join string paths into a classpath.    |
-
 ## Collection Tools
 
 The following static methods are provided:
@@ -106,6 +97,16 @@ The following static methods are provided:
 | [`requireNonNegative(T value, Supplier<String> messageSupplier)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#requireNonNegative(T,java.util.function.Supplier))        | Requires the value to be zero or positive. Throws `NullPointerException` if `null`. Throws `IllegalArgumentException` with message from supplier if negative. Throws `IllegalArgumentException` if unsupported type.                                                                    |
 | [`requirePositive(T value, String context)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#requirePositive(T,java.lang.String))                                           | Requires the value to be positive. Works with numeric `Comparable` types. Throws `NullPointerException` if `null`. Throws `IllegalArgumentException` if zero or negative. Throws `IllegalArgumentException` if unsupported type.                                                        |
 | [`requirePositive(T value, Supplier<String> messageSupplier)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ObjectTools.html#requirePositive(T,java.util.function.Supplier))              | Requires the value to be positive. Throws `NullPointerException` if `null`. Throws `IllegalArgumentException` with message from supplier if zero or negative. Throws `IllegalArgumentException` if unsupported type.                                                                    |
+
+## Path Tools
+
+The following static methods are provided:
+
+| Method                                                                                                                                                                    | Description                                                                                  |
+|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------------------------|
+| [`joinClasspath(Collection<File>... files)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/PathUtils.html#joinClasspath(java.util.Collection...)) | Joins multiple collections of files into a classpath string using normalized absolute paths. |
+| [`joinClasspath(String... paths)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/PathUtils.html#joinClasspath(java.lang.String...))               | Joins non-blank string paths into a classpath string.                                        |
+| [`formatCommandLine(List<String> args)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/PathUtils.html#formatCommandLine(java.util.List))          | Formats command-line arguments into a single string suitable for logging and copy/paste.     |
 
 ## Process Executor
 
