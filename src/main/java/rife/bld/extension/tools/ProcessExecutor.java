@@ -19,7 +19,7 @@ package rife.bld.extension.tools;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import rife.bld.extension.testing.VisibleForTesting;
+import rife.bld.testing.VisibleForTesting;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;

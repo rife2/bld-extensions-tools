@@ -23,7 +23,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.*;
-import rife.bld.extension.testing.BlankSource;
+import rife.bld.testing.BlankSource;
 
 import java.io.File;
 import java.io.IOException;
