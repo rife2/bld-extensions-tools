@@ -48,7 +48,7 @@ public class ToolsBuild extends Project {
 
         repositories = List.of(MAVEN_CENTRAL, RIFE2_RELEASES, RIFE2_SNAPSHOTS);
 
-        var junit = version(6, 1, 0);
+        var junit = version(6, 1, 2);
         scope(provided)
                 .include(dependency("com.uwyn.rife2", "bld-testing-helpers",
                         version(1, 1, 0, "SNAPSHOT")))
