@@ -46,11 +46,17 @@ class PathToolsTest {
     class FormatCommandLineTest {
 
         @Test
-        @DisplayName("does not escape quotes - logs only")
+        @DisplayName("escapes embedded double quotes with single quotes")
         void embeddedQuotes() {
             List<String> args = List.of("echo", "he said \"hello\"");
-            assertEquals("echo \"he said \"hello\"\"", PathTools.formatCommandLine(args));
-            // Note: This is correct for logging, but wouldn't be shell-safe
+            assertEquals("echo 'he said \"hello\"'", PathTools.formatCommandLine(args));
+        }
+
+        @Test
+        @DisplayName("escapes single quotes")
+        void embeddedSingleQuote() {
+            List<String> args = List.of("echo", "can't");
+            assertEquals("echo 'can'\\''t'", PathTools.formatCommandLine(args));
         }
 
         @Test
@@ -60,17 +66,17 @@ class PathToolsTest {
         }
 
         @Test
-        @DisplayName("preserves empty string args")
+        @DisplayName("preserves empty string args as ''")
         void emptyStringArg() {
             List<String> args = List.of("echo", "");
-            assertEquals("echo ", PathTools.formatCommandLine(args));
+            assertEquals("echo ''", PathTools.formatCommandLine(args));
         }
 
         @Test
         @DisplayName("handles multiple spaced args")
         void multipleSpacedArgs() {
             List<String> args = List.of("cp", "my documents", "backup folder");
-            assertEquals("cp \"my documents\" \"backup folder\"", PathTools.formatCommandLine(args));
+            assertEquals("cp 'my documents' 'backup folder'", PathTools.formatCommandLine(args));
         }
 
         @Test
@@ -81,16 +87,23 @@ class PathToolsTest {
         }
 
         @Test
-        @DisplayName("throws NPE for null list")
+        @DisplayName("return empty for null list")
         void nullList() {
-            assertThrows(NullPointerException.class, () -> PathTools.formatCommandLine(null));
+            assertEquals("", PathTools.formatCommandLine(null));
+        }
+
+        @Test
+        @DisplayName("prevents shell expansion")
+        void shellMetaChars() {
+            List<String> args = List.of("echo", "$HOME", "`rm -rf /`");
+            assertEquals("echo '$HOME' '`rm -rf /`'", PathTools.formatCommandLine(args));
         }
 
         @Test
         @DisplayName("quotes args that contain spaces")
         void withSpaces() {
             List<String> args = List.of("myapp", "input file.txt", "--verbose");
-            assertEquals("myapp \"input file.txt\" --verbose", PathTools.formatCommandLine(args));
+            assertEquals("myapp 'input file.txt' --verbose", PathTools.formatCommandLine(args));
         }
     }
 

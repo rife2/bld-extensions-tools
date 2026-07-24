@@ -39,20 +39,37 @@ public final class PathTools {
         // no-op
     }
 
+    private static String escapePosix(String s) {
+        if (s == null) {
+            return "''";
+        }
+        if (s.isEmpty()) {
+            return "''";
+        }
+        // Safe chars that don't need quoting: alphanum + - _ . / : = , @
+        if (s.matches("[a-zA-Z0-9._/:@,=-]+")) {
+            return s;
+        }
+        // Single-quote and escape embedded single quotes: ' -> '\''
+        return "'" + s.replace("'", "'\\''") + "'";
+    }
+
     /**
-     * Formats a list of command-line arguments into a single string suitable for logging, and copy/paste.
-     * <p>
-     * Arguments containing spaces are wrapped in double quotes so the resulting string
-     * can be safely copy-pasted into a shell. This method does not perform full shell
-     * escaping of special characters like quotes, backslashes, or {@code $}.
+     * Formats a list of command-line arguments into a single string suitable for
+     * logging and safe copy/paste into a POSIX-compatible shell.
      *
-     * @param args the list of command-line arguments to format; must not be {@code null}
-     * @return a space-separated string with arguments quoted if they contain spaces
+     * @param args the list of command-line arguments to format; must not be {@code null},
+     *             but may contain {@code null} or empty elements, which are rendered as {@code ''}
+     * @return a space-separated string with arguments quoted and escaped for POSIX shells;
+     * an empty string if the list is empty
      * @since 1.0
      */
     public static String formatCommandLine(List<String> args) {
+        if (args == null || args.isEmpty()) {
+            return "";
+        }
         return args.stream()
-                .map(s -> s.contains(" ") ? "\"" + s + "\"" : s)
+                .map(PathTools::escapePosix)
                 .collect(Collectors.joining(" "));
     }
 
