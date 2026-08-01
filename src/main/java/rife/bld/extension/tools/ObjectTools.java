@@ -16,9 +16,12 @@
 
 package rife.bld.extension.tools;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.jetbrains.annotations.Contract;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.NullUnmarked;
+import org.jspecify.annotations.Nullable;
 import rife.bld.extension.tools.internal.ToolsSupport;
 
 import java.lang.reflect.Array;
@@ -39,16 +42,18 @@ import java.util.logging.Logger;
  * <p>Emptiness is defined for {@link CharSequence}, {@link Collection},
  * {@link Map}, and arrays. All other non-{@code null} objects are considered not empty.</p>
  *
- * <p>If the value is an array, {@link Collection}, or {@link Map},
- * predicates and validators apply to all elements/entries recursively.</p>
+ * <p>{@link #allEmpty(Object)}, {@link #allNotEmpty(Object)}, and the {@code require*}
+ * methods check containers recursively, up to {@value #MAX_NESTING_DEPTH} levels deep
+ * per branch (see {@link #MAX_NESTING_DEPTH}). {@link #anyEmpty(Object)} and
+ * {@link #anyNotEmpty(Object)} check only the container's direct elements/entries —
+ * they do not descend into nested containers.</p>
  *
- * <p><b>Map key checking:</b> For {@link Map} containers, both keys and values
- * are evaluated by emptiness predicates. Keys of non-container, non-{@link CharSequence}
- * types (e.g. {@link Integer}, enum constants) are never considered empty.
- * This means a map with such keys will never report all keys as empty, which
- * can affect the result of {@link #allEmpty(Object)} and {@link #anyEmpty(Object)}.</p>
+ * <p><b>Map key checking:</b> both keys and values are evaluated by emptiness predicates.
+ * Keys of non-container, non-{@link CharSequence} types (e.g. {@link Integer}, enum
+ * constants) are never considered empty, so a map with such keys never reports all keys
+ * as empty — this affects {@link #allEmpty(Object)} and {@link #anyEmpty(Object)}.</p>
  *
- * <p><b>Validation order:</b> All {@code require*} methods throw {@link NullPointerException}
+ * <p><b>Validation order:</b> all {@code require*} methods throw {@link NullPointerException}
  * first if the value or any nested element is {@code null}, then {@link IllegalArgumentException}
  * if the value is empty or blank.</p>
  *
@@ -57,14 +62,20 @@ import java.util.logging.Logger;
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
  */
+@NullMarked
 public final class ObjectTools {
 
     /**
-     * Maximum nesting depth checked during null validation. Containers nested
-     * deeper than this limit are not traversed, preventing {@link StackOverflowError}
-     * on pathologically deep structures.
+     * Maximum nesting depth checked during null/emptiness validation. Containers nested
+     * deeper than this limit along a given branch are not traversed further, preventing
+     * {@link StackOverflowError} on pathologically deep structures.
+     *
+     * <p>Depth is tracked per traversal branch, not the total number of containers visited
+     * across the whole structure — a wide structure with many sibling containers at the
+     * same level does not count against this limit.</p>
      */
-    private static final int MAX_NESTING_DEPTH = 128;
+    static final int MAX_NESTING_DEPTH = 128;
+
     private static final String MESSAGE_SUPPLIER = "messageSupplier";
     private static final String MUST_NOT_BE_NULL = " must not be null";
 
@@ -82,92 +93,162 @@ public final class ObjectTools {
             BigDecimal.class, BigDecimal.ZERO
     );
 
-    private static final Predicate<Object> isEmptyPredicate = ObjectTools::isEmpty;
-    private static final Predicate<Object> isNotEmptyPredicate = ObjectTools::isNotEmpty;
+    private static final Predicate<@Nullable Object> isEmptyPredicate = ObjectTools::isEmpty;
+    private static final Predicate<@Nullable Object> isNotEmptyPredicate = ObjectTools::isNotEmpty;
     private static final Logger logger = Logger.getLogger(ObjectTools.class.getName());
 
     private ObjectTools() {
     }
 
     /**
-     * Returns {@code true} if the value and all elements/entries are empty.
+     * Returns {@code true} if the value and all nested elements/entries are empty.
      *
-     * <p>For non-containers, equivalent to {@link #isEmpty(Object)}.
-     * For arrays, {@link Collection}, or {@link Map}, all elements/entries
-     * must be {@code null} or empty.</p>
+     * <p>For non-containers, equivalent to {@link #isEmpty(Object)}. For containers,
+     * returns {@code true} only if the container itself is empty, or every nested
+     * element/entry (checked recursively, see class docs) is {@code null} or empty.</p>
      *
-     * <p>For a {@link Map}, both keys and values are checked. See the class-level
-     * note on map key checking.</p>
-     *
-     * <p>Example with an empty list:</p>
      * <pre>{@code
-     * List<String> empty = List.of();
-     * allEmpty(empty) // true (vacuously: no non-empty elements)
-     * allNotEmpty(empty) // false (no non-empty elements to satisfy the condition)
+     * allEmpty(List.of());                           // true - vacuously
+     * allEmpty(List.of(List.of("", ""), List.of())); // true
+     * allEmpty(List.of("foo", "bar"));               // false
      * }</pre>
      *
      * @param value the value to inspect; may be {@code null}
-     * @return {@code true} if the value and all elements are empty
-     * @apiNote An empty container (size 0) vacuously satisfies this
-     * condition and returns {@code true}. This is the logical complement of
-     * requiring <em>any</em> element to be non-empty, not the inverse of
-     * {@link #allNotEmpty(Object)} for empty containers.
+     * @return {@code true} if the value and all nested elements are {@code null} or empty
+     * @apiNote An empty container vacuously satisfies this and returns {@code true} — the
+     * logical complement of requiring <em>any</em> element non-empty, not the inverse of
+     * {@link #allNotEmpty(Object)} for empty containers. A {@code null} element is treated
+     * as empty.
      * @since 1.3
      */
     public static boolean allEmpty(@Nullable Object value) {
         if (value == null) {
             return true;
         }
-        return isContainer(value)
-                ? checkAll(value, ObjectTools::isEmpty)
-                : isEmpty(value);
+        if (!isContainer(value)) {
+            return isEmpty(value);
+        }
+        if (isEmpty(value)) {
+            return true;
+        }
+
+        var stack = new DepthStack();
+        stack.pushRoot(value);
+
+        DepthEntry entry;
+        while ((entry = stack.pop()) != null) {
+            var current = entry.value();
+            if (isEmpty(current)) {
+                continue;
+            }
+
+            if (current.getClass().isArray() && !(current instanceof Object[])) {
+                return false; // non-empty primitive array
+            }
+
+            if (current instanceof @Nullable Object[] arr) {
+                for (var o : arr) {
+                    if (o == null) {
+                        continue;
+                    }
+                    if (isContainer(o)) {
+                        stack.tryPush(o, entry.depth());
+                    } else if (isNotEmpty(o)) {
+                        return false;
+                    }
+                }
+            } else if (current instanceof Collection<?> c) {
+                for (var o : c) {
+                    if (o == null) {
+                        continue;
+                    }
+                    if (isContainer(o)) {
+                        stack.tryPush(o, entry.depth());
+                    } else if (isNotEmpty(o)) {
+                        return false;
+                    }
+                }
+            } else if (current instanceof Map<?, ?> m) {
+                for (var e : m.entrySet()) {
+                    var k = e.getKey();
+                    var v = e.getValue();
+                    if (k != null) {
+                        if (isContainer(k)) {
+                            stack.tryPush(k, entry.depth());
+                        } else if (isNotEmpty(k)) {
+                            return false;
+                        }
+                    }
+                    if (v != null) {
+                        if (isContainer(v)) {
+                            stack.tryPush(v, entry.depth());
+                        } else if (isNotEmpty(v)) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     /**
-     * Returns {@code true} if the value and all elements/entries are not empty.
+     * Returns {@code true} if the value and all nested elements/entries are not empty.
      *
-     * <p>For non-containers, equivalent to {@link #isNotEmpty(Object)}.
-     * For arrays, {@link Collection}, or {@link Map}, the container must be
-     * not empty and all elements/entries must be not {@code null} and not empty.</p>
+     * <p>For non-containers, equivalent to {@link #isNotEmpty(Object)}. For containers,
+     * the container itself and every nested element/entry (checked recursively, see class
+     * docs) must be not {@code null} and not empty.</p>
      *
-     * <p>For a {@link Map}, both keys and values are checked. See the class-level
-     * note on map key checking.</p>
-     *
-     * <p>Example with a non-empty list:</p>
      * <pre>{@code
-     * List<String> items = List.of("foo", "bar");
-     * allNotEmpty(items) // true (all elements are non-null and non-empty)
-     * allEmpty(items) // false (elements are present and non-empty)
+     * allNotEmpty(List.of("foo", "bar"));   // true
+     * allNotEmpty(List.of(List.of("")));    // false - nested element is empty
+     * allNotEmpty(List.of());               // false - empty container
      * }</pre>
      *
      * @param value the value to inspect; may be {@code null}
-     * @return {@code true} if the value and all elements are not empty
-     * @apiNote An empty container returns {@code false} because there
-     * are no non-empty elements to satisfy the condition. This is intentionally
-     * asymmetric with {@link #allEmpty(Object)} for empty containers.</p>
+     * @return {@code true} if the value and all nested elements are not {@code null} and not empty
+     * @apiNote An empty container returns {@code false} — there are no non-empty elements
+     * to satisfy the condition. This is intentionally asymmetric with {@link #allEmpty(Object)}
+     * for empty containers. A {@code null} element is treated as empty and causes this method
+     * to return {@code false}.
      * @since 1.3
      */
     public static boolean allNotEmpty(@Nullable Object value) {
-        if (value == null) {
+        if (value == null || isEmpty(value)) {
             return false;
         }
-        return isContainer(value)
-                ? isNotEmpty(value) && checkAll(value, ObjectTools::isNotEmpty)
-                : isNotEmpty(value);
+        if (!isContainer(value)) {
+            return true;
+        }
+
+        var stack = new DepthStack();
+        stack.pushRoot(value);
+
+        DepthEntry entry;
+        while ((entry = stack.pop()) != null) {
+            var current = entry.value();
+            if (isEmpty(current)) {
+                return false;
+            }
+            if (!isContainer(current)) {
+                continue; // non-empty, non-container leaf satisfies allNotEmpty
+            }
+            if (stack.pushAllOrNull(current, entry.depth())) {
+                return false; // a null child means this container fails
+            }
+        }
+        return true;
     }
 
     /**
-     * Returns {@code true} if the value or any element/entry is empty.
+     * Returns {@code true} if the value, or any of its direct elements/entries, is empty.
      *
-     * <p>For non-containers, equivalent to {@link #isEmpty(Object)}.
-     * For arrays, {@link Collection}, or {@link Map}, returns {@code true}
-     * if the container is empty or any element/entry is {@code null} or empty.</p>
-     *
-     * <p>For a {@link Map}, both keys and values are checked. See the class-level
-     * note on map key checking.</p>
+     * <p>For non-containers, equivalent to {@link #isEmpty(Object)}. For containers, only
+     * the direct elements/entries are checked — nested containers are not descended into
+     * (unlike {@link #allEmpty(Object)}). See the class-level note on map key checking.</p>
      *
      * @param value the value to inspect; may be {@code null}
-     * @return {@code true} if the value or any element is empty
+     * @return {@code true} if the value or any direct element is empty
      * @since 1.3
      */
     public static boolean anyEmpty(@Nullable Object value) {
@@ -175,22 +256,19 @@ public final class ObjectTools {
             return true;
         }
         return isContainer(value)
-                ? isEmpty(value) || checkAny(value, ObjectTools::isEmpty)
+                ? isEmpty(value) || checkAny(value, isEmptyPredicate)
                 : isEmpty(value);
     }
 
     /**
-     * Returns {@code true} if the value or any element/entry is not empty.
+     * Returns {@code true} if the value, or any of its direct elements/entries, is not empty.
      *
-     * <p>For non-containers, equivalent to {@link #isNotEmpty(Object)}.
-     * For arrays, {@link Collection}, or {@link Map}, returns {@code true}
-     * if any element/entry is not {@code null} and not empty.</p>
-     *
-     * <p>For a {@link Map}, both keys and values are checked. See the class-level
-     * note on map key checking.</p>
+     * <p>For non-containers, equivalent to {@link #isNotEmpty(Object)}. For containers, only
+     * the direct elements/entries are checked — nested containers are not descended into
+     * (unlike {@link #allNotEmpty(Object)}).</p>
      *
      * @param value the value to inspect; may be {@code null}
-     * @return {@code true} if the value or any element is not empty
+     * @return {@code true} if the value or any direct element is not empty
      * @since 1.3
      */
     public static boolean anyNotEmpty(@Nullable Object value) {
@@ -198,148 +276,137 @@ public final class ObjectTools {
             return false;
         }
         return isContainer(value)
-                ? checkAny(value, ObjectTools::isNotEmpty)
+                ? checkAny(value, isNotEmptyPredicate)
                 : isNotEmpty(value);
     }
 
     /**
      * Iterates {@code container} and returns {@code true} if {@code predicate} holds for
-     * every element (or key/value pair for {@link Map}s). Returns {@code true} vacuously
-     * for containers with no elements.
-     */
-    private static boolean checkAll(Object container, Predicate<Object> predicate) {
-        return forEachElement(container, predicate, true);
-    }
-
-    /**
-     * Iterates {@code container} and returns {@code true} if {@code predicate} holds for
-     * at least one element (or key/value for {@link Map}s). Returns {@code false} for
-     * containers with no elements.
-     */
-    private static boolean checkAny(Object container, Predicate<Object> predicate) {
-        return forEachElement(container, predicate, false);
-    }
-
-    /**
-     * Validates that the value and all nested elements are non-{@code null}.
-     * Throws {@link NullPointerException} on first null encountered.
+     * at least one direct element (or key/value for {@link Map}s); {@code false} for empty
+     * containers.
      *
-     * <p>Uses an iterative traversal (not recursive) up to {@value #MAX_NESTING_DEPTH}
-     * levels deep to prevent {@link StackOverflowError}.</p>
+     * <p>Pass {@link #isEmptyPredicate} or {@link #isNotEmptyPredicate} directly (not a
+     * freshly-created lambda) so the primitive-array fast path in {@link #isPrimitiveFastPath}
+     * can activate.</p>
+     */
+    private static boolean checkAny(Object container, Predicate<@Nullable Object> predicate) {
+        return forEachElement(container, predicate);
+    }
+
+    /**
+     * Throws {@link NullPointerException} if {@code value} is a container containing a
+     * {@code null} element.
      */
     @SuppressWarnings("PMD.AvoidThrowingNullPointerException")
-    @SuppressFBWarnings(value = "NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE",
-            justification = "intentionally nullable — we perform the null check and throw NPE ourselves")
-    private static void checkForNulls(@Nullable Object value, String message) {
-        Objects.requireNonNull(value, message);
+    private static void checkForNulls(Object value, String message) {
         if (isContainer(value) && !isAllNonNull(value)) {
             throw new NullPointerException(message);
         }
     }
 
-    private static boolean forEachBoxedPrimitive(Object container, Predicate<Object> predicate, boolean allMode) {
-        int len = Array.getLength(container);
-        for (int i = 0; i < len; i++) {
-            if (predicate.test(Array.get(container, i)) != allMode) {
-                return !allMode;
-            }
+    /**
+     * Throws {@link NullPointerException} if {@code value} is a container containing a
+     * {@code null} element. Lazy variant: {@code messageSupplier} is only invoked when a
+     * {@code null} element is actually found.
+     */
+    @SuppressWarnings("PMD.AvoidThrowingNullPointerException")
+    private static void checkForNulls(Object value, Supplier<String> messageSupplier) {
+        if (isContainer(value) && !isAllNonNull(value)) {
+            throw new NullPointerException(messageSupplier.get());
         }
-        return allMode;
     }
 
-    private static boolean forEachCollection(Collection<?> c, Predicate<Object> predicate, boolean allMode) {
-        for (Object v : c) {
-            if (predicate.test(v) != allMode) {
-                return !allMode;
+    private static boolean forEachBoxedPrimitive(Object container, Predicate<@Nullable Object> predicate) {
+        int len = Array.getLength(container);
+        for (int i = 0; i < len; i++) {
+            if (predicate.test(Array.get(container, i))) {
+                return true;
             }
         }
-        return allMode;
+        return false;
+    }
+
+    private static boolean forEachCollection(Collection<? extends @Nullable Object> c,
+                                             Predicate<@Nullable Object> predicate) {
+        for (@Nullable Object v : c) {
+            if (predicate.test(v)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
-     * Shared iteration logic for {@link #checkAll} and {@link #checkAny}.
+     * Shared any-match iteration for {@link #checkAny}: {@code true} as soon as
+     * {@code predicate} holds for one element/key/value, {@code false} otherwise
+     * (including empty containers).
      *
-     * @param container the container to iterate; must satisfy {@link #isContainer}
-     * @param predicate the test to apply to each element/key/value
-     * @param allMode   if {@code true}, returns {@code false} on the first predicate failure
-     *                  (all-match semantics); if {@code false}, returns {@code true} on the
-     *                  first predicate success (any-match semantics)
-     * @return the result of the all-match or any-match traversal
-     * @implNote The fast path for primitive arrays uses reference-identity comparison
-     * ({@code predicate == isEmptyPredicate} / {@code predicate == isNotEmptyPredicate})
-     * and relies on callers passing the cached static field references directly.
-     * This assumption holds for all internal callers. Custom predicates passed from
-     * outside always take the slow (boxing) path. For the built-in predicates,
-     * primitives are never considered empty, so the length alone determines the
-     * result without reading elements.
+     * @implNote The primitive-array fast path compares {@code predicate} by reference
+     * identity against the cached {@link #isEmptyPredicate}/{@link #isNotEmptyPredicate}
+     * fields. A newly-created lambda or method reference with equivalent behavior would
+     * not match and would silently fall back to the slower boxing path.
      */
-    private static boolean forEachElement(Object container, Predicate<Object> predicate, boolean allMode) {
+    private static boolean forEachElement(@Nullable Object container, Predicate<@Nullable Object> predicate) {
         if (container == null) {
-            return predicate.test(null) == allMode;
+            return predicate.test(null);
         }
 
-        if (container instanceof Object[] arr) {
-            return forEachObjectArray(arr, predicate, allMode);
+        if (container instanceof @Nullable Object[] arr) {
+            return forEachObjectArray(arr, predicate);
         }
         if (container instanceof Collection<?> c) {
-            return forEachCollection(c, predicate, allMode);
+            return forEachCollection(c, predicate);
         }
         if (container instanceof Map<?, ?> m) {
-            return forEachMap(m, predicate, allMode);
+            return forEachMap(m, predicate);
         }
         if (container.getClass().isArray()) {
-            return forEachPrimitiveArray(container, predicate, allMode);
+            return forEachPrimitiveArray(container, predicate);
         }
-        // Should never be reached: forEachElement is only called from checkAll/checkAny,
-        // which are only called when isContainer() returned true. If isContainer() is
-        // extended to new types, this method must be updated in tandem.
+        // Should never be reached: only called from checkAny, which is only called
+        // when isContainer() returned true. If isContainer() gains new types, update here too.
         throw new IllegalStateException("forEachElement called on unhandled container type: "
                 + container.getClass().getName()
                 + ". Update forEachElement to handle this type.");
     }
 
-    private static boolean forEachMap(Map<?, ?> m, Predicate<Object> predicate, boolean allMode) {
+    private static boolean forEachMap(Map<? extends @Nullable Object, ? extends @Nullable Object> m,
+                                      Predicate<@Nullable Object> predicate) {
         for (var e : m.entrySet()) {
-            if (predicate.test(e.getKey()) != allMode) {
-                return !allMode;
+            if (predicate.test(e.getKey())) {
+                return true;
             }
-            if (predicate.test(e.getValue()) != allMode) {
-                return !allMode;
+            if (predicate.test(e.getValue())) {
+                return true;
             }
         }
-        return allMode;
+        return false;
     }
 
-    private static boolean forEachObjectArray(Object[] arr, Predicate<Object> predicate, boolean allMode) {
-        for (Object v : arr) {
-            if (predicate.test(v) != allMode) {
-                return !allMode;
+    private static boolean forEachObjectArray(@Nullable Object[] arr, Predicate<@Nullable Object> predicate) {
+        for (@Nullable Object v : arr) {
+            if (predicate.test(v)) {
+                return true;
             }
         }
-        return allMode;
+        return false;
     }
 
     @SuppressWarnings("PMD.CompareObjectsWithEquals")
-    private static boolean forEachPrimitiveArray(Object container, Predicate<Object> predicate, boolean allMode) {
+    private static boolean forEachPrimitiveArray(Object container, Predicate<@Nullable Object> predicate) {
         if (isPrimitiveFastPath(predicate)) {
-            int len = Array.getLength(container);
-            // Primitives: emptiness depends only on length, not allMode
-            // allEmpty & anyEmpty: len == 0
-            // allNotEmpty & anyNotEmpty: len > 0
-            return predicate == isEmptyPredicate ? len == 0 : len > 0;
+            // primitives are never empty -> isEmpty never matches, isNotEmpty matches if length > 0
+            return predicate == isNotEmptyPredicate && Array.getLength(container) > 0;
         }
-        return forEachBoxedPrimitive(container, predicate, allMode);
+        return forEachBoxedPrimitive(container, predicate);
     }
 
     /**
-     * Requires the value to be not {@code null}, and all elements/entries to be not {@code null}.
-     *
-     * <p>Nested containers are checked iteratively up to {@value #MAX_NESTING_DEPTH}
-     * levels deep. If the depth limit is reached, validation stops and a warning is
-     * logged; deeper elements are assumed non-null. This prevents {@link StackOverflowError}
-     * on pathologically deep structures while allowing operations to proceed.
+     * Requires the value to be not {@code null}, and all elements/entries to be not
+     * {@code null}, checked recursively up to {@value #MAX_NESTING_DEPTH} levels deep
+     * per branch (see {@link #MAX_NESTING_DEPTH}).
      */
-    private static boolean isAllNonNull(Object value) {
+    private static boolean isAllNonNull(@Nullable Object value) {
         if (value == null) {
             return false;
         }
@@ -347,30 +414,14 @@ public final class ObjectTools {
             return true;
         }
 
-        // Iterative DFS to avoid StackOverflowError on deep nesting.
-        // ArrayDeque does not permit null elements, so nulls are detected
-        // in pushContainerElements before any push is attempted.
-        Deque<Object> stack = new ArrayDeque<>();
-        stack.push(value);
-        int depth = 0;
-
-        while (!stack.isEmpty()) {
-            Object current = stack.pop();
-            // current is always non-null here: pushContainerElements returns false
-            // immediately on null elements rather than pushing them.
-            if (!isContainer(current)) {
+        var stack = new DepthStack();
+        stack.pushRoot(value);
+        DepthEntry entry;
+        while ((entry = stack.pop()) != null) {
+            if (!isContainer(entry.value())) {
                 continue;
             }
-
-            if (++depth > MAX_NESTING_DEPTH) { // depth counts container nesting levels, not total elements
-                if (logger.isLoggable(Level.WARNING)) {
-                    logger.warning("Null validation stopped at depth " + MAX_NESTING_DEPTH +
-                            " to prevent StackOverflowError. Deeper elements not checked.");
-                }
-                break; // assume remaining are non-null
-            }
-
-            if (!pushContainerElements(current, stack)) {
+            if (stack.pushAllOrNull(entry.value(), entry.depth())) {
                 return false;
             }
         }
@@ -379,11 +430,10 @@ public final class ObjectTools {
 
     /**
      * Returns {@code true} if {@code value} is an array, {@link Collection}, or {@link Map}.
-     * Covers both object arrays and primitive arrays. Returns {@code false} if {@code value} is {@code null}.
-     * <p>
-     * {@link CharSequence} is not a container; use {@link TextTools}.
+     * Covers both object arrays and primitive arrays. {@link CharSequence} is not a
+     * container; use {@link TextTools}.
      */
-    private static boolean isContainer(Object value) {
+    private static boolean isContainer(@Nullable Object value) {
         if (value == null) {
             return false;
         }
@@ -429,64 +479,13 @@ public final class ObjectTools {
     }
 
     @SuppressWarnings("PMD.CompareObjectsWithEquals")
-    private static boolean isPrimitiveFastPath(Predicate<Object> predicate) {
+    private static boolean isPrimitiveFastPath(Predicate<@Nullable Object> predicate) {
         // Reference-identity check: these are static final fields; == is intentional.
         return predicate == isEmptyPredicate || predicate == isNotEmptyPredicate;
     }
 
     /**
-     * Pushes all elements of {@code container} onto {@code stack} for iterative null-checking.
-     *
-     * @return {@code false} immediately if any element is {@code null} (since a null element
-     * means the container fails the all-non-null check, and {@link ArrayDeque} does
-     * not permit null values); {@code true} if all elements were pushed successfully
-     */
-    private static boolean pushContainerElements(Object container, Deque<Object> stack) {
-        if (container instanceof Object[] arr) {
-            for (Object o : arr) {
-                if (o == null) {
-                    return false;
-                }
-                stack.push(o);
-            }
-        } else if (container instanceof Collection<?> c) {
-            for (Object o : c) {
-                if (o == null) {
-                    return false;
-                }
-                stack.push(o);
-            }
-        } else if (container instanceof Map<?, ?> m) {
-            for (var e : m.entrySet()) {
-                if (e.getKey() == null || e.getValue() == null) {
-                    return false;
-                }
-                stack.push(e.getKey());
-                stack.push(e.getValue());
-            }
-        } else if (container.getClass().isArray()) {
-            int len = Array.getLength(container);
-            Class<?> ct = container.getClass().getComponentType();
-            if (!ct.isPrimitive()) {
-                for (int i = 0; i < len; i++) {
-                    Object o = Array.get(container, i);
-                    if (o == null) {
-                        return false;
-                    }
-                    stack.push(o);
-                }
-            } // primitives: nothing to push, they can't be null or containers
-        }
-
-        return true;
-    }
-
-    /**
-     * Requires the value to be empty.
-     *
-     * <p>If {@code value} is an array, {@link Collection}, or {@link Map},
-     * all elements/entries must be empty. Throws {@link NullPointerException}
-     * if the value or any element is {@code null}.</p>
+     * Requires the value to be empty (and, for containers, every element/entry to be empty).
      *
      * @param value   the value to validate and return; must not be {@code null}
      * @param message the exception message; must not be {@code null}, empty, or blank
@@ -497,8 +496,12 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if {@code message} is {@code null}, empty, or blank
      * @since 1.3
      */
-    public static <T> T requireEmpty(@NonNull T value, @NonNull String message) {
+    @Contract("null, _ -> fail; !null, _ -> !null")
+    @NullUnmarked
+    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
+    public static <T extends @Nullable Object> @NonNull T requireEmpty(@Nullable T value, @NonNull String message) {
         ToolsSupport.requireMessage(message);
+        Objects.requireNonNull(value, message);
         checkForNulls(value, message);
         if (!allEmpty(value)) {
             throw new IllegalArgumentException(message);
@@ -507,11 +510,10 @@ public final class ObjectTools {
     }
 
     /**
-     * Requires the value to be empty.
+     * Requires the value to be empty. See {@link #requireEmpty(Object, String)}.
      *
-     * <p>If {@code value} is an array, {@link Collection}, or {@link Map},
-     * all elements/entries must be empty. Throws {@link NullPointerException}
-     * if the value or any element is {@code null}.</p>
+     * <p>{@code messageSupplier} is invoked unconditionally, once, so its produced message
+     * is validated (non-{@code null}, non-blank) regardless of whether {@code value} passes.</p>
      *
      * @param <T>             the value type
      * @param value           the value to validate and return; must not be {@code null}
@@ -519,20 +521,22 @@ public final class ObjectTools {
      * @return the validated value
      * @throws NullPointerException     if the value or any element is {@code null}
      * @throws IllegalArgumentException if the value is not empty
-     * @throws IllegalArgumentException if {@code messageSupplier} is {@code null}, empty, or blank
+     * @throws IllegalArgumentException if {@code messageSupplier} produces a {@code null}, empty, or blank message
      * @since 1.3
      */
-    public static <T> T requireEmpty(@NonNull T value, @NonNull Supplier<String> messageSupplier) {
+    @Contract("null, _ -> fail; !null, _ -> !null")
+    @NullUnmarked
+    public static <T extends @Nullable Object> @NonNull T requireEmpty(@Nullable T value,
+                                                                       @NonNull Supplier<String> messageSupplier) {
         Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
         return requireEmpty(value, messageSupplier.get());
     }
 
     /**
-     * Checks that the specified value is strictly negative.
-     *
-     * <p>This method is generic and works with any {@link Comparable} type that has a natural
-     * zero value, including {@link Integer}, {@link Long}, {@link Double}, {@link Float},
-     * {@link Byte}, {@link Short}, {@link BigInteger}, and {@link BigDecimal}.
+     * Checks that the specified value is strictly negative. Works with any
+     * {@link Comparable} type that has a natural zero value: {@link Integer}, {@link Long},
+     * {@link Double}, {@link Float}, {@link Byte}, {@link Short}, {@link BigInteger}, and
+     * {@link BigDecimal}.
      *
      * @param <T>     the type of the value, must implement {@link Comparable}
      * @param value   the value to check for negativity; must not be {@code null}
@@ -544,13 +548,17 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
-    public static <T extends Comparable<T>> T requireNegative(@NonNull T value, @NonNull String context) {
+    @Contract("null, _ -> fail; !null, _ -> !null")
+    @NullUnmarked
+    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNegative(@Nullable T value,
+                                                                                          @NonNull String context) {
         ToolsSupport.requireContext(context);
+        requireNonNull(value, context);
         return requireNegative(value, () -> context + " must be negative, got: " + value);
     }
 
     /**
-     * Checks that the specified value is strictly negative.
+     * Checks that the specified value is strictly negative. See {@link #requireNegative(Object, String)}.
      *
      * @param <T>             the type of the value, must implement {@link Comparable}
      * @param value           the value to check for negativity; must not be {@code null}
@@ -558,12 +566,14 @@ public final class ObjectTools {
      * @return the validated value if it is less than zero
      * @throws NullPointerException     if {@code value} or {@code messageSupplier} is {@code null}
      * @throws IllegalArgumentException if {@code value} is zero or positive
-     * @throws IllegalArgumentException if {@code messageSupplier} is empty, or blank
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
-    public static <T extends Comparable<T>> T requireNegative(@NonNull T value,
-                                                              @NonNull Supplier<String> messageSupplier) {
+    @Contract("null, _ -> fail; !null, _ -> !null")
+    @NullUnmarked
+    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
+    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNegative(@Nullable T value,
+                                                                                          @NonNull Supplier<String> messageSupplier) {
         Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
         requireNonNull(value, "value");
 
@@ -574,11 +584,8 @@ public final class ObjectTools {
     }
 
     /**
-     * Checks that the specified value is non-negative.
-     *
-     * <p>This method is generic and works with any {@link Comparable} type that has a natural
-     * zero value, including {@link Integer}, {@link Long}, {@link Double}, {@link Float},
-     * {@link Byte}, {@link Short}, {@link BigInteger}, and {@link BigDecimal}.
+     * Checks that the specified value is non-negative. See {@link #requireNegative(Object, String)}
+     * for supported types.
      *
      * @param <T>     the type of the value, must implement {@link Comparable}
      * @param value   the value to check for non-negativity; must not be {@code null}
@@ -590,13 +597,17 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
-    public static <T extends Comparable<T>> T requireNonNegative(@NonNull T value, @NonNull String context) {
+    @Contract("null, _ -> fail; !null, _ -> !null")
+    @NullUnmarked
+    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNonNegative(@Nullable T value,
+                                                                                             @NonNull String context) {
         ToolsSupport.requireContext(context);
+        requireNonNull(value, context);
         return requireNonNegative(value, () -> context + " must be non-negative, got: " + value);
     }
 
     /**
-     * Checks that the specified value is non-negative.
+     * Checks that the specified value is non-negative. See {@link #requireNonNegative(Object, String)}.
      *
      * @param <T>             the type of the value, must implement {@link Comparable}
      * @param value           the value to check for non-negativity; must not be {@code null}
@@ -604,12 +615,14 @@ public final class ObjectTools {
      * @return the validated value if it is greater than or equal to zero
      * @throws NullPointerException     if {@code value} or {@code messageSupplier} is {@code null}
      * @throws IllegalArgumentException if {@code value} is negative
-     * @throws IllegalArgumentException if {@code messageSupplier} is empty, or blank
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
-    public static <T extends Comparable<T>> T requireNonNegative(@NonNull T value,
-                                                                 @NonNull Supplier<String> messageSupplier) {
+    @Contract("null, _ -> fail; !null, _ -> !null")
+    @NullUnmarked
+    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
+    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNonNegative(@Nullable T value,
+                                                                                             @NonNull Supplier<String> messageSupplier) {
         Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
         requireNonNull(value, "value");
 
@@ -620,18 +633,10 @@ public final class ObjectTools {
     }
 
     /**
-     * Requires the value to be not {@code null}, and all elements/entries to be not {@code null}.
-     *
-     * <p>If {@code value} is an array, {@link Collection}, or {@link Map},
-     * the container must be not {@code null} and all elements/entries must be
-     * not {@code null}. Unlike {@link #requireNotEmpty(Object, String)}, this method
-     * allows empty containers as long as they contain no {@code null} elements.</p>
-     *
-     * <p>Exception message is constructed from {@code context} as
-     * {@code "{context} must not be null"}.</p>
-     *
-     * <p><b>Note:</b> Nested containers are checked iteratively up to
-     * {@value #MAX_NESTING_DEPTH} levels deep to prevent {@link StackOverflowError}.</p>
+     * Requires the value to be not {@code null}, and all elements/entries to be not
+     * {@code null}. Unlike {@link #requireNotEmpty(Object, String)}, empty containers
+     * are allowed as long as they contain no {@code null} elements. Nested containers
+     * are checked recursively (see class docs).
      *
      * @param value   the value to validate and return; must not be {@code null}
      * @param context the context string used in exception message; must not be {@code null}, empty, or blank
@@ -642,7 +647,10 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if {@code context} is empty, or blank
      * @since 1.3
      */
-    public static <T> T requireNonNull(@NonNull T value, @NonNull String context) {
+    @Contract("null, _ -> fail; !null, _ -> !null")
+    @NullUnmarked
+    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
+    public static <T extends @Nullable Object> @NonNull T requireNonNull(@Nullable T value, @NonNull String context) {
         ToolsSupport.requireContext(context);
         Objects.requireNonNull(value, context + MUST_NOT_BE_NULL);
         checkForNulls(value, context + " must not contain null elements");
@@ -650,39 +658,35 @@ public final class ObjectTools {
     }
 
     /**
-     * Requires the value to be not {@code null}, and all elements/entries to be not {@code null}.
+     * Requires the value to be not {@code null}, and all elements/entries to be not
+     * {@code null}. See {@link #requireNonNull(Object, String)}.
      *
-     * <p>If {@code value} is an array, {@link Collection}, or {@link Map},
-     * the container must be not {@code null} and all elements/entries must be
-     * not {@code null}. Unlike {@link #requireNotEmpty(Object, String, String)},
-     * this method allows empty containers as long as they contain no {@code null} elements.</p>
-     *
-     * <p><b>Note:</b> Nested containers are checked iteratively up to
-     * {@value #MAX_NESTING_DEPTH} levels deep to prevent {@link StackOverflowError}.</p>
+     * <p>Unlike the {@code String} overload, {@code messageSupplier} is invoked lazily —
+     * only when the value actually fails validation — so it is never evaluated on the
+     * success path.</p>
      *
      * @param value           the value to validate and return; must not be {@code null}
      * @param messageSupplier the supplier of the exception message; must not be {@code null}
      * @param <T>             the value type
      * @return the validated value, never {@code null}
-     * @throws NullPointerException     if the {@code value} is {@code null} or contains {@code null} elements
-     * @throws NullPointerException     if {@code messageSupplier} is {@code null}
-     * @throws IllegalArgumentException if {@code messageSupplier} is empty, or blank
+     * @throws NullPointerException if the {@code value} is {@code null} or contains {@code null} elements
+     * @throws NullPointerException if {@code messageSupplier} is {@code null}
      * @since 1.3
      */
-    public static <T> T requireNonNull(@NonNull T value, @NonNull Supplier<String> messageSupplier) {
+    @Contract("null, _ -> fail; !null, _ -> !null")
+    @NullUnmarked
+    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
+    public static <T extends @Nullable Object> @NonNull T requireNonNull(@Nullable T value,
+                                                                         @NonNull Supplier<String> messageSupplier) {
         Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
-        var message = messageSupplier.get();
-        Objects.requireNonNull(value, message);
-        checkForNulls(value, message);
+        Objects.requireNonNull(value, messageSupplier.get());
+        checkForNulls(value, messageSupplier);
         return value;
     }
 
     /**
-     * Requires the value to be not {@code null} and not empty.
-     *
-     * <p>If {@code value} is an array, {@link Collection}, or {@link Map},
-     * the container must be not empty and all elements/entries must be
-     * not {@code null} and not empty.</p>
+     * Requires the value to be not {@code null} and not empty (and, for containers, every
+     * element/entry to be not {@code null} and not empty).
      *
      * <p>Exception messages are constructed from {@code context} as
      * {@code "{context} must not be null"} and {@code "{context} must not be empty"}.</p>
@@ -697,20 +701,25 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if {@code context} is empty, or blank
      * @since 1.3
      */
-    public static <T> T requireNotEmpty(@NonNull T value, @NonNull String context) {
+    @Contract("null, _ -> fail; !null, _ -> !null")
+    @NullUnmarked
+    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
+    public static <T extends @Nullable Object> @NonNull T requireNotEmpty(@Nullable T value, @NonNull String context) {
         ToolsSupport.requireContext(context);
-        return requireNotEmpty(value,
-                context + MUST_NOT_BE_NULL,
-                context + " must not be empty");
+        Objects.requireNonNull(value, context + MUST_NOT_BE_NULL);
+        checkForNulls(value, context + " must not contain null elements");
+        if (isEmpty(value)) {
+            throw new IllegalArgumentException(context + " must not be empty");
+        }
+        if (!allNotEmpty(value)) {
+            throw new IllegalArgumentException(context + " must not contain empty elements");
+        }
+        return value;
     }
 
     /**
-     * Requires the value to be not {@code null} and not empty.
-     *
-     * <p>If {@code value} is an array, {@link Collection}, or {@link Map},
-     * the container must be not empty and all elements/entries must be
-     * not {@code null} and not empty. Throws {@link NullPointerException}
-     * if the value or any element is {@code null}.</p>
+     * Requires the value to be not {@code null} and not empty. See
+     * {@link #requireNotEmpty(Object, String)}.
      *
      * @param value        the value to validate and return; must not be {@code null} or empty
      * @param nullMessage  the message for {@code NullPointerException}; must not be {@code null}, empty, or blank
@@ -722,9 +731,15 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if either message is {@code null}, empty, or blank
      * @since 1.3
      */
-    public static <T> T requireNotEmpty(@NonNull T value, @NonNull String nullMessage, @NonNull String emptyMessage) {
+    @Contract("null, _, _ -> fail; !null, _, _ -> !null")
+    @NullUnmarked
+    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
+    public static <T extends @Nullable Object> @NonNull T requireNotEmpty(@Nullable T value,
+                                                                          @NonNull String nullMessage,
+                                                                          @NonNull String emptyMessage) {
         ToolsSupport.requireMessage(nullMessage);
         ToolsSupport.requireMessage(emptyMessage);
+        Objects.requireNonNull(value, nullMessage);
         checkForNulls(value, nullMessage);
         if (!allNotEmpty(value)) {
             throw new IllegalArgumentException(emptyMessage);
@@ -733,11 +748,8 @@ public final class ObjectTools {
     }
 
     /**
-     * Checks that the specified value is strictly positive.
-     *
-     * <p>This method is generic and works with any {@link Comparable} type that has a natural
-     * zero value, including {@link Integer}, {@link Long}, {@link Double}, {@link Float},
-     * {@link Byte}, {@link Short}, {@link BigInteger}, and {@link BigDecimal}.
+     * Checks that the specified value is strictly positive. See {@link #requireNegative(Object, String)}
+     * for supported types.
      *
      * @param <T>     the type of the value, must implement {@link Comparable}
      * @param value   the value to check for positivity; must not be {@code null}
@@ -749,13 +761,17 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
-    public static <T extends Comparable<T>> T requirePositive(@NonNull T value, @NonNull String context) {
+    @Contract("null, _ -> fail; !null, _ -> !null")
+    @NullUnmarked
+    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requirePositive(@Nullable T value,
+                                                                                          @NonNull String context) {
         ToolsSupport.requireContext(context);
+        requireNonNull(value, context);
         return requirePositive(value, () -> context + " must be positive, got: " + value);
     }
 
     /**
-     * Checks that the specified value is strictly positive.
+     * Checks that the specified value is strictly positive. See {@link #requirePositive(Object, String)}.
      *
      * @param <T>             the type of the value, must implement {@link Comparable}
      * @param value           the value to check for positivity; must not be {@code null}
@@ -763,12 +779,14 @@ public final class ObjectTools {
      * @return the validated value if it is greater than zero
      * @throws NullPointerException     if {@code value} or {@code messageSupplier} is {@code null}
      * @throws IllegalArgumentException if {@code value} is zero or negative
-     * @throws IllegalArgumentException if {@code messageSupplier} is empty, or blank
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
-    public static <T extends Comparable<T>> T requirePositive(@NonNull T value,
-                                                              @NonNull Supplier<String> messageSupplier) {
+    @Contract("null, _ -> fail; !null, _ -> !null")
+    @NullUnmarked
+    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
+    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requirePositive(@Nullable T value,
+                                                                                          @NonNull Supplier<String> messageSupplier) {
         Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
         requireNonNull(value, "value");
 
@@ -793,5 +811,85 @@ public final class ObjectTools {
             throw new IllegalArgumentException("Unsupported type: " + value.getClass().getName());
         }
         return (T) zero;
+    }
+
+    /**
+     * A container value paired with its nesting depth (number of containers enclosing it,
+     * counted along the traversal branch from the root - not the total number of containers
+     * visited across the whole structure).
+     */
+    private record DepthEntry(Object value, int depth) {
+
+    }
+
+    /**
+     * Iterative depth-tracked stack shared by {@link #allEmpty}, {@link #allNotEmpty}, and
+     * {@link #isAllNonNull} to traverse nested containers without recursion, stopping each
+     * branch at {@link #MAX_NESTING_DEPTH}.
+     */
+    private static final class DepthStack {
+
+        private final Deque<DepthEntry> deque = new ArrayDeque<>();
+
+        private static void logDepthLimit() {
+            if (logger.isLoggable(Level.WARNING)) {
+                logger.warning("Validation stopped at depth " + MAX_NESTING_DEPTH +
+                        " to prevent StackOverflowError.");
+            }
+        }
+
+        @Nullable DepthEntry pop() {
+            return deque.isEmpty() ? null : deque.pop();
+        }
+
+        /**
+         * Pushes every element/entry of {@code container} at {@code parentDepth + 1},
+         * stopping and returning {@code true} as soon as a {@code null} is found (used by
+         * {@link #isAllNonNull} and {@link #allNotEmpty}, where a null child already fails
+         * the check the caller is performing).
+         */
+        boolean pushAllOrNull(Object container, int parentDepth) {
+            if (container instanceof @Nullable Object[] arr) {
+                for (var o : arr) {
+                    if (o == null) {
+                        return true;
+                    }
+                    tryPush(o, parentDepth);
+                }
+            } else if (container instanceof Collection<?> c) {
+                for (var o : c) {
+                    if (o == null) {
+                        return true;
+                    }
+                    tryPush(o, parentDepth);
+                }
+            } else if (container instanceof Map<?, ?> m) {
+                for (var e : m.entrySet()) {
+                    if (e.getKey() == null || e.getValue() == null) {
+                        return true;
+                    }
+                    tryPush(e.getKey(), parentDepth);
+                    tryPush(e.getValue(), parentDepth);
+                }
+            }
+            return false;
+        }
+
+        void pushRoot(Object value) {
+            deque.push(new DepthEntry(value, 0));
+        }
+
+        /**
+         * Pushes {@code child} at {@code parentDepth + 1}, or drops it (logging a warning)
+         * if that exceeds {@link #MAX_NESTING_DEPTH}.
+         */
+        void tryPush(Object child, int parentDepth) {
+            int childDepth = parentDepth + 1;
+            if (childDepth > MAX_NESTING_DEPTH) {
+                logDepthLimit();
+                return;
+            }
+            deque.push(new DepthEntry(child, childDepth));
+        }
     }
 }

@@ -31,6 +31,9 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -118,10 +121,80 @@ class ObjectToolsTest {
     @DisplayName("allEmpty")
     class AllEmptyTest {
 
+        @Test
+        void allPrimitiveTypes() {
+            assertTrue(ObjectTools.allEmpty(new long[]{}));
+            assertFalse(ObjectTools.allEmpty(new long[]{1}));
+            assertTrue(ObjectTools.allEmpty(new double[]{}));
+            assertFalse(ObjectTools.allEmpty(new double[]{1.0}));
+        }
+
+        @Test
+        void depthLimit() {
+            Object root = "leaf";
+            for (int i = 0; i < ObjectTools.MAX_NESTING_DEPTH + 2; i++) {
+                root = List.of(root);
+            }
+
+            var handler = new Handler() {
+                boolean warned = false;
+
+                public void publish(LogRecord r) {
+                    if (r.getMessage().contains("Validation stopped")) {
+                        warned = true;
+                    }
+                }
+
+                public void flush() {
+                }
+
+                public void close() {
+                }
+            };
+
+            var logger = Logger.getLogger(ObjectTools.class.getName());
+            logger.addHandler(handler);
+
+            try {
+                assertTrue(ObjectTools.allEmpty(root), "beyond MAX_NESTING_DEPTH should be assumed empty");
+
+                assertTrue(ObjectTools.allNotEmpty(root), "beyond limit assumed not empty");
+
+                assertTrue(handler.warned, "should log warning at depth limit");
+
+                var wide = List.of(root, "not-empty");
+                assertFalse(ObjectTools.allEmpty(wide), "other branches must still be checked");
+            } finally {
+                logger.removeHandler(handler);
+            }
+        }
+
         @ParameterizedTest(name = "→ false : {0}")
         @MethodSource("rife.bld.extension.tools.ObjectToolsTest#containersWithNonEmptyElement")
         void falseWhenAnyNonEmpty(Object value) {
             assertFalse(ObjectTools.allEmpty(value));
+        }
+
+        @Test
+        void mapWithNonEmptyContainerKeyAndNullValue() {
+            Map<List<String>, String> m = new HashMap<>();
+            m.put(List.of("x"), null);
+
+            assertFalse(ObjectTools.allEmpty(m));
+        }
+
+        @Test
+        void mapWithNullKeyValue() {
+            Map<String, String> m = new HashMap<>();
+            m.put(null, "");
+            assertTrue(ObjectTools.allEmpty(m));
+        }
+
+        @Test
+        void nestedPrimitiveNonEmpty() {
+            assertFalse(ObjectTools.allEmpty(List.of(new int[]{1})));
+            assertFalse(ObjectTools.allEmpty(new Object[]{new long[]{1L}}));
+            assertFalse(ObjectTools.allEmpty(Map.of("k", new double[]{1.0})));
         }
 
         @Test
@@ -160,11 +233,72 @@ class ObjectToolsTest {
         void trueForEmptyContent(Object value) {
             assertTrue(ObjectTools.allEmpty(value));
         }
+
+        @Test
+        void whenMapHasNullValueAndContainerKey() {
+            Map<List<String>, String> map = new HashMap<>();
+            map.put(List.of(), null);
+
+            assertTrue(ObjectTools.allEmpty(map));
+        }
+
+        @Test
+        void whenMapHasNullValueAndNonEmptyKey_shouldReturnFalse() {
+            Map<String, String> map = new HashMap<>();
+            map.put("foo", null);
+
+            assertFalse(ObjectTools.allEmpty(map));
+        }
+
+        @Test
+        void whenMapValueIsNull_shouldBeTreatedAsEmpty() {
+            Map<String, String> map = new HashMap<>();
+            map.put("", null);
+
+            assertTrue(ObjectTools.allEmpty(map));
+        }
+
+        @Test
+        void withArrayKey() {
+            Map<Object, String> map = new java.util.HashMap<>();
+            map.put(new String[]{""}, "");
+            assertTrue(ObjectTools.allEmpty(map));
+
+            map.clear();
+            map.put(new String[]{"x"}, "");
+            assertFalse(ObjectTools.allEmpty(map));
+        }
+
+        @Test
+        void withIntegerKey_neverEmpty() {
+            Map<Integer, String> m = new HashMap<>();
+            m.put(1, "");
+
+            assertFalse(ObjectTools.allEmpty(m));
+            assertTrue(ObjectTools.anyEmpty(m)); // value "" is empty
+            assertFalse(ObjectTools.allNotEmpty(m));
+        }
     }
 
     @Nested
     @DisplayName("allNotEmpty")
     class AllNotEmptyTest {
+
+        @Test
+        void allNotEmpty_integerKeyWithNonEmptyValue() {
+            Map<Integer, String> m = Map.of(1, "x");
+            assertTrue(ObjectTools.allNotEmpty(m));
+        }
+
+        @Test
+        void allPrimitiveTypes() {
+            assertTrue(ObjectTools.allNotEmpty(new float[]{1.0f}));
+            assertFalse(ObjectTools.allNotEmpty(new float[]{}));
+            assertTrue(ObjectTools.allNotEmpty(new boolean[]{false}));
+            assertTrue(ObjectTools.allNotEmpty(new char[]{'a'}));
+            assertTrue(ObjectTools.allNotEmpty(new short[]{(short) 1}));
+            assertTrue(ObjectTools.allNotEmpty(new byte[]{(byte) 1}));
+        }
 
         @Test
         void emptyStringFalse() {
@@ -178,6 +312,19 @@ class ObjectToolsTest {
         })
         void falseWhenAnyEmpty(Object value) {
             assertFalse(ObjectTools.allNotEmpty(value));
+        }
+
+        @Test
+        void integerKeyMakesNotEmpty() {
+            Map<Integer, String> m = new HashMap<>();
+            m.put(1, "");
+            assertTrue(ObjectTools.anyNotEmpty(m)); // key is not empty
+        }
+
+        @Test
+        void nestedPrimitiveNonEmpty() {
+            assertTrue(ObjectTools.allNotEmpty(List.of(new int[]{1})));
+            assertTrue(ObjectTools.allNotEmpty(new Object[]{new byte[]{1}}));
         }
 
         @Test
@@ -212,6 +359,20 @@ class ObjectToolsTest {
         void trueWhenAllNonEmpty(Object value) {
             assertTrue(ObjectTools.allNotEmpty(value));
         }
+
+        @Test
+        void withNullElements() {
+            assertFalse(ObjectTools.allNotEmpty(Arrays.asList("x", null)));
+            assertFalse(ObjectTools.allNotEmpty(new Object[]{"x", null}));
+
+            Map<String, String> m1 = new HashMap<>();
+            m1.put("a", null);
+            assertFalse(ObjectTools.allNotEmpty(m1));
+
+            Map<String, String> m2 = new HashMap<>();
+            m2.put(null, "x");
+            assertFalse(ObjectTools.allNotEmpty(m2));
+        }
     }
 
     @Nested
@@ -233,6 +394,13 @@ class ObjectToolsTest {
         void primitiveArrayNonEmpty_notEmpty() {
             assertFalse(ObjectTools.anyEmpty(new int[]{1}));
             assertFalse(ObjectTools.anyEmpty(new boolean[]{false}));
+        }
+
+        @Test
+        void primitiveEmpty() {
+            assertTrue(ObjectTools.anyEmpty(new int[]{}));
+            assertFalse(ObjectTools.anyEmpty(new int[]{1, 2}));
+            assertTrue(ObjectTools.anyEmpty(new long[]{}));
         }
 
         @ParameterizedTest(name = "→ true : {0}")
@@ -263,10 +431,63 @@ class ObjectToolsTest {
             assertFalse(ObjectTools.anyNotEmpty(null));
         }
 
+        @Test
+        void primitiveEmpty() {
+            assertFalse(ObjectTools.anyNotEmpty(new int[]{}));
+            assertTrue(ObjectTools.anyNotEmpty(new int[]{1, 2}));
+            assertFalse(ObjectTools.anyNotEmpty(new long[]{}));
+        }
+
         @ParameterizedTest(name = "→ true : {0}")
         @MethodSource("rife.bld.extension.tools.ObjectToolsTest#containersWithNonEmptyElement")
         void trueWhenAnyNonEmpty(Object value) {
             assertTrue(ObjectTools.anyNotEmpty(value));
+        }
+    }
+
+    @Nested
+    @DisplayName("forEachElement")
+    class ForEachElementTest {
+
+        @Test
+        void customPredicateBoxingPath() throws Exception {
+            var m = ObjectTools.class.getDeclaredMethod("forEachElement", Object.class, Predicate.class);
+            m.setAccessible(true);
+
+            assertTrue((Boolean) m.invoke(null, new Object[]{"a", "b"}, (Predicate<Object>) "a"::equals));
+
+            assertTrue((Boolean) m.invoke(null, List.of("a", "b"), (Predicate<Object>) "b"::equals));
+
+            assertTrue((Boolean) m.invoke(null, Map.of("k", "v"), (Predicate<Object>) "k"::equals));
+
+            assertTrue((Boolean) m.invoke(null, new int[]{1, 2, 3}, (Predicate<Object>) o -> ((Integer) o) == 2));
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void isEmptyPredicate() throws Exception {
+            var m = ObjectTools.class.getDeclaredMethod("forEachElement", Object.class, Predicate.class);
+            m.setAccessible(true);
+
+            var isEmptyField = ObjectTools.class.getDeclaredField("isEmptyPredicate");
+            isEmptyField.setAccessible(true);
+            var fieldPredicate = (Predicate<Object>) isEmptyField.get(null);
+            Predicate<Object> lambdaSameLogic = ObjectTools::isEmpty; // new method reference, different identity
+
+            assertFalse((Boolean) m.invoke(null, new int[]{1}, fieldPredicate));
+            assertFalse((Boolean) m.invoke(null, new int[]{1}, lambdaSameLogic));
+        }
+
+        @Test
+        void unhandledContainerTypeThrows() throws Exception {
+            var m = ObjectTools.class.getDeclaredMethod("forEachElement", Object.class, Predicate.class);
+            m.setAccessible(true);
+            class FakeContainer {
+
+            }
+
+            var ex = assertThrows(Exception.class, () -> m.invoke(null, new FakeContainer(), (Predicate<Object>) o -> true));
+            assertInstanceOf(IllegalStateException.class, ex.getCause());
         }
     }
 
@@ -282,7 +503,7 @@ class ObjectToolsTest {
 
             boolean result = (boolean) method.invoke(null, (Object) null);
 
-            assertFalse(result); // hits: if (value == null) return false;
+            assertFalse(result);
         }
     }
 
@@ -313,6 +534,18 @@ class ObjectToolsTest {
         @Test
         void emptyStringTrue() {
             assertTrue(ObjectTools.isEmpty(""));
+        }
+
+        @Test
+        void nonContainerTypes() {
+            assertFalse(ObjectTools.isEmpty(1));
+            assertFalse(ObjectTools.isEmpty(BigDecimal.ZERO));
+            assertFalse(ObjectTools.isEmpty(new Object()));
+            assertFalse(ObjectTools.isEmpty(Optional.empty()));
+            assertFalse(ObjectTools.isEmpty(Optional.of("x")));
+            assertTrue(ObjectTools.isEmpty(new StringBuilder()));
+            assertFalse(ObjectTools.isEmpty(new StringBuilder("x")));
+            assertTrue(ObjectTools.isEmpty(new StringBuffer()));
         }
 
         @Test
@@ -411,10 +644,17 @@ class ObjectToolsTest {
         }
 
         @Test
+        void customPredicate() throws Exception {
+            var m = ObjectTools.class.getDeclaredMethod("forEachElement", Object.class, Predicate.class);
+            m.setAccessible(true);
+            assertTrue((Boolean) m.invoke(null, new int[]{1, 2}, (Predicate<Object>) o -> ((Integer) o) == 1));
+        }
+
+        @Test
         @SuppressWarnings("unchecked")
         void primitiveArrayBranches() throws Exception {
             var m = ObjectTools.class.getDeclaredMethod("forEachPrimitiveArray",
-                    Object.class, Predicate.class, boolean.class);
+                    Object.class, Predicate.class);
             m.setAccessible(true);
 
             var f1 = ObjectTools.class.getDeclaredField("isEmptyPredicate");
@@ -425,17 +665,11 @@ class ObjectToolsTest {
             Predicate<Object> isEmpty = (Predicate<Object>) f1.get(null);
             Predicate<Object> isNotEmpty = (Predicate<Object>) f2.get(null);
 
-            // new int[0] cases
-            assertTrue((boolean) m.invoke(null, new int[0], isEmpty, true)); // allEmpty
-            assertTrue((boolean) m.invoke(null, new int[0], isEmpty, false)); // anyEmpty
-            assertFalse((boolean) m.invoke(null, new int[0], isNotEmpty, true)); // allNotEmpty
-            assertFalse((boolean) m.invoke(null, new int[0], isNotEmpty, false)); // anyNotEmpty
+            assertFalse((boolean) m.invoke(null, new int[0], isEmpty));
+            assertFalse((boolean) m.invoke(null, new int[0], isNotEmpty));
 
-            // new int[1] cases
-            assertFalse((boolean) m.invoke(null, new int[1], isEmpty, true)); // allEmpty
-            assertFalse((boolean) m.invoke(null, new int[1], isEmpty, false)); // anyEmpty
-            assertTrue((boolean) m.invoke(null, new int[1], isNotEmpty, true)); // allNotEmpty
-            assertTrue((boolean) m.invoke(null, new int[1], isNotEmpty, false)); // anyNotEmpty
+            assertFalse((boolean) m.invoke(null, new int[1], isEmpty));
+            assertTrue((boolean) m.invoke(null, new int[1], isNotEmpty));
         }
     }
 
@@ -473,6 +707,12 @@ class ObjectToolsTest {
         }
 
         @Test
+        void supplierNullMessage() {
+            assertThrows(NullPointerException.class,
+                    () -> ObjectTools.requireEmpty("", () -> null));
+        }
+
+        @Test
         void throwsForArrayWithNonEmptyElement() {
             var ex = assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requireEmpty(new Object[]{"x"}, "ctx"));
@@ -501,7 +741,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNull() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireEmpty(null, "ctx"));
@@ -597,6 +836,16 @@ class ObjectToolsTest {
         void returnsSameInstance() {
             var bd = new BigDecimal("-42.5");
             assertSame(bd, ObjectTools.requireNegative(bd, "bd"));
+        }
+
+        @Test
+        @SuppressWarnings("DataFlowIssue")
+        void supplierReturningNullOrBlank() {
+            assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNegative(1, () -> null));
+
+            assertDoesNotThrow(() -> ObjectTools.requireNegative(-1, () -> ""));
+            assertDoesNotThrow(() -> ObjectTools.requireNegative(-1, () -> " "));
         }
 
         @SuppressWarnings({"rawtypes"})
@@ -790,6 +1039,24 @@ class ObjectToolsTest {
     class RequireNonNullTest {
 
         @Test
+        void beyondMaxDepth() {
+            Object root = "leaf";
+            for (int i = 0; i < ObjectTools.MAX_NESTING_DEPTH + 10; i++) {
+                root = List.of(root);
+            }
+            Object finalRoot = root;
+            assertDoesNotThrow(() -> ObjectTools.requireNonNull(finalRoot, "deep"));
+
+            var wide = Arrays.asList(root, null);
+            assertThrows(NullPointerException.class, () -> ObjectTools.requireNonNull(wide, "wide"));
+
+            var wide2 = new ArrayList<>();
+            wide2.add(root);
+            wide2.add(null);
+            assertThrows(NullPointerException.class, () -> ObjectTools.requireNonNull(wide2, "wide2"));
+        }
+
+        @Test
         void passesForCollectionWithNonNullElements() {
             assertEquals(List.of("a", "b", ""), ObjectTools.requireNonNull(List.of("a", "b", ""), "list"));
         }
@@ -819,6 +1086,16 @@ class ObjectToolsTest {
         @Test
         void passesForNonNullScalar() {
             assertEquals("test", ObjectTools.requireNonNull("test", "value"));
+        }
+
+        @Test
+        @SuppressWarnings("DataFlowIssue")
+        void supplierReturningNullOrBlank() {
+            assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNegative(1, () -> null));
+
+            assertDoesNotThrow(() -> ObjectTools.requireNonNull("x", () -> ""));
+            assertDoesNotThrow(() -> ObjectTools.requireNonNull("x", () -> " "));
         }
 
         @Test
@@ -891,7 +1168,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNullValue() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNonNull(null, "userList"));
@@ -899,11 +1175,111 @@ class ObjectToolsTest {
         }
 
         @Test
-        @SuppressWarnings("DataFlowIssue")
         void throwsNpeWithFormattedMessage() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNonNull(null, () -> String.format("user %s must not be null", "admin")));
             assertEquals("user admin must not be null", ex.getMessage());
+        }
+
+        @Test
+        void withNestedPrimitiveArray() {
+            assertDoesNotThrow(() -> ObjectTools.requireNonNull(List.of(new int[]{1, 2}), "ctx"));
+            assertDoesNotThrow(() -> ObjectTools.requireNonNull(new Object[]{new long[]{1}}, "ctx"));
+            assertDoesNotThrow(() -> ObjectTools.requireNonNull(Map.of("k", new double[]{1.0}), "ctx"));
+        }
+    }
+
+    @Nested
+    @DisplayName("requireNotEmpty (dual message)")
+    class RequireNotEmptyDualMessageTest {
+
+        @Test
+        void allowsContainerWithAllNonEmptyElements() {
+            var list = List.of("x", "y");
+            assertSame(list, ObjectTools.requireNotEmpty(list, "null msg", "empty msg"));
+        }
+
+        @Test
+        void allowsNonEmptyScalar() {
+            assertEquals("x", ObjectTools.requireNotEmpty("x", "null msg", "empty msg"));
+        }
+
+        @Test
+        void returnsSameInstance() {
+            var arr = new Object[]{"x"};
+            assertSame(arr, ObjectTools.requireNotEmpty(arr, "null msg", "empty msg"));
+        }
+
+        @ParameterizedTest
+        @BlankSource
+        void throwsIaeForBlankEmptyMessage(String emptyMessage) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNotEmpty("x", "null msg", emptyMessage));
+        }
+
+        @ParameterizedTest
+        @BlankSource
+        void throwsIaeForBlankNullMessage(String nullMessage) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNotEmpty("x", nullMessage, "empty msg"));
+        }
+
+        @Test
+        void throwsIaeUsingEmptyMessageForEmptyContainer() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNotEmpty(List.of(), "no nulls", "no empties"));
+            assertEquals("no empties", ex.getMessage());
+        }
+
+        @Test
+        void throwsIaeUsingEmptyMessageForEmptyElement() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNotEmpty(List.of("x", ""), "no nulls", "no empties"));
+            assertEquals("no empties", ex.getMessage());
+        }
+
+        @Test
+        void throwsIaeUsingEmptyMessageForEmptyValue() {
+            var ex = assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNotEmpty("", "no nulls", "no empties"));
+            assertEquals("no empties", ex.getMessage());
+        }
+
+        @Test
+        void throwsNpeForMapWithNullValue() {
+            Map<String, String> map = new HashMap<>();
+            map.put("a", null);
+            var ex = assertThrows(NullPointerException.class,
+                    () -> ObjectTools.requireNotEmpty(map, "no nulls allowed", "no empties allowed"));
+            assertEquals("no nulls allowed", ex.getMessage());
+        }
+
+        @ParameterizedTest
+        @NullSource
+        void throwsNpeForNullEmptyMessage(String emptyMessage) {
+            assertThrows(NullPointerException.class,
+                    () -> ObjectTools.requireNotEmpty("x", "null msg", emptyMessage));
+        }
+
+        @ParameterizedTest
+        @NullSource
+        void throwsNpeForNullNullMessage(String nullMessage) {
+            assertThrows(NullPointerException.class,
+                    () -> ObjectTools.requireNotEmpty("x", nullMessage, "empty msg"));
+        }
+
+        @Test
+        void throwsNpeUsingNullMessageForNullElement() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> ObjectTools.requireNotEmpty(Arrays.asList("x", null), "no nulls allowed", "no empties allowed"));
+            assertEquals("no nulls allowed", ex.getMessage());
+        }
+
+        @Test
+        void throwsNpeUsingNullMessageForNullValue() {
+            var ex = assertThrows(NullPointerException.class,
+                    () -> ObjectTools.requireNotEmpty(null, "value must not be null", "value must not be empty"));
+            assertEquals("value must not be null", ex.getMessage());
         }
     }
 
@@ -954,7 +1330,7 @@ class ObjectToolsTest {
         void throwsForArrayWithEmptyElement() {
             var ex = assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requireNotEmpty(new Object[]{""}, "ctx"));
-            assertEquals("ctx must not be empty", ex.getMessage());
+            assertEquals("ctx must not contain empty elements", ex.getMessage());
         }
 
         @ParameterizedTest
@@ -968,7 +1344,7 @@ class ObjectToolsTest {
         void throwsForCollectionWithEmptyElement() {
             var ex = assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requireNotEmpty(List.of(""), "ctx"));
-            assertEquals("ctx must not be empty", ex.getMessage());
+            assertEquals("ctx must not contain empty elements", ex.getMessage());
         }
 
         @Test
@@ -1003,7 +1379,7 @@ class ObjectToolsTest {
         void throwsForMapWithEmptyValue() {
             var ex = assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requireNotEmpty(Map.of("a", ""), "ctx"));
-            assertEquals("ctx must not be empty", ex.getMessage());
+            assertEquals("ctx must not contain empty elements", ex.getMessage());
         }
 
         @ParameterizedTest
@@ -1017,14 +1393,14 @@ class ObjectToolsTest {
         void throwsNpeForArrayWithNullElement() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNotEmpty(new Object[]{null}, "ctx"));
-            assertEquals("ctx must not be null", ex.getMessage());
+            assertEquals("ctx must not contain null elements", ex.getMessage());
         }
 
         @Test
         void throwsNpeForCollectionWithNullElement() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNotEmpty(Arrays.asList("x", null), "ctx"));
-            assertEquals("ctx must not be null", ex.getMessage());
+            assertEquals("ctx must not contain null elements", ex.getMessage());
         }
 
         @Test
@@ -1033,11 +1409,10 @@ class ObjectToolsTest {
             map.put("a", null);
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNotEmpty(map, "ctx"));
-            assertEquals("ctx must not be null", ex.getMessage());
+            assertEquals("ctx must not contain null elements", ex.getMessage());
         }
 
         @Test
-        @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNull() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNotEmpty(null, "ctx"));
@@ -1089,6 +1464,23 @@ class ObjectToolsTest {
             );
         }
 
+        @Test
+        void NnaNEdge() {
+            var nanObj = Double.valueOf(Double.NaN);
+            var result = ObjectTools.requirePositive(nanObj, "nan");
+
+            assertSame(nanObj, result); // same instance returned
+            assertTrue(Double.isNaN(result));
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requirePositive(-0.0d, "zero"));
+            assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requirePositive(0.0d, "zero"));
+
+            double nanPrimitive = Double.NaN;
+            assertTrue(Double.isNaN(ObjectTools.requirePositive(nanPrimitive, "nan")));
+        }
+
         @ParameterizedTest(name = "allows positive: {0}")
         @MethodSource("positiveNumbers")
         <T extends Comparable<T>> void allowsPositiveValues(T value) {
@@ -1106,6 +1498,15 @@ class ObjectToolsTest {
         void returnsSameInstance() {
             var bd = new BigDecimal("42.5");
             assertSame(bd, ObjectTools.requirePositive(bd, "bd"));
+        }
+
+        @Test
+        @SuppressWarnings("DataFlowIssue")
+        void supplierReturningNullOrBlank() {
+            assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requireNegative(1, () -> null));
+
+            assertDoesNotThrow(() -> ObjectTools.requirePositive(1, () -> ""));
         }
 
         @SuppressWarnings({"rawtypes"})
@@ -1168,5 +1569,4 @@ class ObjectToolsTest {
             assertEquals("input value must be > 0", ex.getMessage());
         }
     }
-
 }
