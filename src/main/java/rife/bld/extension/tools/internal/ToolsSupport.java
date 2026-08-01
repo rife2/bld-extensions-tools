@@ -16,6 +16,7 @@
 
 package rife.bld.extension.tools.internal;
 
+import org.jspecify.annotations.NullMarked;
 import rife.bld.extension.tools.TextTools;
 
 import java.util.Objects;
@@ -28,6 +29,7 @@ import java.util.Objects;
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
  */
+@NullMarked
 public final class ToolsSupport {
 
     private ToolsSupport() {

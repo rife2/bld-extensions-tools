@@ -16,9 +16,9 @@
 
 package rife.bld.extension.tools;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import rife.bld.testing.VisibleForTesting;
 
 import java.io.*;
@@ -39,6 +39,7 @@ import java.util.function.Consumer;
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
  */
+@NullMarked
 @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "intentional and documented")
 public class ProcessExecutor {
 
@@ -50,10 +51,9 @@ public class ProcessExecutor {
     private final List<String> command_ = new ArrayList<>();
     private final Map<String, String> env_ = new HashMap<>();
     private boolean inheritIO_;
-    @Nullable
-    private Consumer<String> outputConsumer_;
+    private @Nullable Consumer<String> outputConsumer_;
     private long timeout_ = DEFAULT_TIMEOUT_SECONDS;
-    private File workDir_;
+    private @Nullable File workDir_;
 
     /**
      * Sets the command and arguments to be executed, replacing any previously configured command.
@@ -64,7 +64,7 @@ public class ProcessExecutor {
      * @throws NullPointerException     if args is null
      * @throws IllegalArgumentException if args contains null/empty elements.
      */
-    public ProcessExecutor command(@NonNull String... args) {
+    public ProcessExecutor command(String... args) {
         ObjectTools.requireNotEmpty(args, "command");
         command_.clear();
         command_.addAll(List.of(args));
@@ -89,7 +89,7 @@ public class ProcessExecutor {
      * @throws NullPointerException     if args is null
      * @throws IllegalArgumentException if args contains null/empty elements
      */
-    public ProcessExecutor command(@NonNull Collection<String> args) {
+    public ProcessExecutor command(Collection<String> args) {
         ObjectTools.requireNotEmpty(args, "command");
         command_.clear();
         command_.addAll(args);
@@ -104,7 +104,7 @@ public class ProcessExecutor {
      * @return this instance
      * @throws NullPointerException if name or value is null
      */
-    public ProcessExecutor env(@NonNull String name, @NonNull String value) {
+    public ProcessExecutor env(String name, String value) {
         Objects.requireNonNull(name, "environment variable name must not be null");
         Objects.requireNonNull(value, "environment variable value must not be null");
         env_.put(name, value);
@@ -118,7 +118,7 @@ public class ProcessExecutor {
      * @return this instance
      * @throws NullPointerException if vars is null
      */
-    public ProcessExecutor env(@NonNull Map<String, String> vars) {
+    public ProcessExecutor env(Map<String, String> vars) {
         ObjectTools.requireNonNull(vars, "environment variables");
         env_.putAll(vars);
         return this;
@@ -268,7 +268,7 @@ public class ProcessExecutor {
      * @return this instance
      * @throws NullPointerException if dir is null
      */
-    public ProcessExecutor workDir(@NonNull File dir) {
+    public ProcessExecutor workDir(File dir) {
         Objects.requireNonNull(dir, "directory must not be null");
         workDir_ = dir;
         return this;
@@ -281,7 +281,7 @@ public class ProcessExecutor {
      * @return this instance
      * @throws NullPointerException if dir is null
      */
-    public ProcessExecutor workDir(@NonNull Path dir) {
+    public ProcessExecutor workDir(Path dir) {
         Objects.requireNonNull(dir, "directory must not be null");
         return workDir(dir.toFile());
     }
@@ -293,7 +293,7 @@ public class ProcessExecutor {
      * @return this instance
      * @throws IllegalArgumentException if dir is null or empty
      */
-    public ProcessExecutor workDir(@NonNull String dir) {
+    public ProcessExecutor workDir(String dir) {
         ObjectTools.requireNotEmpty(dir, "directory must not be null or empty");
         return workDir(new File(dir));
     }
@@ -330,7 +330,7 @@ public class ProcessExecutor {
      * Used during cleanup to ensure background threads don't leak.
      */
     @VisibleForTesting
-    void cleanupThread(Thread outputThread) {
+    void cleanupThread(@Nullable Thread outputThread) {
         if (outputThread != null && outputThread.isAlive()) {
             outputThread.interrupt();
             try {
@@ -462,6 +462,7 @@ public class ProcessExecutor {
      * @return the started thread, or null if I/O is inherited
      */
     @VisibleForTesting
+    @Nullable
     Thread startOutputReader(Process proc, Collection<String> outputLines) {
         if (inheritIO_) {
             return null;

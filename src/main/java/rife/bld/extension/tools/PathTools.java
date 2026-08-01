@@ -15,7 +15,8 @@
  */
 package rife.bld.extension.tools;
 
-import edu.umd.cs.findbugs.annotations.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.io.File;
 import java.util.Arrays;
@@ -33,13 +34,14 @@ import java.util.stream.Stream;
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
  */
+@NullMarked
 public final class PathTools {
 
     private PathTools() {
         // no-op
     }
 
-    private static String escapePosix(String s) {
+    private static String escapePosix(@Nullable String s) {
         if (s == null) {
             return "''";
         }
@@ -64,7 +66,7 @@ public final class PathTools {
      * an empty string if the list is empty
      * @since 1.0
      */
-    public static String formatCommandLine(List<String> args) {
+    public static String formatCommandLine(@Nullable List<@Nullable String> args) {
         if (args == null || args.isEmpty()) {
             return "";
         }
@@ -94,7 +96,7 @@ public final class PathTools {
      * @since 1.0
      */
     @SafeVarargs
-    public static String joinClasspath(@Nullable Collection<File>... files) {
+    public static String joinClasspath(@Nullable Collection<File> @Nullable... files) {
         if (files == null) {
             return "";
         }
@@ -119,7 +121,7 @@ public final class PathTools {
      * the system's path separator; an empty string if no valid paths are provided
      * @since 1.0
      */
-    public static String joinClasspath(@Nullable String... paths) {
+    public static String joinClasspath(@Nullable String @Nullable... paths) {
         if (paths == null) {
             return "";
         }

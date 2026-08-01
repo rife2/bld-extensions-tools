@@ -52,6 +52,8 @@ public class ToolsBuild extends Project {
         scope(provided)
                 .include(dependency("com.uwyn.rife2", "bld-testing-helpers",
                         version(1, 1, 0, "SNAPSHOT")))
+                .include(dependency("org.jspecify", "jspecify", version(1, 0, 1)))
+                .include(dependency("org.jetbrains", "annotations", version(26, 1, 0)))
                 .include(dependency("com.github.spotbugs", "spotbugs-annotations",
                         version(4, 10, 3)));
         scope(test)
@@ -63,8 +65,11 @@ public class ToolsBuild extends Project {
         javadocOperation()
                 .javadocOptions()
                 .author()
+                .tag("apiNote", "a", "API Note:")
+                .tag("implNote", "a", "Implementation Note:")
                 .docLint(NO_MISSING)
-                .link("https://findbugs.sourceforge.net/api/");
+                .link("https://javadoc.io/doc/org.jetbrains/annotations/latest")
+                .link("https://jspecify.dev/docs/api/");
 
         publishOperation()
                 .repository(version.isSnapshot() ?

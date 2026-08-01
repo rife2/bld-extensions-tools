@@ -1767,7 +1767,7 @@ class TextToolsTest {
         }
 
         @Test
-        @DisplayName("should throw NullPointerException for null arequireNotEmptyrray")
+        @DisplayName("should throw NullPointerException for null array")
         void shouldThrowNullPointerExceptionForNullArray() {
             var ex = assertThrows(NullPointerException.class,
                     () -> TextTools.requireNotEmpty("values", (String[]) null));

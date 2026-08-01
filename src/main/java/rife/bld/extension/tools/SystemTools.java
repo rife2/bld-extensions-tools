@@ -16,7 +16,8 @@
 
 package rife.bld.extension.tools;
 
-import edu.umd.cs.findbugs.annotations.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -40,6 +41,7 @@ import java.util.function.Supplier;
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
  */
+@NullMarked
 public final class SystemTools {
 
     private static final String OS_ARCH = System.getProperty("os.arch", "").toLowerCase(Locale.ROOT);
@@ -80,8 +82,8 @@ public final class SystemTools {
      * @return {@code true} if WSL, {@code false} otherwise
      * @since 1.3
      */
-    private static boolean computeWsl(String osName, Supplier<String> procVersionSupplier) {
-        if (!isLinux(osName)) {
+    private static boolean computeWsl(@Nullable String osName, Supplier<@Nullable String> procVersionSupplier) {
+        if (osName == null || !isLinux(osName)) {
             return false;
         }
         var version = procVersionSupplier.get();
@@ -203,7 +205,7 @@ public final class SystemTools {
      * @return {@code true} if the environment is detected as Cygwin, {@code false} otherwise
      * @since 1.0
      */
-    static boolean isCygwin(@Nullable String osName, Function<String, String> envProvider) {
+    static boolean isCygwin(@Nullable String osName, Function<String, @Nullable String> envProvider) {
         if (!isWindows(osName)) {
             return false;
         }
@@ -322,7 +324,7 @@ public final class SystemTools {
      * @return {@code true} if the environment is detected as MinGW/MSYS2, {@code false} otherwise
      * @since 1.0
      */
-    static boolean isMinGw(@Nullable String osName, Function<String, String> envProvider) {
+    static boolean isMinGw(@Nullable String osName, Function<String, @Nullable String> envProvider) {
         if (!isWindows(osName)) {
             return false;
         }
@@ -473,7 +475,7 @@ public final class SystemTools {
      * @return {@code true} if WSL, {@code false} otherwise
      * @since 1.3
      */
-    static boolean isWsl(@Nullable String osName, Supplier<String> procVersionSupplier) {
+    static boolean isWsl(@Nullable String osName, Supplier<@Nullable String> procVersionSupplier) {
         return computeWsl(osName, procVersionSupplier);
     }
 

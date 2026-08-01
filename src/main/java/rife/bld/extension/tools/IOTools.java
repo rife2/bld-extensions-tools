@@ -16,7 +16,8 @@
 
 package rife.bld.extension.tools;
 
-import edu.umd.cs.findbugs.annotations.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +36,7 @@ import java.nio.file.Path;
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
  */
+@NullMarked
 public final class IOTools {
 
     private IOTools() {
@@ -371,7 +373,7 @@ public final class IOTools {
      * @return a {@link File} representing the resolved path
      * @since 1.0
      */
-    public static File resolveFile(@Nullable File base, @Nullable String... segments) {
+    public static File resolveFile(@Nullable File base, @Nullable String @Nullable ... segments) {
         var path = (base == null ? Path.of("") : base.toPath());
 
         if (segments != null) {

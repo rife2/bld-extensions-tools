@@ -16,7 +16,8 @@
 
 package rife.bld.extension.tools;
 
-import edu.umd.cs.findbugs.annotations.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -39,6 +40,7 @@ import java.util.logging.Logger;
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
  */
+@NullMarked
 @SuppressWarnings("PMD.CouplingBetweenObjects") // Multiple conversions between File/Path/String are intentional
 public final class CollectionTools {
 
@@ -60,7 +62,7 @@ public final class CollectionTools {
      * @since 1.0
      */
     @SafeVarargs // Safe because we don't store the array or expose it to untrusted code
-    public static <T> List<T> combine(@Nullable Collection<T>... collections) {
+    public static <T> List<T> combine(@Nullable Collection<T> @Nullable ... collections) {
         return combineAndMap(collections, t -> t);
     }
 
@@ -75,7 +77,7 @@ public final class CollectionTools {
      * @since 1.0
      */
     @SafeVarargs // Safe because we don't store the array or expose it to untrusted code
-    public static <T> List<T> combine(@Nullable T... elements) {
+    public static <T> List<T> combine(@Nullable T @Nullable ... elements) {
         return combineAndMapVarargs(elements, t -> t);
     }
 
@@ -92,8 +94,8 @@ public final class CollectionTools {
      *
      * @since 1.0
      */
-    static <T, R> List<R> combineAndMap(@Nullable Collection<T>[] collections,
-                                        Function<T, R> mapper) {
+    static <T, R> List<R> combineAndMap(@Nullable Collection<T> @Nullable [] collections,
+                                        Function<T, @Nullable R> mapper) {
         if (collections == null) {
             logger.fine("Ignored null collections array");
             return List.of();
@@ -105,7 +107,7 @@ public final class CollectionTools {
         boolean droppedEmpty = false;
         boolean droppedNullMapped = false;
 
-        for (Collection<T> c : collections) {
+        for (@Nullable Collection<@Nullable T> c : collections) {
             if (c == null) {
                 droppedNullCollection = true;
                 continue;
@@ -114,7 +116,8 @@ public final class CollectionTools {
                 droppedEmpty = true;
                 continue;
             }
-            for (T e : c) {
+            //noinspection NullableProblems
+            for (@Nullable T e : c) {
                 if (e == null) {
                     droppedNullElement = true;
                     continue;
@@ -162,8 +165,8 @@ public final class CollectionTools {
      *
      * @since 1.0
      */
-    static <T, R> List<R> combineAndMapVarargs(@Nullable T[] elements,
-                                               Function<T, R> mapper) {
+    static <T, R> List<R> combineAndMapVarargs(@Nullable T @Nullable [] elements,
+                                               Function<T, @Nullable R> mapper) {
         if (elements == null) {
             logger.fine("Ignored null varargs array");
             return List.of();
@@ -173,7 +176,7 @@ public final class CollectionTools {
         boolean droppedNullElement = false;
         boolean droppedNullMapped = false;
 
-        for (T e : elements) {
+        for (@Nullable T e : elements) {
             if (e == null) {
                 droppedNullElement = true;
                 continue;
@@ -207,7 +210,7 @@ public final class CollectionTools {
      * @since 1.0
      */
     @SafeVarargs // Safe because we don't store the array or expose it to untrusted code
-    public static List<Path> combineFilesToPaths(@Nullable Collection<File>... collections) {
+    public static List<Path> combineFilesToPaths(@Nullable Collection<File> @Nullable ... collections) {
         return combineAndMap(collections, CollectionTools::toPath);
     }
 
@@ -220,7 +223,7 @@ public final class CollectionTools {
      * @return an unmodifiable list of paths
      * @since 1.0
      */
-    public static List<Path> combineFilesToPaths(@Nullable File... files) {
+    public static List<Path> combineFilesToPaths(@Nullable File @Nullable ... files) {
         return combineAndMapVarargs(files, CollectionTools::toPath);
     }
 
@@ -235,7 +238,7 @@ public final class CollectionTools {
      * @since 1.0
      */
     @SafeVarargs // Safe because we don't store the array or expose it to untrusted code
-    public static List<String> combineFilesToStrings(@Nullable Collection<File>... collections) {
+    public static List<String> combineFilesToStrings(@Nullable Collection<File> @Nullable ... collections) {
         return combineAndMap(collections, CollectionTools::toNormalizedString);
     }
 
@@ -249,7 +252,7 @@ public final class CollectionTools {
      * @return an unmodifiable list of normalized path strings
      * @since 1.0
      */
-    public static List<String> combineFilesToStrings(@Nullable File... files) {
+    public static List<String> combineFilesToStrings(@Nullable File @Nullable ... files) {
         return combineAndMapVarargs(files, CollectionTools::toNormalizedString);
     }
 
@@ -264,7 +267,7 @@ public final class CollectionTools {
      * @since 1.0
      */
     @SafeVarargs // Safe because we don't store the array or expose it to untrusted code
-    public static List<File> combinePathsToFiles(@Nullable Collection<Path>... collections) {
+    public static List<File> combinePathsToFiles(@Nullable Collection<Path> @Nullable ... collections) {
         return combineAndMap(collections, CollectionTools::toFile);
     }
 
@@ -277,7 +280,7 @@ public final class CollectionTools {
      * @return an unmodifiable list of files
      * @since 1.0
      */
-    public static List<File> combinePathsToFiles(@Nullable Path... paths) {
+    public static List<File> combinePathsToFiles(@Nullable Path @Nullable ... paths) {
         return combineAndMapVarargs(paths, CollectionTools::toFile);
     }
 
@@ -292,7 +295,7 @@ public final class CollectionTools {
      * @since 1.0
      */
     @SafeVarargs // Safe because we don't store the array or expose it to untrusted code
-    public static List<String> combinePathsToStrings(@Nullable Collection<Path>... collections) {
+    public static List<String> combinePathsToStrings(@Nullable Collection<Path> @Nullable ... collections) {
         return combineAndMap(collections, CollectionTools::toNormalizedString);
     }
 
@@ -306,7 +309,7 @@ public final class CollectionTools {
      * @return an unmodifiable list of normalized path strings
      * @since 1.0
      */
-    public static List<String> combinePathsToStrings(@Nullable Path... paths) {
+    public static List<String> combinePathsToStrings(@Nullable Path @Nullable ... paths) {
         return combineAndMapVarargs(paths, CollectionTools::toNormalizedString);
     }
 
@@ -321,7 +324,7 @@ public final class CollectionTools {
      * @since 1.0
      */
     @SafeVarargs // Safe because we don't store the array or expose it to untrusted code
-    public static List<File> combineStringsToFiles(@Nullable Collection<String>... collections) {
+    public static List<File> combineStringsToFiles(@Nullable Collection<String> @Nullable ... collections) {
         return combineAndMap(collections, CollectionTools::toFile);
     }
 
@@ -334,7 +337,7 @@ public final class CollectionTools {
      * @return an unmodifiable list of files
      * @since 1.0
      */
-    public static List<File> combineStringsToFiles(@Nullable String... strings) {
+    public static List<File> combineStringsToFiles(@Nullable String @Nullable ... strings) {
         return combineAndMapVarargs(strings, CollectionTools::toFile);
     }
 
@@ -349,7 +352,7 @@ public final class CollectionTools {
      * @since 1.0
      */
     @SafeVarargs // Safe because we don't store the array or expose it to untrusted code
-    public static List<Path> combineStringsToPaths(@Nullable Collection<String>... collections) {
+    public static List<Path> combineStringsToPaths(@Nullable Collection<String> @Nullable ... collections) {
         return combineAndMap(collections, CollectionTools::toPath);
     }
 
@@ -362,7 +365,7 @@ public final class CollectionTools {
      * @return an unmodifiable list of paths
      * @since 1.0
      */
-    public static List<Path> combineStringsToPaths(@Nullable String... strings) {
+    public static List<Path> combineStringsToPaths(@Nullable String @Nullable ... strings) {
         return combineAndMapVarargs(strings, CollectionTools::toPath);
     }
 
