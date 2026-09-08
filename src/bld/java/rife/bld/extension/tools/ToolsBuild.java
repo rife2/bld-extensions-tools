@@ -51,7 +51,7 @@ public class ToolsBuild extends Project {
         var junit = version(6, 1, 3);
         scope(provided)
                 .include(dependency("com.uwyn.rife2", "bld-testing-helpers",
-                        version(1, 1, 0, "SNAPSHOT")))
+                        version(1, 1, 0)))
                 .include(dependency("org.jspecify", "jspecify", version(1, 0, 1)))
                 .include(dependency("org.jetbrains", "annotations", version(26, 1, 0)))
                 .include(dependency("com.github.spotbugs", "spotbugs-annotations",
