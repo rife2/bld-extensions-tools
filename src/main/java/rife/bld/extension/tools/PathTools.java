@@ -21,7 +21,6 @@ import org.jspecify.annotations.Nullable;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -57,16 +56,16 @@ public final class PathTools {
     }
 
     /**
-     * Formats a list of command-line arguments into a single string suitable for
+     * Formats a collection of command-line arguments into a single string suitable for
      * logging and safe copy/paste into a POSIX-compatible shell.
      *
-     * @param args the list of command-line arguments to format; must not be {@code null},
-     *             but may contain {@code null} or empty elements, which are rendered as {@code ''}
+     * @param args the collection of command-line arguments to format; may be {@code null}
+     *             or empty, and may contain {@code null} or empty elements, which are rendered as {@code ''}
      * @return a space-separated string with arguments quoted and escaped for POSIX shells;
-     * an empty string if the list is empty
+     * an empty string if the collection is {@code null} or empty
      * @since 1.0
      */
-    public static String formatCommandLine(@Nullable List<@Nullable String> args) {
+    public static String formatCommandLine(@Nullable Collection<@Nullable String> args) {
         if (args == null || args.isEmpty()) {
             return "";
         }
@@ -96,7 +95,7 @@ public final class PathTools {
      * @since 1.0
      */
     @SafeVarargs
-    public static String joinClasspath(@Nullable Collection<File> @Nullable... files) {
+    public static String joinClasspath(@Nullable Collection<File> @Nullable ... files) {
         if (files == null) {
             return "";
         }
@@ -121,7 +120,7 @@ public final class PathTools {
      * the system's path separator; an empty string if no valid paths are provided
      * @since 1.0
      */
-    public static String joinClasspath(@Nullable String @Nullable... paths) {
+    public static String joinClasspath(@Nullable String @Nullable ... paths) {
         if (paths == null) {
             return "";
         }
