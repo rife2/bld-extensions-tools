@@ -166,6 +166,22 @@ public class ProcessExecutor {
 
             if (!finished) {
                 timedOut = true;
+                // Must destroy BEFORE we try exitValue() - on macOS waitFor(1) is racy
+                // and process is still alive here
+                destroyProcessTree(proc.toHandle());
+                // Give the OS a chance to reap the process tree
+                // waitFor() without timeout after destroy will return quickly
+                try {
+                    if (!proc.waitFor(1, TimeUnit.SECONDS)) {
+                        // Forceful fallback if graceful tree kill didn't work
+                        proc.destroyForcibly();
+                        proc.waitFor(1, TimeUnit.SECONDS);
+                    }
+                } catch (InterruptedException e) {
+                    // Preserve interrupt status but continue cleanup
+                    Thread.currentThread().interrupt();
+                    proc.destroyForcibly();
+                }
             }
 
             if (outputThread != null) {
@@ -176,8 +192,10 @@ public class ProcessExecutor {
             try {
                 exitCode = proc.exitValue();
             } catch (IllegalThreadStateException e) {
+                // Still alive even after destroy - treat as timeout
                 exitCode = -1;
                 timedOut = true;
+                proc.destroyForcibly();
             }
             return new ProcessResult(exitCode, String.join(System.lineSeparator(), outputLines), timedOut);
         } finally {
