@@ -121,6 +121,7 @@ public final class ObjectTools {
      * as empty.
      * @since 1.3
      */
+    @SuppressFBWarnings("ITC_INHERITANCE_TYPE_CHECKING")
     public static boolean allEmpty(@Nullable Object value) {
         if (value == null) {
             return true;
@@ -848,6 +849,7 @@ public final class ObjectTools {
          * {@link #isAllNonNull} and {@link #allNotEmpty}, where a null child already fails
          * the check the caller is performing).
          */
+        @SuppressFBWarnings("ITC_INHERITANCE_TYPE_CHECKING")
         boolean pushAllOrNull(Object container, int parentDepth) {
             if (container instanceof @Nullable Object[] arr) {
                 for (var o : arr) {

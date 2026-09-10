@@ -16,6 +16,7 @@
 
 package rife.bld.extension.tools;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.jetbrains.annotations.Contract;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.NullMarked;
@@ -40,6 +41,10 @@ import java.util.regex.Pattern;
  * @since 1.0
  */
 @NullMarked
+@SuppressFBWarnings(
+        value = "FCCD_FIND_CLASS_CIRCULAR_DEPENDENCY",
+        justification = "ToolsSupport is shared support used by all tools, including TextTools."
+)
 public final class TextTools {
 
     private static final String BLANK_MESSAGE = "blankMessage";
