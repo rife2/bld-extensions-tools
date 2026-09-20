@@ -42,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("exists(...) Tests")
 class ExistsTests {
 
-
     @Nested
     @DisplayName("exists edge cases")
     class ExistsEdgeCaseTests {
@@ -187,12 +186,12 @@ class ExistsTests {
 @DisplayName("findFilesByExtensions")
 class FindFileTest {
 
-    @TempDir
-    Path tempDir;
-
     @Nested
     @DisplayName("edge cases and error handling")
     class EdgeCases {
+
+        @TempDir
+        Path tempDir;
 
         @ParameterizedTest(name = "[{index}] null/blank extensions are ignored")
         @DisplayName("null, empty and blank extensions yield empty result")
@@ -239,11 +238,12 @@ class FindFileTest {
         }
     }
 
-    // --- providers ---
-
     @Nested
     @DisplayName("filtering behavior")
     class Filtering {
+
+        @TempDir
+        Path tempDir;
 
         @Test
         @DisplayName("directories named like files are excluded")
@@ -260,10 +260,10 @@ class FindFileTest {
         @ParameterizedTest(name = "[{index}] file=''{0}'' should NOT match extension .java")
         @DisplayName("non-matching files are ignored")
         @ValueSource(strings = {"file.jav", "java", "filejava", "file.txt"})
-        void nonMatching(String fileName) throws IOException {
-            Files.createFile(tempDir.resolve(fileName));
+        void nonMatching(String fileName, @TempDir Path isolatedDir) throws IOException {
+            Files.createFile(isolatedDir.resolve(fileName));
 
-            List<Path> result = IOTools.findFilesByExtensions(tempDir, ".java");
+            List<Path> result = IOTools.findFilesByExtensions(isolatedDir, ".java");
 
             assertTrue(result.isEmpty());
         }
@@ -285,11 +285,11 @@ class FindFileTest {
     @Nested
     @DisplayName("normalization")
     class Normalization {
-
         static Stream<Arguments> multipleExtensionsCases() {
             return Stream.of(
                     Arguments.of(List.of(".java", ".kt"), List.of("A.java", "B.kt", "C.txt"), 2),
-                    Arguments.of(List.of("java"), List.of("A.java", "A.JAVA", "B.java"), 3),
+                    // Fixed: avoid A.java + A.JAVA collision on case-insensitive FS (macOS/Windows)
+                    Arguments.of(List.of("java"), List.of("A.java", "B.JAVA", "C.java"), 3),
                     Arguments.of(List.of(".md", ".txt"), List.of("readme.md"), 1)
             );
         }
@@ -298,15 +298,15 @@ class FindFileTest {
         @ParameterizedTest(name = "[{index}] extension=''{0}'' should match file ''{1}''")
         @CsvSource({
                 ".txt,  file.txt",
-                "txt,    file.txt",
-                ".TXT,   file.txt",
-                "TXT,    file.txt",
-                ".Txt,   FILE.TXT"
+                "txt,    file2.txt",
+                ".TXT,   file3.txt",
+                "TXT,    file4.txt",
+                ".Txt,   FILE5.TXT"
         })
-        void extensionIsNormalized(String extension, String fileName) throws IOException {
-            Files.createFile(tempDir.resolve(fileName));
+        void extensionIsNormalized(String extension, String fileName, @TempDir Path isolatedDir) throws IOException {
+            Files.createFile(isolatedDir.resolve(fileName));
 
-            List<Path> result = IOTools.findFilesByExtensions(tempDir, extension);
+            List<Path> result = IOTools.findFilesByExtensions(isolatedDir, extension);
 
             assertEquals(1, result.size());
             assertEquals(fileName, result.get(0).getFileName().toString());
@@ -315,12 +315,12 @@ class FindFileTest {
         @ParameterizedTest(name = "[{index}] extensions={0} -> should find {2} files")
         @DisplayName("multiple extensions")
         @MethodSource("multipleExtensionsCases")
-        void multipleExtensions(List<String> extensions, List<String> filesToCreate, int expectedCount) throws IOException {
+        void multipleExtensions(List<String> extensions, List<String> filesToCreate, int expectedCount, @TempDir Path isolatedDir) throws IOException {
             for (String f : filesToCreate) {
-                Files.createFile(tempDir.resolve(f));
+                Files.createFile(isolatedDir.resolve(f));
             }
 
-            List<Path> result = IOTools.findFilesByExtensions(tempDir, extensions.toArray(String[]::new));
+            List<Path> result = IOTools.findFilesByExtensions(isolatedDir, extensions.toArray(String[]::new));
 
             assertEquals(expectedCount, result.size());
         }
@@ -599,7 +599,6 @@ class IOToolsTest {
             }
         }
     }
-
 
     @Nested
     @DisplayName("Create Directories Tests")
