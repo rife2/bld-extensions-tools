@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -178,6 +179,150 @@ class ExistsTests {
         void shouldReturnTrueWhenStringPathExists() {
             var result = IOTools.exists(existingPath.toString());
             assertTrue(result);
+        }
+    }
+}
+
+@Nested
+@DisplayName("findFilesByExtensions")
+class FindFileTest {
+
+    @TempDir
+    Path tempDir;
+
+    @Nested
+    @DisplayName("edge cases and error handling")
+    class EdgeCases {
+
+        @ParameterizedTest(name = "[{index}] null/blank extensions are ignored")
+        @DisplayName("null, empty and blank extensions yield empty result")
+        @BlankSource
+        void blankExtensions(String extension) {
+            List<Path> result = IOTools.findFilesByExtensions(tempDir, extension);
+
+            assertTrue(result.isEmpty());
+        }
+
+        @Test
+        @DisplayName("empty dir returns empty list")
+        void emptyDir() {
+            List<Path> result = IOTools.findFilesByExtensions(tempDir, ".txt");
+
+            assertTrue(result.isEmpty());
+        }
+
+        @Test
+        @DisplayName("non-existent dir returns empty list, does not throw")
+        void nonExistentDir() {
+            Path nonExistent = tempDir.resolve("nope");
+
+            assertDoesNotThrow(() -> {
+                List<Path> result = IOTools.findFilesByExtensions(nonExistent, ".txt");
+                assertTrue(result.isEmpty());
+            });
+        }
+
+        @Test
+        @DisplayName("null directory throws NPE")
+        @SuppressWarnings("DataFlowIssue")
+        void nullDirectory() {
+            assertThrows(NullPointerException.class,
+                    () -> IOTools.findFilesByExtensions(null, ".txt"));
+        }
+
+        @Test
+        @DisplayName("null extensions array throws NPE")
+        @SuppressWarnings("DataFlowIssue")
+        void nullExtensionsArray() {
+            assertThrows(NullPointerException.class,
+                    () -> IOTools.findFilesByExtensions(tempDir, (String[]) null));
+        }
+    }
+
+    // --- providers ---
+
+    @Nested
+    @DisplayName("filtering behavior")
+    class Filtering {
+
+        @Test
+        @DisplayName("directories named like files are excluded")
+        void directoriesAreExcluded() throws IOException {
+            Files.createDirectory(tempDir.resolve("fake.txt"));
+            Files.createFile(tempDir.resolve("real.txt"));
+
+            List<Path> result = IOTools.findFilesByExtensions(tempDir, ".txt");
+
+            assertEquals(1, result.size());
+            assertEquals("real.txt", result.get(0).getFileName().toString());
+        }
+
+        @ParameterizedTest(name = "[{index}] file=''{0}'' should NOT match extension .java")
+        @DisplayName("non-matching files are ignored")
+        @ValueSource(strings = {"file.jav", "java", "filejava", "file.txt"})
+        void nonMatching(String fileName) throws IOException {
+            Files.createFile(tempDir.resolve(fileName));
+
+            List<Path> result = IOTools.findFilesByExtensions(tempDir, ".java");
+
+            assertTrue(result.isEmpty());
+        }
+
+        @Test
+        @DisplayName("only direct children - not recursive")
+        void notRecursive() throws IOException {
+            Path subDir = Files.createDirectory(tempDir.resolve("sub"));
+            Files.createFile(tempDir.resolve("root.java"));
+            Files.createFile(subDir.resolve("nested.java"));
+
+            List<Path> result = IOTools.findFilesByExtensions(tempDir, ".java");
+
+            assertEquals(1, result.size());
+            assertEquals("root.java", result.get(0).getFileName().toString());
+        }
+    }
+
+    @Nested
+    @DisplayName("normalization")
+    class Normalization {
+
+        static Stream<Arguments> multipleExtensionsCases() {
+            return Stream.of(
+                    Arguments.of(List.of(".java", ".kt"), List.of("A.java", "B.kt", "C.txt"), 2),
+                    Arguments.of(List.of("java"), List.of("A.java", "A.JAVA", "B.java"), 3),
+                    Arguments.of(List.of(".md", ".txt"), List.of("readme.md"), 1)
+            );
+        }
+
+        @DisplayName("accepts with/without dot and any case")
+        @ParameterizedTest(name = "[{index}] extension=''{0}'' should match file ''{1}''")
+        @CsvSource({
+                ".txt,  file.txt",
+                "txt,    file.txt",
+                ".TXT,   file.txt",
+                "TXT,    file.txt",
+                ".Txt,   FILE.TXT"
+        })
+        void extensionIsNormalized(String extension, String fileName) throws IOException {
+            Files.createFile(tempDir.resolve(fileName));
+
+            List<Path> result = IOTools.findFilesByExtensions(tempDir, extension);
+
+            assertEquals(1, result.size());
+            assertEquals(fileName, result.get(0).getFileName().toString());
+        }
+
+        @ParameterizedTest(name = "[{index}] extensions={0} -> should find {2} files")
+        @DisplayName("multiple extensions")
+        @MethodSource("multipleExtensionsCases")
+        void multipleExtensions(List<String> extensions, List<String> filesToCreate, int expectedCount) throws IOException {
+            for (String f : filesToCreate) {
+                Files.createFile(tempDir.resolve(f));
+            }
+
+            List<Path> result = IOTools.findFilesByExtensions(tempDir, extensions.toArray(String[]::new));
+
+            assertEquals(expectedCount, result.size());
         }
     }
 }
@@ -1413,6 +1558,7 @@ class ResolveFileTests {
 
             assertFalse(result.exists(), "File should not exist on filesystem");
         }
+
     }
 
     @Nested
@@ -1473,6 +1619,7 @@ class ResolveFileTests {
             assertTrue(result.getPath().contains("before"));
             assertTrue(result.getPath().contains("after"));
         }
+
     }
 
     @Nested

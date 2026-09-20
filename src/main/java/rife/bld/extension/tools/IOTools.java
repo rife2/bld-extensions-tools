@@ -24,6 +24,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * I/O Tools.
@@ -186,6 +191,57 @@ public final class IOTools {
             return Files.exists(Path.of(path));
         } catch (InvalidPathException e) {
             return false;
+        }
+    }
+
+    /**
+     * Finds regular files located directly in {@code directory} whose file name
+     * ends with one of the given extensions (case-insensitive).
+     * <p>
+     * This is non-recursive - it does not search subdirectories. If the directory
+     * cannot be read, an empty list is returned.
+     *
+     * @param directory  the directory to list, must not be null
+     * @param extensions one or more extensions to match, e.g. ".java" or "java"
+     * @return an unmodifiable list of matching files; never null, may be empty
+     * @throws NullPointerException if directory or extensions is null
+     * @since 1.4
+     */
+    public static List<Path> findFilesByExtensions(Path directory, String... extensions) {
+        ObjectTools.requireNonNull(directory, "directory");
+        ObjectTools.requireNonNull(extensions, "extensions");
+
+        if (extensions.length == 0) {
+            return List.of();
+        }
+
+        // Normalize: ".JAVA" -> ".java", "java" -> ".java"
+        final Set<String> normalizedExtensions = Arrays.stream(extensions)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(s -> s.startsWith(".") ? s : "." + s)
+                .map(s -> s.toLowerCase(Locale.ROOT))
+                .collect(Collectors.toUnmodifiableSet());
+
+        if (normalizedExtensions.isEmpty()) {
+            return List.of();
+        }
+
+        try (var stream = Files.list(directory)) {
+            return stream
+                    .filter(Files::isRegularFile)
+                    .filter(path -> {
+                        var fileName = path.getFileName();
+                        if (fileName == null) {
+                            return false;
+                        }
+                        var lowerName = fileName.toString().toLowerCase(Locale.ROOT);
+                        return normalizedExtensions.stream().anyMatch(lowerName::endsWith);
+                    })
+                    .toList();
+        } catch (IOException e) {
+            // Directory does not exist, not a directory, or not readable
+            return List.of();
         }
     }
 
