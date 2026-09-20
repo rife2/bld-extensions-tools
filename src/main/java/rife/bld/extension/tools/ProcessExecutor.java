@@ -147,7 +147,6 @@ public class ProcessExecutor {
 
         var pb = createProcessBuilder();
         var outputLines = new ArrayList<String>();
-        @SuppressWarnings("PMD.CloseResource")
         Process proc = null;
         Thread outputThread = null;
         boolean timedOut = false;

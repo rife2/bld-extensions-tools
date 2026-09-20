@@ -1,11 +1,3 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <FindBugsFilter>
-    <Match>
-        <Class name="rife.bld.extension.tools.CollectionTools"/>7
-        <Or>
-        <Method name="combineStringsToFiles$0"/>
-        <Method name="combineStringsToFiles$1"/>
-        <Bug pattern="PATH_TRAVERSAL_IN"/>
-        </Or>
-    </Match>
 </FindBugsFilter>

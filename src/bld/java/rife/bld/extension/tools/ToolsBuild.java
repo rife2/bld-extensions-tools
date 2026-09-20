@@ -29,8 +29,7 @@ import java.io.File;
 import java.util.List;
 
 import static rife.bld.dependencies.Repository.*;
-import static rife.bld.dependencies.Scope.provided;
-import static rife.bld.dependencies.Scope.test;
+import static rife.bld.dependencies.Scope.*;
 import static rife.bld.operations.JavadocOptions.DocLinkOption.NO_MISSING;
 
 public class ToolsBuild extends Project {
@@ -39,7 +38,7 @@ public class ToolsBuild extends Project {
         pkg = "rife.bld.extension.tools";
         name = "Extensions Tolls";
         archiveBaseName = "bld-extensions-tools";
-        version = version(1, 3, 1, "SNAPSHOT");
+        version = version(1, 4, 0, "SNAPSHOT");
 
         javaRelease = 17;
 
@@ -50,6 +49,7 @@ public class ToolsBuild extends Project {
 
         var junit = version(6, 1, 3);
         scope(provided)
+                .include(dependency("com.uwyn.rife2", "bld", version(3, 0, 1)))
                 .include(dependency("com.uwyn.rife2", "bld-testing-helpers",
                         version(1, 1, 1)))
                 .include(dependency("org.jspecify", "jspecify", version(1, 0, 1)))

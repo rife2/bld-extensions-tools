@@ -49,27 +49,28 @@ NOTE: All methods properly handle null values
 
 The following static methods are provided:
 
-| Method                                                                                                                                                                           | Description                                   |
-| :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------- |
-| [`canExecute(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#canExecute(java.io.File))                                           | Check if a file is executable.                |
-| [`canExecute(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#canExecute(java.nio.file.Path))                                     | Check if a file path is exectuable.           |
-| [`canExecute(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#canExecute(java.lang.String))                                     | Check if a file path is exectuable.           |
-| [`createDir(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#createDir(java.io.File))                                             | Create directory including parents.           |
-| [`createDir(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#createDir(java.nio.file.Path))                                       | Create directory including parents.           |
-| [`createDir(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#createDir(java.lang.String))                                       | Create directory including parents.           |
-| [`exists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#exists(java.io.File))                                                   | Check if a file exists.                       |
-| [`exists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#exists(java.nio.file.Path))                                             | Check if a path exists.                       |
-| [`exists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#exits(java.lang.String))                                              | Check if a path exists.                       |
-| [`isDirectory(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#isDirectory(java.io.File))                                         | Check if a file is a directory.               |
-| [`isDirectory(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#isDirectory(java.nio.file.Path))                                   | Check if a path is a directory.               |
-| [`isDirectory(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#isDirectory(java.lang.String))                                   | Check if a path is a directory.               |
-| [`mkdirs(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#mkdirs(java.io.File))                                                   | Make directories.                             |
-| [`mkdirs(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#mkdirs(java.nio.file.Path))                                             | Make directories.                             |
-| [`mkdirs(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#mkdirs(java.lang.String))                                             | Make directories.                             |
-| [`notExists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#notExists(java.io.File))                                             | Check if a file exists.                       |
-| [`notExists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#notExists(java.nio.file.Path))                                       | Check if a path exists.                       |
-| [`notExists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#notExits(java.lang.String))                                        | Check if a path exists.                       |
-| [`resolveFile(File base, String... segments)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#resolveFile(java.io.File,java.lang.String...)) | Resolve a file with additional path segments. |
+| Method                                                                                                                                                                                                            | Description                                                                                 |
+|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------|
+| [`canExecute(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#canExecute(java.io.File))                                                                            | Check if a file is executable.                                                              |
+| [`canExecute(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#canExecute(java.nio.file.Path))                                                                      | Check if a path is executable.                                                              |
+| [`canExecute(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#canExecute(java.lang.String))                                                                      | Check if a path string is executable.                                                       |
+| [`createDirs(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#createDirs(java.io.File))                                                                            | Create directory including any nonexistent parent directories.                              |
+| [`createDirs(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#createDirs(java.nio.file.Path))                                                                      | Create directory including any nonexistent parent directories.                              |
+| [`createDirs(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#createDirs(java.lang.String))                                                                      | Create directory including any nonexistent parent directories.                              |
+| [`exists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#exists(java.io.File))                                                                                    | Check if a file exists.                                                                     |
+| [`exists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#exists(java.nio.file.Path))                                                                              | Check if a path exists.                                                                     |
+| [`exists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#exists(java.lang.String))                                                                              | Check if a path string exists.                                                              |
+| [`findFilesByExtensions(Path directory, String... extensions)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#findFilesByExtensions(java.nio.file.Path,java.lang.String...)) | Find regular files directly in a directory by extensions (non-recursive, case-insensitive). |
+| [`isDirectory(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#isDirectory(java.io.File))                                                                          | Check if a file is a directory.                                                             |
+| [`isDirectory(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#isDirectory(java.nio.file.Path))                                                                    | Check if a path is a directory.                                                             |
+| [`isDirectory(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#isDirectory(java.lang.String))                                                                    | Check if a path string is a directory.                                                      |
+| [`mkdirs(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#mkdirs(java.io.File))                                                                                    | Create directory including parents, returning false on failure.                             |
+| [`mkdirs(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#mkdirs(java.nio.file.Path))                                                                              | Create directory including parents, returning false on failure.                             |
+| [`mkdirs(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#mkdirs(java.lang.String))                                                                              | Create directory including parents, returning false on failure.                             |
+| [`notExists(File file)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#notExists(java.io.File))                                                                              | Check if a file does not exist.                                                             |
+| [`notExists(Path path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#notExists(java.nio.file.Path))                                                                        | Check if a path does not exist.                                                             |
+| [`notExists(String path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#notExists(java.lang.String))                                                                        | Check if a path string does not exist.                                                      |
+| [`resolveFile(File base, String... segments)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/IOTools.html#resolveFile(java.io.File,java.lang.String...))                                  | Resolve a file path by joining a base with additional segments.                             |
 
 *NOTE:* All methods properly handle `null` values
 
@@ -102,16 +103,101 @@ The following static methods are provided:
 
 The following static methods are provided:
 
-| Method                                                                                                                                                                    | Description                                                                                  |
-|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------------------------|
-| [`joinClasspath(Collection<File>... files)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/PathUtils.html#joinClasspath(java.util.Collection...)) | Joins multiple collections of files into a classpath string using normalized absolute paths. |
-| [`joinClasspath(String... paths)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/PathUtils.html#joinClasspath(java.lang.String...))               | Joins non-blank string paths into a classpath string.                                        |
-| [`formatCommandLine(List<String> args)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/PathUtils.html#formatCommandLine(java.util.List))          | Formats command-line arguments into a single string suitable for logging and copy/paste.     |
+| Method                                                                                                                                                                       | Description                                                                                                      |
+|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------|
+| [`formatCommandLine(Collection<String> args)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/PathTools.html#formatCommandLine(java.util.Collection)) | Formats command-line arguments into a single string suitable for logging and safe copy/paste into a POSIX shell. |
+| [`joinClasspath()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/PathTools.html#joinClasspath())                                                    | Returns an empty classpath string to disambiguate zero-arg calls.                                                |
+| [`joinClasspath(Collection<File>... files)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/PathTools.html#joinClasspath(java.util.Collection...))    | Joins multiple collections of files into a classpath string using normalized absolute paths.                     |
+| [`joinClasspath(File... files)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/PathTools.html#joinClasspath(java.io.File...))                        | Joins multiple files into a classpath string using normalized absolute paths.                                    |
+| [`joinClasspath(String... paths)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/PathTools.html#joinClasspath(java.lang.String...))                  | Joins non-blank string paths into a classpath string.                                                            |
+| [`joinClasspath(Collection<Path> paths)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/PathTools.html#joinClasspath(java.util.Collection))          | Joins a collection of paths into a classpath string using normalized absolute paths.                             |
+| [`joinClasspath(Path... paths)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/PathTools.html#joinClasspath(java.nio.file.Path...))                  | Joins multiple paths into a classpath string using normalized absolute paths.                                    |
 
 ## Process Executor
 
 The [ProcessExecutor](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ProcessExecutor.html)
-class implements a generic process executor with timeout, I/O control, and output capture.
+class is a generic process executor with timeout, I/O control, and output capture.
+
+It handles process tree cleanup and stream management for Windows compatibility.
+Not thread-safe. Configure and execute from a single thread.
+
+To use, build the command and execute:
+
+```java
+var result = new ProcessExecutor()
+    .command("git", "status")
+    .workDir(new File("."))
+    .timeout(30)
+    .execute();
+
+if (!result.isSuccess()) {
+    System.out.println(result.output());
+}
+```
+
+The following methods are provided:
+
+| Method                                                                                                                                                                                | Description                                                                |
+|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------|
+| [`command(String... args)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ProcessExecutor.html#command(java.lang.String...))                                  | Sets the command and arguments, replacing any previous command.            |
+| [`command(Collection<String> args)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ProcessExecutor.html#command(java.util.Collection))                        | Sets the command from a collection, replacing any previous command.        |
+| [`command()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ProcessExecutor.html#command())                                                                   | Returns the mutable command list.                                          |
+| [`env(String name, String value)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ProcessExecutor.html#env(java.lang.String,java.lang.String))                 | Adds an environment variable.                                              |
+| [`env(Map<String,String> vars)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ProcessExecutor.html#env(java.util.Map))                                       | Adds environment variables.                                                |
+| [`env()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ProcessExecutor.html#env())                                                                           | Returns the mutable environment map.                                       |
+| [`workDir(File dir)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ProcessExecutor.html#workDir(java.io.File))                                               | Configures the working directory.                                          |
+| [`workDir(Path dir)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ProcessExecutor.html#workDir(java.nio.file.Path))                                         | Configures the working directory.                                          |
+| [`workDir(String dir)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ProcessExecutor.html#workDir(java.lang.String))                                         | Configures the working directory.                                          |
+| [`workDir()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ProcessExecutor.html#workDir())                                                                   | Returns the working directory, or null if not set.                         |
+| [`timeout(long timeout)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ProcessExecutor.html#timeout(long))                                                   | Configures the timeout in seconds; negative disables it.                   |
+| [`timeout()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ProcessExecutor.html#timeout())                                                                   | Returns the timeout in seconds.                                            |
+| [`inheritIO(boolean inheritIO)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ProcessExecutor.html#inheritIO(boolean))                                       | Configures whether the child inherits the JVM's I/O streams.               |
+| [`inheritIO()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ProcessExecutor.html#inheritIO())                                                               | Returns whether I/O is inherited.                                          |
+| [`outputConsumer(Consumer<String> consumer)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ProcessExecutor.html#outputConsumer(java.util.function.Consumer)) | Sets a consumer to receive output lines as they arrive.                    |
+| [`execute()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ProcessExecutor.html#execute())                                                                   | Executes the command and returns the result.                               |
+| [`ProcessResult`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/ProcessExecutor.html)                                                                         | Record containing `exitCode`, `output`, and `timedOut` with `isSuccess()`. |
+
+## Sandbox
+
+The [Sandbox](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html)
+class manages an isolated download directory for a bld extension.
+
+Each extension gets its own subdirectory under `lib/bld/.sandbox/<extensionName>`
+where its compile and runtime dependencies are downloaded. To avoid unnecessary
+re-downloads, the state is tracked with a hash-based snapshot in
+`lib/bld/.sandbox/sandbox.snapshot`. If the snapshot is valid,
+`downloadDependencies` becomes a no-op.
+
+Downloads are serialized per-extension within a single JVM. Concurrent
+processes sharing the same sandbox directory are not coordinated; the worst
+case is a redundant download.
+
+To use, create a `Sandbox` for your extension name and download:
+
+```java
+var sandbox = new Sandbox("my-extension", project);
+
+var dir = sandbox.downloadDependencies(
+    List.of(dependency("com.example", "my-lib", version(1,0,0))),
+    List.of(MAVEN_CENTRAL),
+    new VersionResolution(null)
+);
+// artifacts in lib/bld/.sandbox/my-extension
+```
+
+The following methods are provided:
+
+| Method                                                                                                                                                                | Description                                                        |
+|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------------------------------------------|
+| [`Sandbox(String, BaseProject)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#%3Cinit%3E(java.lang.String,rife.bld.BaseProject)) | Creates a sandbox for the given extension name.                    |
+| [`downloadDependencies(List<Dependency>, List<Repository>)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadDependencies(java.util.List,java.util.List)) | Downloads dependencies with default resolution into the extension root. |
+| [`downloadDependencies(List<Dependency>, List<Repository>, VersionResolution)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadDependencies(java.util.List,java.util.List,rife.bld.dependencies.VersionResolution)) | Downloads dependencies with a resolution into the extension root, skips if snapshot is valid. |
+| [`downloadDependencies(List<Dependency>, List<Repository>, VersionResolution, Path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadDependencies(java.util.List,java.util.List,rife.bld.dependencies.VersionResolution,java.nio.file.Path)) | Downloads dependencies into the sandbox, optionally under a subdirectory. |
+| [`downloadDependencies(List<Dependency>, List<Repository>, VersionResolution, File)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadDependencies(java.util.List,java.util.List,rife.bld.dependencies.VersionResolution,java.io.File)) | File-based overload for backward compatibility.                    |
+| [`getSandboxDirectory()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxDirectory()) | Returns `lib/bld/.sandbox`.                                        |
+| [`getSandboxDirectoryAsFile()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxDirectoryAsFile()) | Returns `lib/bld/.sandbox` as a `File`.                            |
+| [`getSandboxExtensionDirectory()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxExtensionDirectory()) | Returns `lib/bld/.sandbox/<extensionName>`.                        |
+| [`getSandboxExtensionDirectoryAsFile()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxExtensionDirectoryAsFile()) | Returns `lib/bld/.sandbox/<extensionName>` as a `File`.            |
 
 ## System Tools
 
