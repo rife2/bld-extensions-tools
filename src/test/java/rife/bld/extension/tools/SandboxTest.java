@@ -32,6 +32,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
@@ -392,7 +393,7 @@ class SandboxTest {
     }
 
     @Nested
-    @DisplayName("getFastMetadataHash")
+    @DisplayName("getDirectoryHash")
     class HashTests {
 
         Method hashMethod;
@@ -405,10 +406,24 @@ class SandboxTest {
             var h1 = (String) hashMethod.invoke(null, dir);
             var h2 = (String) hashMethod.invoke(null, dir);
             assertEquals(h1, h2);
-            Thread.sleep(20);
             Files.writeString(dir.resolve("b.txt"), "world");
             var h3 = (String) hashMethod.invoke(null, dir);
             assertNotEquals(h1, h3);
+        }
+
+        @Test
+        void hashIgnoresMtimeButDetectsSameSizeEdit() throws Exception {
+            var dir = tmp.resolve("data");
+            Files.createDirectories(dir);
+            var file = dir.resolve("a.txt");
+            Files.writeString(file, "hello");
+            var h1 = (String) hashMethod.invoke(null, dir);
+
+            Files.setLastModifiedTime(file, FileTime.fromMillis(12345));
+            assertEquals(h1, hashMethod.invoke(null, dir));
+
+            Files.writeString(file, "jello");
+            assertNotEquals(h1, hashMethod.invoke(null, dir));
         }
 
         @Test
@@ -419,7 +434,7 @@ class SandboxTest {
 
         @BeforeEach
         void setUp() throws Exception {
-            hashMethod = Sandbox.class.getDeclaredMethod("getFastMetadataHash", Path.class);
+            hashMethod = Sandbox.class.getDeclaredMethod("getDirectoryHash", Path.class);
             hashMethod.setAccessible(true);
         }
     }

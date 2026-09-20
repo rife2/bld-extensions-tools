@@ -26,12 +26,14 @@ import rife.tools.exceptions.FileUtilsErrorException;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -102,7 +104,7 @@ public final class Sandbox {
         }
     }
 
-    private static String getFastMetadataHash(Path directory) throws IOException {
+    private static String getDirectoryHash(Path directory) throws IOException {
         if (!Files.exists(directory)) {
             return "";
         }
@@ -112,9 +114,7 @@ public final class Sandbox {
             for (Path path : sortedPaths) {
                 manifest.append(directory.relativize(path)).append('|');
                 if (Files.isRegularFile(path)) {
-                    manifest.append(Files.size(path))
-                            .append('|')
-                            .append(Files.getLastModifiedTime(path).toMillis()).append('\n');
+                    manifest.append(sha256(path)).append('\n');
                 } else {
                     manifest.append("DIR\n");
                 }
@@ -151,13 +151,24 @@ public final class Sandbox {
         }
     }
 
-    private static String sha256(String text) {
+    private static MessageDigest newSha256() {
         try {
-            var digest = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(digest.digest(text.getBytes(StandardCharsets.UTF_8)));
+            return MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 is not available", e);
         }
+    }
+
+    private static String sha256(Path file) throws IOException {
+        var digest = newSha256();
+        try (var in = new DigestInputStream(Files.newInputStream(file), digest)) {
+            in.transferTo(OutputStream.nullOutputStream());
+        }
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
+    private static String sha256(String text) {
+        return HexFormat.of().formatHex(newSha256().digest(text.getBytes(StandardCharsets.UTF_8)));
     }
 
     private static String toPortableString(Path path) {
@@ -446,7 +457,7 @@ public final class Sandbox {
     }
 
     private String snapshotValue(String inputsHash, Path directory) throws IOException {
-        return inputsHash + ':' + getFastMetadataHash(directory);
+        return inputsHash + ':' + getDirectoryHash(directory);
     }
 
     private void writeSnapshot(Properties snapshot) throws IOException {
