@@ -44,12 +44,19 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Manages an isolated sandbox under {@code lib/bld/.sandbox/<extensionName>}.
+ * Manages an isolated, per-extension sandbox for downloading dependencies, rooted at
+ * {@code lib/bld/.sandbox/<extensionName>}.
  * <p>
- * Downloads are cached and skipped when a snapshot in
- * {@code lib/bld/.sandbox/sandbox.snapshot} is still valid.
- * Mixing downloads into the extension root and its subdirectories for the
- * same extension should be avoided.
+ * Dependencies can be downloaded into the extension's sandbox root or into an explicit
+ * subdirectory of it (see the {@code subDirectory} overloads); each location is tracked
+ * independently. A download is skipped and the cached artifacts reused when a snapshot
+ * recorded in {@code lib/bld/.sandbox/sandbox.snapshot} is still valid — validity requires
+ * both the resolution inputs (dependencies, repositories, version overrides/boms) and the
+ * current on-disk content of the target directory to match what was recorded, so external
+ * changes to either force a re-download. Snapshot updates are written atomically.
+ * <p>
+ * Concurrent downloads for the same extension are serialized; downloads for different
+ * extensions may proceed in parallel while still safely sharing the snapshot file.
  *
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.4
@@ -89,7 +96,6 @@ public final class Sandbox {
         sandboxSnapshotFile_ = sandboxDirectory_.resolve("sandbox.snapshot");
     }
 
-    // internal helpers
     private static void deleteDirectory(Path directory) {
         if (!Files.exists(directory)) {
             return;
@@ -139,6 +145,14 @@ public final class Sandbox {
         return sha256(manifest.toString());
     }
 
+    private static MessageDigest newSha256() {
+        try {
+            return MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available", e);
+        }
+    }
+
     private static void requireSinglePathSegment(String name) {
         var path = Path.of(name);
         var fileName = path.getFileName();
@@ -148,14 +162,6 @@ public final class Sandbox {
                 || ".".equals(fileName.toString())
                 || "..".equals(fileName.toString())) {
             throw new IllegalArgumentException("extensionName must be a single path segment: " + name);
-        }
-    }
-
-    private static MessageDigest newSha256() {
-        try {
-            return MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is not available", e);
         }
     }
 
@@ -178,15 +184,15 @@ public final class Sandbox {
     /**
      * Downloads the given dependencies using the provided repositories and a default
      * {@link VersionResolution}.
-     * <p>
-     * This is a convenience overload that delegates to
-     * {@link #downloadDependencies(List, List, VersionResolution, Path)} with no subdirectory.
      *
      * @param dependencies the dependencies to resolve; must not be {@code null}
      * @param repositories the repositories to resolve from; must not be {@code null}
      * @return the path to the extension sandbox directory where artifacts were (or would be) downloaded
      * @throws NullPointerException     if any argument is {@code null} or contain {@code null} elements
      * @throws IllegalArgumentException if any argument is empty or contain empty elements
+     * @see #downloadDependencies(List, List, VersionResolution, Path)
+     * @see #downloadDependencies(List, List, VersionResolution)
+     * @see #downloadDependencies(List, List, Path)
      */
     public Path downloadDependencies(List<Dependency> dependencies, List<Repository> repositories) {
         ObjectTools.requireNotEmpty(dependencies, DEPENDENCIES);
@@ -205,6 +211,9 @@ public final class Sandbox {
      * @return the path to the extension sandbox directory where artifacts were (or would be) downloaded
      * @throws NullPointerException     if any argument is {@code null} or contain {@code null} elements
      * @throws IllegalArgumentException if any argument is empty or contain empty elements
+     * @see #downloadDependencies(List, List, VersionResolution, Path)
+     * @see #downloadDependencies(List, List)
+     * @see #downloadDependencies(List, List, Path)
      */
     public Path downloadDependencies(List<Dependency> dependencies,
                                      List<Repository> repositories,
@@ -284,7 +293,8 @@ public final class Sandbox {
     }
 
     /**
-     * Backward-compatible bridge for callers using {@link File} for the subdirectory.
+     * Downloads the given dependencies using the provided repositories and version resolution
+     * into an optional subdirectory specified as a {@link File}.
      *
      * @param dependencies the dependencies to resolve; must not be {@code null} or empty
      * @param repositories the repositories to resolve from; must not be {@code null} or empty
@@ -297,6 +307,10 @@ public final class Sandbox {
      * @throws IllegalStateException    if an existing download directory cannot be deleted
      * @throws UncheckedIOException     if the download directory cannot be created or the snapshot
      *                                  cannot be written
+     * @see #downloadDependencies(List, List, VersionResolution, Path)
+     * @see #downloadDependencies(List, List, VersionResolution, File)
+     * @see #downloadDependencies(List, List, Path)
+     * @see #downloadDependencies(List, List, File)
      */
     public Path downloadDependencies(List<Dependency> dependencies,
                                      List<Repository> repositories,
@@ -323,6 +337,9 @@ public final class Sandbox {
      * @throws IllegalStateException    if an existing download directory cannot be deleted
      * @throws UncheckedIOException     if the download directory cannot be created or the snapshot
      *                                  cannot be written
+     * @see #downloadDependencies(List, List, VersionResolution, Path)
+     * @see #downloadDependencies(List, List)
+     * @see #downloadDependencies(List, List, VersionResolution)
      */
     public Path downloadDependencies(List<Dependency> dependencies,
                                      List<Repository> repositories,
@@ -333,13 +350,17 @@ public final class Sandbox {
     }
 
     /**
-     * Backward-compatible bridge for callers using {@link File} for the subdirectory,
-     * without specifying a {@link VersionResolution}.
+     * Downloads dependencies into the sandbox, optionally under a subdirectory
+     * specified as a {@link File}.
      *
      * @param dependencies the dependencies to resolve; must not be {@code null} or empty
      * @param repositories the repositories to resolve from; must not be {@code null} or empty
      * @param subDirectory optional subdirectory as a {@code File}; may be {@code null}
      * @return the path to the directory where artifacts were downloaded
+     * @see #downloadDependencies(List, List, Path)
+     * @see #downloadDependencies(List, List, VersionResolution, Path)
+     * @see #downloadDependencies(List, List, VersionResolution, File)
+     * @see #downloadDependencies(List, List)
      */
     public Path downloadDependencies(List<Dependency> dependencies,
                                      List<Repository> repositories,
