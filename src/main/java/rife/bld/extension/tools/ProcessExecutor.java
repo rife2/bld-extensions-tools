@@ -142,6 +142,7 @@ public class ProcessExecutor {
      * @throws IllegalStateException if no command is set, the working directory is invalid,
      *                               or both {@link #inheritIO()} and {@link #outputConsumer(Consumer)} are configured
      */
+    @SuppressWarnings("PMD.CloseResource")
     public ProcessResult execute() throws IOException, InterruptedException {
         validatePreconditions();
 
