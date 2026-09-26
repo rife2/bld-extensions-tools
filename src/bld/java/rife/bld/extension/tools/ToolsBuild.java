@@ -39,7 +39,7 @@ public class ToolsBuild extends Project {
         pkg = "rife.bld.extension.tools";
         name = "Extensions Tolls";
         archiveBaseName = "bld-extensions-tools";
-        version = version(1, 4, 0);
+        version = version(1, 4, 1, "SNAPSHOT");
 
         javaRelease = 17;
 
@@ -61,7 +61,7 @@ public class ToolsBuild extends Project {
                 .include(dependency("org.junit.jupiter", "junit-jupiter", junit))
                 .include(dependency("org.junit.platform", "junit-platform-console-standalone", junit))
                 .include(dependency("org.mockito", "mockito-junit-jupiter",
-                        version(5, 23, 0)));
+                        version(5, 24, 0)));
 
         javadocOperation()
                 .javadocOptions()
