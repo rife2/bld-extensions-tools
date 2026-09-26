@@ -839,7 +839,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        @SuppressWarnings("DataFlowIssue")
         void supplierReturningNullOrBlank() {
             assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requireNegative(1, () -> null));
@@ -888,7 +887,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNullValue() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNegative(null, "value"));
@@ -1013,7 +1011,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNullValue() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNonNegative(null, "value"));
@@ -1067,7 +1064,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        @SuppressWarnings("ConstantValue")
         void passesForEmptyCollection() {
             assertTrue(ObjectTools.requireNonNull(List.of(), "list").isEmpty());
         }
@@ -1089,7 +1085,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        @SuppressWarnings("DataFlowIssue")
         void supplierReturningNullOrBlank() {
             assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requireNegative(1, () -> null));
@@ -1464,23 +1459,6 @@ class ObjectToolsTest {
             );
         }
 
-        @Test
-        void NnaNEdge() {
-            var nanObj = Double.valueOf(Double.NaN);
-            var result = ObjectTools.requirePositive(nanObj, "nan");
-
-            assertSame(nanObj, result); // same instance returned
-            assertTrue(Double.isNaN(result));
-
-            assertThrows(IllegalArgumentException.class,
-                    () -> ObjectTools.requirePositive(-0.0d, "zero"));
-            assertThrows(IllegalArgumentException.class,
-                    () -> ObjectTools.requirePositive(0.0d, "zero"));
-
-            double nanPrimitive = Double.NaN;
-            assertTrue(Double.isNaN(ObjectTools.requirePositive(nanPrimitive, "nan")));
-        }
-
         @ParameterizedTest(name = "allows positive: {0}")
         @MethodSource("positiveNumbers")
         <T extends Comparable<T>> void allowsPositiveValues(T value) {
@@ -1495,13 +1473,23 @@ class ObjectToolsTest {
         }
 
         @Test
+        void nanEdge() {
+            assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requirePositive(Double.NaN, "nan"));
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requirePositive(-0.0d, "zero"));
+            assertThrows(IllegalArgumentException.class,
+                    () -> ObjectTools.requirePositive(0.0d, "zero"));
+        }
+
+        @Test
         void returnsSameInstance() {
             var bd = new BigDecimal("42.5");
             assertSame(bd, ObjectTools.requirePositive(bd, "bd"));
         }
 
         @Test
-        @SuppressWarnings("DataFlowIssue")
         void supplierReturningNullOrBlank() {
             assertThrows(IllegalArgumentException.class,
                     () -> ObjectTools.requireNegative(1, () -> null));
@@ -1549,7 +1537,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNullValue() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requirePositive(null, "value"));

@@ -285,6 +285,7 @@ class FindFileTest {
     @Nested
     @DisplayName("normalization")
     class Normalization {
+
         static Stream<Arguments> multipleExtensionsCases() {
             return Stream.of(
                     Arguments.of(List.of(".java", ".kt"), List.of("A.java", "B.kt", "C.txt"), 2),

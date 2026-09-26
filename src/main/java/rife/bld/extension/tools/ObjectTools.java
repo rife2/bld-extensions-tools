@@ -36,26 +36,35 @@ import java.util.logging.Logger;
 /**
  * Object Tools.
  *
- * <p>Unified utility methods for emptiness-checking objects, arrays,
- * collections, maps, and character sequences.</p>
+ * <p>Unified utility methods for validating objects: emptiness-checking (arrays,
+ * collections, maps, and character sequences) and null/sign/range checks for
+ * {@link Comparable} values, including all {@code require*} guard methods.</p>
  *
- * <p>Emptiness is defined for {@link CharSequence}, {@link Collection},
- * {@link Map}, and arrays. All other non-{@code null} objects are considered not empty.</p>
- *
- * <p>{@link #allEmpty(Object)}, {@link #allNotEmpty(Object)}, and the {@code require*}
- * methods check containers recursively, up to {@value #MAX_NESTING_DEPTH} levels deep
- * per branch (see {@link #MAX_NESTING_DEPTH}). {@link #anyEmpty(Object)} and
- * {@link #anyNotEmpty(Object)} check only the container's direct elements/entries —
- * they do not descend into nested containers.</p>
+ * <p><b>Emptiness.</b> Emptiness is defined for {@link CharSequence}, {@link Collection},
+ * {@link Map}, and arrays. All other non-{@code null} objects are considered not empty.
+ * {@link #allEmpty(Object)}, {@link #allNotEmpty(Object)}, and the container-checking
+ * {@code require*} methods check containers recursively, up to {@value #MAX_NESTING_DEPTH}
+ * levels deep per branch (see {@link #MAX_NESTING_DEPTH}). {@link #anyEmpty(Object)} and
+ * {@link #anyNotEmpty(Object)} check only the container's direct elements/entries — they
+ * do not descend into nested containers.</p>
  *
  * <p><b>Map key checking:</b> both keys and values are evaluated by emptiness predicates.
  * Keys of non-container, non-{@link CharSequence} types (e.g. {@link Integer}, enum
  * constants) are never considered empty, so a map with such keys never reports all keys
  * as empty — this affects {@link #allEmpty(Object)} and {@link #anyEmpty(Object)}.</p>
  *
+ * <p><b>Sign and range checks.</b> {@link #requirePositive(Object, String)},
+ * {@link #requireNegative(Object, String)}, and {@link #requireNonNegative(Object, String)}
+ * work with any {@link Comparable} type that has a natural zero: {@link Integer},
+ * {@link Long}, {@link Double}, {@link Float}, {@link Short}, {@link Byte},
+ * {@link java.math.BigInteger}, and {@link java.math.BigDecimal}. For {@link Double} and
+ * {@link Float}, {@code NaN} is rejected by all three, and {@code -0.0} is treated as equal
+ * to zero rather than negative.</p>
+ *
  * <p><b>Validation order:</b> all {@code require*} methods throw {@link NullPointerException}
- * first if the value or any nested element is {@code null}, then {@link IllegalArgumentException}
- * if the value is empty or blank.</p>
+ * first if the value (or, for container-checking overloads, any nested element) is
+ * {@code null}, then {@link IllegalArgumentException} if the value fails its specific check
+ * (empty, wrong sign, etc.).</p>
  *
  * <p>For text-specific operations like blank-checking, see {@link TextTools}.</p>
  *
@@ -63,6 +72,7 @@ import java.util.logging.Logger;
  * @since 1.0
  */
 @NullMarked
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class ObjectTools {
 
     /**
@@ -300,7 +310,7 @@ public final class ObjectTools {
      */
     @SuppressWarnings("PMD.AvoidThrowingNullPointerException")
     private static void checkForNulls(Object value, String message) {
-        if (isContainer(value) && !isAllNonNull(value)) {
+        if (isContainer(value) && hasNullElement(value)) {
             throw new NullPointerException(message);
         }
     }
@@ -312,7 +322,7 @@ public final class ObjectTools {
      */
     @SuppressWarnings("PMD.AvoidThrowingNullPointerException")
     private static void checkForNulls(Object value, Supplier<String> messageSupplier) {
-        if (isContainer(value) && !isAllNonNull(value)) {
+        if (isContainer(value) && hasNullElement(value)) {
             throw new NullPointerException(messageSupplier.get());
         }
     }
@@ -403,16 +413,13 @@ public final class ObjectTools {
     }
 
     /**
-     * Requires the value to be not {@code null}, and all elements/entries to be not
-     * {@code null}, checked recursively up to {@value #MAX_NESTING_DEPTH} levels deep
-     * per branch (see {@link #MAX_NESTING_DEPTH}).
+     * Returns {@code true} if {@code value} is a container holding a {@code null} element/entry,
+     * checked recursively up to {@value #MAX_NESTING_DEPTH} levels deep per branch (see
+     * {@link #MAX_NESTING_DEPTH}).
      */
-    private static boolean isAllNonNull(@Nullable Object value) {
-        if (value == null) {
-            return false;
-        }
+    private static boolean hasNullElement(Object value) {
         if (!isContainer(value)) {
-            return true;
+            return false;
         }
 
         var stack = new DepthStack();
@@ -423,10 +430,10 @@ public final class ObjectTools {
                 continue;
             }
             if (stack.pushAllOrNull(entry.value(), entry.depth())) {
-                return false;
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     /**
@@ -470,6 +477,22 @@ public final class ObjectTools {
     }
 
     /**
+     * Returns {@code true} if {@code value} is greater than or equal to zero.
+     *
+     * <p>For {@link Double} and {@link Float}, uses primitive comparison so that
+     * {@code NaN} is never non-negative and {@code -0.0} is treated as zero.</p>
+     */
+    private static <T extends Comparable<T>> boolean isNonNegative(T value) {
+        if (value instanceof Double d) {
+            return d >= 0.0d;
+        }
+        if (value instanceof Float f) {
+            return f >= 0.0f;
+        }
+        return value.compareTo(zeroOf(value)) >= 0;
+    }
+
+    /**
      * Determines whether the given {@code value} is not {@code null} and not empty.
      *
      * @param value the value to inspect; may be {@code null}
@@ -483,6 +506,38 @@ public final class ObjectTools {
     private static boolean isPrimitiveFastPath(Predicate<@Nullable Object> predicate) {
         // Reference-identity check: these are static final fields; == is intentional.
         return predicate == isEmptyPredicate || predicate == isNotEmptyPredicate;
+    }
+
+    /**
+     * Returns {@code true} if {@code value} is strictly negative.
+     *
+     * <p>For {@link Double} and {@link Float}, uses primitive comparison so that
+     * {@code NaN} is never negative and {@code -0.0} is not treated as negative.</p>
+     */
+    private static <T extends Comparable<T>> boolean isStrictlyNegative(T value) {
+        if (value instanceof Double d) {
+            return d < 0.0d;
+        }
+        if (value instanceof Float f) {
+            return f < 0.0f;
+        }
+        return value.compareTo(zeroOf(value)) < 0;
+    }
+
+    /**
+     * Returns {@code true} if {@code value} is strictly positive.
+     *
+     * <p>For {@link Double} and {@link Float}, uses primitive comparison so that
+     * {@code NaN} is never positive and {@code -0.0}/{@code 0.0} are not positive.</p>
+     */
+    private static <T extends Comparable<T>> boolean isStrictlyPositive(T value) {
+        if (value instanceof Double d) {
+            return d > 0.0d;
+        }
+        if (value instanceof Float f) {
+            return f > 0.0f;
+        }
+        return value.compareTo(zeroOf(value)) > 0;
     }
 
     /**
@@ -539,6 +594,10 @@ public final class ObjectTools {
      * {@link Double}, {@link Float}, {@link Byte}, {@link Short}, {@link BigInteger}, and
      * {@link BigDecimal}.
      *
+     * <p>For {@link Double} and {@link Float}, {@code NaN} is rejected by all three
+     * {@code require*} sign-check methods, and {@code -0.0} is treated as equal to zero
+     * rather than negative.</p>
+     *
      * @param <T>     the type of the value, must implement {@link Comparable}
      * @param value   the value to check for negativity; must not be {@code null}
      * @param context the context string used in exception messages; must not be {@code null}, empty, or blank
@@ -578,7 +637,7 @@ public final class ObjectTools {
         Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
         requireNonNull(value, "value");
 
-        if (value.compareTo(zeroOf(value)) >= 0) {
+        if (!isStrictlyNegative(value)) {
             throw new IllegalArgumentException(messageSupplier.get());
         }
         return value;
@@ -627,7 +686,7 @@ public final class ObjectTools {
         Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
         requireNonNull(value, "value");
 
-        if (value.compareTo(zeroOf(value)) < 0) {
+        if (!isNonNegative(value)) {
             throw new IllegalArgumentException(messageSupplier.get());
         }
         return value;
@@ -791,7 +850,7 @@ public final class ObjectTools {
         Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
         requireNonNull(value, "value");
 
-        if (value.compareTo(zeroOf(value)) <= 0) {
+        if (!isStrictlyPositive(value)) {
             throw new IllegalArgumentException(messageSupplier.get());
         }
         return value;
@@ -825,7 +884,7 @@ public final class ObjectTools {
 
     /**
      * Iterative depth-tracked stack shared by {@link #allEmpty}, {@link #allNotEmpty}, and
-     * {@link #isAllNonNull} to traverse nested containers without recursion, stopping each
+     * {@link #hasNullElement} to traverse nested containers without recursion, stopping each
      * branch at {@link #MAX_NESTING_DEPTH}.
      */
     private static final class DepthStack {
@@ -846,7 +905,7 @@ public final class ObjectTools {
         /**
          * Pushes every element/entry of {@code container} at {@code parentDepth + 1},
          * stopping and returning {@code true} as soon as a {@code null} is found (used by
-         * {@link #isAllNonNull} and {@link #allNotEmpty}, where a null child already fails
+         * {@link #hasNullElement} and {@link #allNotEmpty}, where a null child already fails
          * the check the caller is performing).
          */
         @SuppressFBWarnings("ITC_INHERITANCE_TYPE_CHECKING")

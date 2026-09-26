@@ -745,6 +745,7 @@ class ProcessExecutorTest {
                 when(proc.getInputStream()).thenReturn(input);
 
                 var thread = exec.startOutputReader(proc, lines);
+                assertNotNull(thread, "thread should not be null");
                 thread.join(1000);
 
                 assertEquals(List.of("line1", "line2"), lines);
@@ -769,6 +770,7 @@ class ProcessExecutorTest {
                 when(proc.getInputStream()).thenReturn(badStream);
 
                 var thread = exec.startOutputReader(proc, new ArrayList<>());
+                assertNotNull(thread, "thread should not be null");
                 assertDoesNotThrow(() -> thread.join(1000));
             }
         }

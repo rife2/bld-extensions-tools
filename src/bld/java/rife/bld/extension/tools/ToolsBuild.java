@@ -29,7 +29,8 @@ import java.io.File;
 import java.util.List;
 
 import static rife.bld.dependencies.Repository.*;
-import static rife.bld.dependencies.Scope.*;
+import static rife.bld.dependencies.Scope.provided;
+import static rife.bld.dependencies.Scope.test;
 import static rife.bld.operations.JavadocOptions.DocLinkOption.NO_MISSING;
 
 public class ToolsBuild extends Project {
