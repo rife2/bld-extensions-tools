@@ -56,7 +56,7 @@ public class ToolsBuild extends Project {
                 .include(dependency("org.jspecify", "jspecify", version(1, 0, 1)))
                 .include(dependency("org.jetbrains", "annotations", version(26, 1, 0)))
                 .include(dependency("com.github.spotbugs", "spotbugs-annotations",
-                        version(4, 10, 4)));
+                        version(4, 10, 5)));
         scope(test)
                 .include(dependency("org.junit.jupiter", "junit-jupiter", junit))
                 .include(dependency("org.junit.platform", "junit-platform-console-standalone", junit))
