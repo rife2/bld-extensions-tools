@@ -257,7 +257,9 @@ public final class Sandbox {
         lock.lock();
         try {
             if (isSnapshotValid(snapshotKey, inputsHash, downloadDirectory)) {
-                logInfo("Reusing valid sandbox snapshot for ''{0}''", snapshotKey);
+                if (logger.isLoggable(Level.INFO)) {
+                    logger.log(Level.INFO, "Reusing valid sandbox snapshot for ''{0}''", snapshotKey);
+                }
                 return downloadDirectory;
             }
 
@@ -429,23 +431,36 @@ public final class Sandbox {
      */
     private boolean isSnapshotValid(String snapshotKey, String inputsHash, Path directory) {
         if (!Files.exists(sandboxSnapshotFile_)) {
-            logInvalidation(snapshotKey, "no snapshot file");
+            if (logger.isLoggable(Level.INFO)) {
+                logger.log(Level.INFO,
+                        "Invalidating sandbox snapshot for ''{0}'': no snapshot file", snapshotKey);
+            }
             return false;
         }
         if (!Files.exists(directory)) {
-            logInvalidation(snapshotKey, "no sandbox directory");
+            if (logger.isLoggable(Level.INFO)) {
+                logger.log(Level.INFO,
+                        "Invalidating sandbox snapshot for ''{0}'': no sandbox directory", snapshotKey);
+            }
             return false;
         }
         var snapshot = new Properties();
         try (var in = Files.newInputStream(sandboxSnapshotFile_)) {
             snapshot.load(in);
         } catch (IOException e) {
-            logInvalidation(snapshotKey, "snapshot file unreadable: " + e.getMessage());
+            if (logger.isLoggable(Level.INFO)) {
+                logger.log(Level.INFO,
+                        "Invalidating sandbox snapshot for ''{0}'': snapshot file unreadable: {1}",
+                        new Object[]{snapshotKey, e.getMessage()});
+            }
             return false;
         }
         var expected = snapshot.getProperty(snapshotKey);
         if (expected == null) {
-            logInvalidation(snapshotKey, "no recorded entry");
+            if (logger.isLoggable(Level.INFO)) {
+                logger.log(Level.INFO,
+                        "Invalidating sandbox snapshot for ''{0}'': no recorded entry", snapshotKey);
+            }
             return false;
         }
         var currentJvm = jvmVersion();
@@ -453,20 +468,35 @@ public final class Sandbox {
         if (!expected.startsWith(prefix)) {
             var recordedJvm = recordedJvmVersion(expected);
             if (recordedJvm != null && !recordedJvm.equals(currentJvm)) {
-                logInvalidation(snapshotKey,
-                        "JVM version changed from " + recordedJvm + " to " + currentJvm);
+                if (logger.isLoggable(Level.INFO)) {
+                    logger.log(Level.INFO,
+                            "Invalidating sandbox snapshot for ''{0}'': JVM version changed from {1} to {2}",
+                            new Object[]{snapshotKey, recordedJvm, currentJvm});
+                }
             } else {
-                logInvalidation(snapshotKey, "resolution inputs changed");
+                if (logger.isLoggable(Level.INFO)) {
+                    logger.log(Level.INFO,
+                            "Invalidating sandbox snapshot for ''{0}'': resolution inputs changed",
+                            snapshotKey);
+                }
             }
             return false;
         }
         try {
             if (!expected.equals(prefix + getDirectoryHash(directory))) {
-                logInvalidation(snapshotKey, "sandbox content changed");
+                if (logger.isLoggable(Level.INFO)) {
+                    logger.log(Level.INFO,
+                            "Invalidating sandbox snapshot for ''{0}'': sandbox content changed",
+                            snapshotKey);
+                }
                 return false;
             }
         } catch (IOException e) {
-            logInvalidation(snapshotKey, "sandbox content unhashable: " + e.getMessage());
+            if (logger.isLoggable(Level.INFO)) {
+                logger.log(Level.INFO,
+                        "Invalidating sandbox snapshot for ''{0}'': sandbox content unhashable: {1}",
+                        new Object[]{snapshotKey, e.getMessage()});
+            }
             return false;
         }
         return true;
@@ -487,16 +517,6 @@ public final class Sandbox {
             return null;
         }
         return snapshotValue.substring(firstColon + 1, secondColon);
-    }
-
-    private static void logInvalidation(String snapshotKey, String reason) {
-        logInfo("Invalidating sandbox snapshot for ''{0}'': {1}", snapshotKey, reason);
-    }
-
-    private static void logInfo(String format, Object... params) {
-        if (logger.isLoggable(Level.INFO)) {
-            logger.log(Level.INFO, format, params);
-        }
     }
 
     /**
@@ -545,7 +565,9 @@ public final class Sandbox {
             } finally {
                 snapshotLock.unlock();
             }
-            logInfo("Sandbox snapshot saved for ''{0}''", snapshotKey);
+            if (logger.isLoggable(Level.INFO)) {
+                logger.log(Level.INFO, "Sandbox snapshot saved for ''{0}''", snapshotKey);
+            }
         } catch (IOException e) {
             if (logger.isLoggable(Level.WARNING)) {
                 logger.log(Level.WARNING,
