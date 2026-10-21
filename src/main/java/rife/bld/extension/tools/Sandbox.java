@@ -47,7 +47,7 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 /**
- * Manages a per-extension sandbox at {@code lib/bld/.sandbox/<extensionName>} for caching
+ * Manages a per-extension sandbox at {@code lib/.sandbox/<extensionName>} for caching
  * resolved dependencies.
  * <p>
  * A download is skipped when a recorded snapshot is still valid: the resolution inputs, the
@@ -72,11 +72,10 @@ public final class Sandbox {
     private static final String REPOSITORIES = "repositories";
     private static final ArtifactRetriever artifactRetriever = ArtifactRetriever.cachingInstance();
     private static final ConcurrentMap<Path, ReentrantLock> directoryLocks = new ConcurrentHashMap<>();
-    private static final Logger logger = Logger.getLogger(Sandbox.class.getName());
-    private static final ReentrantLock snapshotLock = new ReentrantLock();
     private static final AtomicReference<Supplier<String>> jvmVersionSupplier_ =
             new AtomicReference<>(() -> Runtime.version().toString());
-
+    private static final Logger logger = Logger.getLogger(Sandbox.class.getName());
+    private static final ReentrantLock snapshotLock = new ReentrantLock();
     private final String extensionName_;
     private final Path sandboxDirectory_;
     private final Path sandboxExtensionDirectory_;
@@ -95,8 +94,9 @@ public final class Sandbox {
         ObjectTools.requireNonNull(project, "project");
         extensionName_ = TextTools.requireNotBlank(extensionName, "extensionName");
         requireValidExtensionName(extensionName_);
+        // Sibling of lib/bld, not a child: keeps the sandbox off the wrapper's classpath.
         sandboxDirectory_ = project.libBldDirectory().toPath()
-                .resolve(".sandbox")
+                .resolveSibling(".sandbox")
                 .toAbsolutePath()
                 .normalize();
         sandboxExtensionDirectory_ = sandboxDirectory_.resolve(extensionName_).normalize();
@@ -364,7 +364,7 @@ public final class Sandbox {
     /**
      * Returns the root sandbox directory.
      *
-     * @return the path to {@code lib/bld/.sandbox}
+     * @return the path to {@code lib/.sandbox}
      */
     public Path getSandboxDirectory() {
         return sandboxDirectory_;
@@ -382,7 +382,7 @@ public final class Sandbox {
     /**
      * Returns the extension-specific sandbox directory.
      *
-     * @return the path to {@code lib/bld/.sandbox/<extensionName>}
+     * @return the path to {@code lib/.sandbox/<extensionName>}
      */
     public Path getSandboxExtensionDirectory() {
         return sandboxExtensionDirectory_;
@@ -521,15 +521,13 @@ public final class Sandbox {
 
     private void writeSnapshot(Properties snapshot) throws IOException {
         var temp = Files.createTempFile(sandboxDirectory_, "sandbox", ".snapshot.tmp");
+        try (var out = Files.newOutputStream(temp)) {
+            snapshot.store(out, "Sandbox snapshots");
+        }
         try {
-            try (var out = Files.newOutputStream(temp)) {
-                snapshot.store(out, "Sandbox snapshots");
-            }
-            try {
-                Files.move(temp, sandboxSnapshotFile_, StandardCopyOption.ATOMIC_MOVE);
-            } catch (AtomicMoveNotSupportedException e) {
-                Files.move(temp, sandboxSnapshotFile_, StandardCopyOption.REPLACE_EXISTING);
-            }
+            Files.move(temp, sandboxSnapshotFile_, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(temp, sandboxSnapshotFile_, StandardCopyOption.REPLACE_EXISTING);
         } finally {
             Files.deleteIfExists(temp);
         }

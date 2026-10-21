@@ -124,8 +124,8 @@ class SandboxTest {
         void initializesDirectories() throws Exception {
             var proj = project();
             var sandbox = new Sandbox("my-ext", proj);
-            assertEquals(tmp.resolve("lib/bld/.sandbox"), sandbox.getSandboxDirectory());
-            assertEquals(tmp.resolve("lib/bld/.sandbox/my-ext"), sandbox.getSandboxExtensionDirectory());
+            assertEquals(tmp.resolve("lib/.sandbox"), sandbox.getSandboxDirectory());
+            assertEquals(tmp.resolve("lib/.sandbox/my-ext"), sandbox.getSandboxExtensionDirectory());
         }
 
         @ParameterizedTest
