@@ -39,40 +39,43 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 /**
- * Manages an isolated, per-extension sandbox for downloading dependencies, rooted at
- * {@code lib/bld/.sandbox/<extensionName>}.
+ * Manages a per-extension sandbox at {@code lib/bld/.sandbox/<extensionName>} for caching
+ * resolved dependencies.
  * <p>
- * Dependencies can be downloaded into the extension's sandbox root or into an explicit
- * subdirectory of it (see the {@code subDirectory} overloads); each location is tracked
- * independently. A download is skipped and the cached artifacts reused when a snapshot
- * recorded in {@code lib/bld/.sandbox/sandbox.snapshot} is still valid — validity requires
- * both the resolution inputs (dependencies, repositories, version overrides/boms) and the
- * current on-disk content of the target directory to match what was recorded, so external
- * changes to either force a re-download. The sandbox is also invalidated when the JVM version
- * differs from the one recorded in the snapshot. Snapshot updates are written atomically.
- * <p>
- * Concurrent downloads for the same extension are serialized; downloads for different
- * extensions may proceed in parallel while still safely sharing the snapshot file.
+ * A download is skipped when a recorded snapshot is still valid: the resolution inputs, the
+ * extension name, the JVM version, and the on-disk content of the target directory must all
+ * match. Downloads for the same extension are serialized; different extensions may proceed
+ * in parallel.
  *
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.4
  */
 @NullMarked
-@SuppressFBWarnings("EXS_EXCEPTION_SOFTENING_NO_CONSTRAINTS")
 public final class Sandbox {
 
     private static final String DEPENDENCIES = "dependencies";
-    private static final String REPOSITORIES = "repositories";
 
+    /**
+     * Extension names: alphanumeric at both ends, only {@code [A-Za-z0-9._-]} inside.
+     */
+    private static final Pattern EXTENSION_NAME_PATTERN =
+            Pattern.compile("[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?");
+
+    private static final String REPOSITORIES = "repositories";
     private static final ArtifactRetriever artifactRetriever = ArtifactRetriever.cachingInstance();
     private static final ConcurrentMap<Path, ReentrantLock> directoryLocks = new ConcurrentHashMap<>();
     private static final Logger logger = Logger.getLogger(Sandbox.class.getName());
     private static final ReentrantLock snapshotLock = new ReentrantLock();
+    private static final AtomicReference<Supplier<String>> jvmVersionSupplier_ =
+            new AtomicReference<>(() -> Runtime.version().toString());
 
     private final String extensionName_;
     private final Path sandboxDirectory_;
@@ -80,23 +83,27 @@ public final class Sandbox {
     private final Path sandboxSnapshotFile_;
 
     /**
-     * Creates a new sandbox manager for the given extension.
+     * Creates a sandbox for the given extension.
      *
-     * @param extensionName the unique name of the extension; must be a single, non-blank path segment
-     * @param project       the bld project used to resolve {@code lib/bld}; must not be {@code null}
+     * @param extensionName the extension name; must start and end with an ASCII alphanumeric
+     *                      character and contain only {@code [A-Za-z0-9._-]}
+     * @param project       the project used to resolve {@code lib/bld}
      * @throws NullPointerException     if any argument is {@code null}
-     * @throws IllegalArgumentException if {@code extensionName} is blank or is not a single path segment
-     *                                  (for example, if it contains a separator, {@code ..} or is absolute)
+     * @throws IllegalArgumentException if {@code extensionName} is blank or invalid
      */
     public Sandbox(String extensionName, BaseProject project) {
         ObjectTools.requireNonNull(project, "project");
         extensionName_ = TextTools.requireNotBlank(extensionName, "extensionName");
-        requireSinglePathSegment(extensionName_);
-        sandboxDirectory_ = project.libBldDirectory().toPath().resolve(".sandbox");
-        sandboxExtensionDirectory_ = sandboxDirectory_.resolve(extensionName_);
+        requireValidExtensionName(extensionName_);
+        sandboxDirectory_ = project.libBldDirectory().toPath()
+                .resolve(".sandbox")
+                .toAbsolutePath()
+                .normalize();
+        sandboxExtensionDirectory_ = sandboxDirectory_.resolve(extensionName_).normalize();
         sandboxSnapshotFile_ = sandboxDirectory_.resolve("sandbox.snapshot");
     }
 
+    @SuppressFBWarnings("EXS_EXCEPTION_SOFTENING_NO_CONSTRAINTS")
     private static void deleteDirectory(Path directory) {
         if (!Files.exists(directory)) {
             return;
@@ -116,10 +123,11 @@ public final class Sandbox {
             return "";
         }
         var manifest = new StringBuilder();
+        // No FOLLOW_LINKS: symlinks hash as links, not as their targets.
         try (var stream = Files.walk(directory)) {
             var sortedPaths = stream.sorted().toList();
             for (Path path : sortedPaths) {
-                manifest.append(directory.relativize(path)).append('|');
+                manifest.append(toPortableString(directory.relativize(path))).append('|');
                 if (Files.isRegularFile(path)) {
                     manifest.append(sha256(path)).append('\n');
                 } else {
@@ -130,22 +138,7 @@ public final class Sandbox {
         return sha256(manifest.toString());
     }
 
-    private static String hashInputs(Collection<Dependency> dependencies,
-                                     Collection<Repository> repositories,
-                                     VersionResolution resolution) {
-        var manifest = new StringBuilder(50);
-        for (var dependency : dependencies) {
-            manifest.append("dependency|").append(dependency)
-                    .append('|').append(dependency.exclusions()).append('\n');
-        }
-        for (var repository : repositories) {
-            manifest.append("repository|").append(repository).append('\n');
-        }
-        manifest.append("overrides|").append(new TreeMap<>(resolution.versionOverrides()))
-                .append("\nboms|").append(new TreeMap<>(resolution.bomVersions())).append('\n');
-        return sha256(manifest.toString());
-    }
-
+    @SuppressFBWarnings("EXS_EXCEPTION_SOFTENING_NO_CONSTRAINTS")
     private static MessageDigest newSha256() {
         try {
             return MessageDigest.getInstance("SHA-256");
@@ -154,16 +147,25 @@ public final class Sandbox {
         }
     }
 
-    private static void requireSinglePathSegment(String name) {
-        var path = Path.of(name);
-        var fileName = path.getFileName();
-        if (path.getRoot() != null
-                || path.getNameCount() != 1
-                || fileName == null
-                || ".".equals(fileName.toString())
-                || "..".equals(fileName.toString())) {
-            throw new IllegalArgumentException("extensionName must be a single path segment: " + name);
+    private static void requireValidExtensionName(String name) {
+        if (!EXTENSION_NAME_PATTERN.matcher(name).matches()) {
+            throw new IllegalArgumentException(
+                    "extensionName must start and end with an alphanumeric character and "
+                            + "contain only [A-Za-z0-9._-]: " + name);
         }
+    }
+
+    /**
+     * Overrides the JVM version supplier for testing; {@code null} restores the default.
+     *
+     * @param supplier the replacement supplier, or {@code null} to reset
+     */
+    static void setJvmVersionSupplier(@Nullable Supplier<String> supplier) {
+        jvmVersionSupplier_.set((supplier != null) ? supplier : () -> Runtime.version().toString());
+    }
+
+    private static String sha256(String text) {
+        return HexFormat.of().formatHex(newSha256().digest(text.getBytes(StandardCharsets.UTF_8)));
     }
 
     private static String sha256(Path file) throws IOException {
@@ -174,10 +176,6 @@ public final class Sandbox {
         return HexFormat.of().formatHex(digest.digest());
     }
 
-    private static String sha256(String text) {
-        return HexFormat.of().formatHex(newSha256().digest(text.getBytes(StandardCharsets.UTF_8)));
-    }
-
     private static String toPortableString(Path path) {
         return path.toString().replace(File.separatorChar, '/');
     }
@@ -186,14 +184,12 @@ public final class Sandbox {
      * Downloads the given dependencies using the provided repositories and a default
      * {@link VersionResolution}.
      *
-     * @param dependencies the dependencies to resolve; must not be {@code null}
-     * @param repositories the repositories to resolve from; must not be {@code null}
-     * @return the path to the extension sandbox directory where artifacts were (or would be) downloaded
-     * @throws NullPointerException     if any argument is {@code null} or contain {@code null} elements
-     * @throws IllegalArgumentException if any argument is empty or contain empty elements
-     * @see #downloadDependencies(List, List, VersionResolution, Path)
-     * @see #downloadDependencies(List, List, VersionResolution)
-     * @see #downloadDependencies(List, List, Path)
+     * @param dependencies the dependencies to resolve
+     * @param repositories the repositories to resolve from
+     * @return the sandbox directory containing the artifacts
+     * @throws NullPointerException     if any argument is {@code null} or contains {@code null}
+     *                                  elements, or if the JVM version supplier returns {@code null}
+     * @throws IllegalArgumentException if any argument is empty or contains empty elements
      */
     public Path downloadDependencies(List<Dependency> dependencies, List<Repository> repositories) {
         ObjectTools.requireNotEmpty(dependencies, DEPENDENCIES);
@@ -203,18 +199,14 @@ public final class Sandbox {
 
     /**
      * Downloads the given dependencies using the provided repositories and version resolution.
-     * <p>
-     * If a valid snapshot already exists, the download is skipped.
      *
-     * @param dependencies the dependencies to resolve; must not be {@code null} or empty
-     * @param repositories the repositories to resolve from; must not be {@code null} or empty
-     * @param resolution   the version resolution strategy; must not be {@code null}
-     * @return the path to the extension sandbox directory where artifacts were (or would be) downloaded
-     * @throws NullPointerException     if any argument is {@code null} or contain {@code null} elements
-     * @throws IllegalArgumentException if any argument is empty or contain empty elements
-     * @see #downloadDependencies(List, List, VersionResolution, Path)
-     * @see #downloadDependencies(List, List)
-     * @see #downloadDependencies(List, List, Path)
+     * @param dependencies the dependencies to resolve
+     * @param repositories the repositories to resolve from
+     * @param resolution   the version resolution strategy
+     * @return the sandbox directory containing the artifacts
+     * @throws NullPointerException     if any argument is {@code null} or contains {@code null}
+     *                                  elements, or if the JVM version supplier returns {@code null}
+     * @throws IllegalArgumentException if any argument is empty or contains empty elements
      */
     public Path downloadDependencies(List<Dependency> dependencies,
                                      List<Repository> repositories,
@@ -228,19 +220,20 @@ public final class Sandbox {
     /**
      * Downloads dependencies into the sandbox, optionally under a subdirectory.
      *
-     * @param dependencies the direct dependencies to resolve; must not be {@code null} or empty
-     * @param repositories the repositories to resolve from; must not be {@code null} or empty
-     * @param resolution   the version resolution strategy; must not be {@code null}
-     * @param subDirectory optional subdirectory within the extension sandbox to place artifacts;
-     *                     may be {@code null} to use the extension root
-     * @return the path to the directory where artifacts were downloaded
-     * @throws NullPointerException     if any argument is {@code null} or contain {@code null} elements
-     * @throws IllegalArgumentException if any argument is empty or contain empty elements, or if
-     *                                  {@code subDirectory} resolves outside the extension sandbox
+     * @param dependencies the direct dependencies to resolve
+     * @param repositories the repositories to resolve from
+     * @param resolution   the version resolution strategy
+     * @param subDirectory optional subdirectory within the extension sandbox; {@code null}
+     *                     uses the extension root
+     * @return the directory containing the artifacts
+     * @throws NullPointerException     if any argument is {@code null} or contains {@code null}
+     *                                  elements, or if the JVM version supplier returns {@code null}
+     * @throws IllegalArgumentException if any argument is empty or contains empty elements, or
+     *                                  if {@code subDirectory} resolves outside the extension sandbox
      * @throws IllegalStateException    if an existing download directory cannot be deleted
-     * @throws UncheckedIOException     if the download directory cannot be created or the snapshot
-     *                                  cannot be written
+     * @throws UncheckedIOException     if the download directory cannot be created
      */
+    @SuppressFBWarnings("EXS_EXCEPTION_SOFTENING_NO_CONSTRAINTS")
     public Path downloadDependencies(List<Dependency> dependencies,
                                      List<Repository> repositories,
                                      VersionResolution resolution,
@@ -258,8 +251,9 @@ public final class Sandbox {
                 : extensionName_;
         var inputsHash = hashInputs(dependencies, repositories, resolution);
 
-        var lock = directoryLocks.computeIfAbsent(
-                sandboxExtensionDirectory_.toAbsolutePath().normalize(), k -> new ReentrantLock());
+        // Locking on the extension root serializes all downloads for one extension, which
+        // guarantees no two snapshot keys touch the same directory concurrently.
+        var lock = directoryLocks.computeIfAbsent(sandboxExtensionDirectory_, k -> new ReentrantLock());
         lock.lock();
         try {
             if (isSnapshotValid(snapshotKey, inputsHash, downloadDirectory)) {
@@ -294,24 +288,20 @@ public final class Sandbox {
     }
 
     /**
-     * Downloads the given dependencies using the provided repositories and version resolution
-     * into an optional subdirectory specified as a {@link File}.
+     * Downloads dependencies into the sandbox, optionally under a {@link File} subdirectory.
      *
-     * @param dependencies the dependencies to resolve; must not be {@code null} or empty
-     * @param repositories the repositories to resolve from; must not be {@code null} or empty
-     * @param resolution   the version resolution strategy; must not be {@code null}
-     * @param subDirectory optional subdirectory as a {@code File}; may be {@code null}
-     * @return the path to the directory where artifacts were downloaded
-     * @throws NullPointerException     if any argument is {@code null} or contain {@code null} elements
-     * @throws IllegalArgumentException if any argument is empty or contain empty elements, or if
-     *                                  {@code subDirectory} resolves outside the extension sandbox
+     * @param dependencies the dependencies to resolve
+     * @param repositories the repositories to resolve from
+     * @param resolution   the version resolution strategy
+     * @param subDirectory optional subdirectory within the extension sandbox; {@code null}
+     *                     uses the extension root
+     * @return the directory containing the artifacts
+     * @throws NullPointerException     if any argument is {@code null} or contains {@code null}
+     *                                  elements, or if the JVM version supplier returns {@code null}
+     * @throws IllegalArgumentException if any argument is empty or contains empty elements, or
+     *                                  if {@code subDirectory} resolves outside the extension sandbox
      * @throws IllegalStateException    if an existing download directory cannot be deleted
-     * @throws UncheckedIOException     if the download directory cannot be created or the snapshot
-     *                                  cannot be written
-     * @see #downloadDependencies(List, List, VersionResolution, Path)
-     * @see #downloadDependencies(List, List, VersionResolution, File)
-     * @see #downloadDependencies(List, List, Path)
-     * @see #downloadDependencies(List, List, File)
+     * @throws UncheckedIOException     if the download directory cannot be created
      */
     public Path downloadDependencies(List<Dependency> dependencies,
                                      List<Repository> repositories,
@@ -327,20 +317,17 @@ public final class Sandbox {
     /**
      * Downloads dependencies into the sandbox, optionally under a subdirectory.
      *
-     * @param dependencies the direct dependencies to resolve; must not be {@code null} or empty
-     * @param repositories the repositories to resolve from; must not be {@code null} or empty
-     * @param subDirectory optional subdirectory within the extension sandbox to place artifacts;
-     *                     may be {@code null} to use the extension root
-     * @return the path to the directory where artifacts were downloaded
-     * @throws NullPointerException     if any argument is {@code null} or contain {@code null} elements
-     * @throws IllegalArgumentException if any argument is empty or contain empty elements, or if
-     *                                  {@code subDirectory} resolves outside the extension sandbox
+     * @param dependencies the dependencies to resolve
+     * @param repositories the repositories to resolve from
+     * @param subDirectory optional subdirectory within the extension sandbox; {@code null}
+     *                     uses the extension root
+     * @return the directory containing the artifacts
+     * @throws NullPointerException     if any argument is {@code null} or contains {@code null}
+     *                                  elements, or if the JVM version supplier returns {@code null}
+     * @throws IllegalArgumentException if any argument is empty or contains empty elements, or
+     *                                  if {@code subDirectory} resolves outside the extension sandbox
      * @throws IllegalStateException    if an existing download directory cannot be deleted
-     * @throws UncheckedIOException     if the download directory cannot be created or the snapshot
-     *                                  cannot be written
-     * @see #downloadDependencies(List, List, VersionResolution, Path)
-     * @see #downloadDependencies(List, List)
-     * @see #downloadDependencies(List, List, VersionResolution)
+     * @throws UncheckedIOException     if the download directory cannot be created
      */
     public Path downloadDependencies(List<Dependency> dependencies,
                                      List<Repository> repositories,
@@ -351,17 +338,19 @@ public final class Sandbox {
     }
 
     /**
-     * Downloads dependencies into the sandbox, optionally under a subdirectory
-     * specified as a {@link File}.
+     * Downloads dependencies into the sandbox, optionally under a {@link File} subdirectory.
      *
-     * @param dependencies the dependencies to resolve; must not be {@code null} or empty
-     * @param repositories the repositories to resolve from; must not be {@code null} or empty
-     * @param subDirectory optional subdirectory as a {@code File}; may be {@code null}
-     * @return the path to the directory where artifacts were downloaded
-     * @see #downloadDependencies(List, List, Path)
-     * @see #downloadDependencies(List, List, VersionResolution, Path)
-     * @see #downloadDependencies(List, List, VersionResolution, File)
-     * @see #downloadDependencies(List, List)
+     * @param dependencies the dependencies to resolve
+     * @param repositories the repositories to resolve from
+     * @param subDirectory optional subdirectory within the extension sandbox; {@code null}
+     *                     uses the extension root
+     * @return the directory containing the artifacts
+     * @throws NullPointerException     if any argument is {@code null} or contains {@code null}
+     *                                  elements, or if the JVM version supplier returns {@code null}
+     * @throws IllegalArgumentException if any argument is empty or contains empty elements, or
+     *                                  if {@code subDirectory} resolves outside the extension sandbox
+     * @throws IllegalStateException    if an existing download directory cannot be deleted
+     * @throws UncheckedIOException     if the download directory cannot be created
      */
     public Path downloadDependencies(List<Dependency> dependencies,
                                      List<Repository> repositories,
@@ -408,6 +397,35 @@ public final class Sandbox {
         return sandboxExtensionDirectory_.toFile();
     }
 
+    private String hashInputs(Collection<Dependency> dependencies,
+                              Collection<Repository> repositories,
+                              VersionResolution resolution) {
+        // Sort every section so caller iteration order does not affect the hash.
+        var dependenciesSection = new TreeSet<String>();
+        for (var dependency : dependencies) {
+            dependenciesSection.add(dependency + "|" + dependency.exclusions());
+        }
+        var repositoriesSection = new TreeSet<String>();
+        for (var repository : repositories) {
+            repositoriesSection.add(repository.toString());
+        }
+
+        var manifest = new StringBuilder(52);
+        manifest.append("extension|").append(extensionName_).append('\n');
+        for (var line : dependenciesSection) {
+            manifest.append("dependency|").append(line).append('\n');
+        }
+        for (var line : repositoriesSection) {
+            manifest.append("repository|").append(line).append('\n');
+        }
+        manifest.append("overrides|").append(new TreeMap<>(resolution.versionOverrides()))
+                .append("\nboms|").append(new TreeMap<>(resolution.bomVersions())).append('\n');
+        return sha256(manifest.toString());
+    }
+
+    /**
+     * @throws NullPointerException if the JVM version supplier returns {@code null}
+     */
     private boolean isSnapshotValid(String snapshotKey, String inputsHash, Path directory) {
         if (!Files.exists(sandboxSnapshotFile_) || !Files.exists(directory)) {
             return false;
@@ -416,8 +434,8 @@ public final class Sandbox {
         try (var in = Files.newInputStream(sandboxSnapshotFile_)) {
             snapshot.load(in);
         } catch (IOException e) {
-            if (logger.isLoggable(Level.FINE)) {
-                logger.log(Level.FINE, "Could not load snapshot, will re-download", e);
+            if (logger.isLoggable(Level.WARNING)) {
+                logger.log(Level.WARNING, "Could not load snapshot, will re-download", e);
             }
             return false;
         }
@@ -425,21 +443,36 @@ public final class Sandbox {
         if (expected == null) {
             return false;
         }
+        // Cheap reject before walking the tree.
+        var prefix = inputsHash + ':' + jvmVersion() + ':';
+        if (!expected.startsWith(prefix)) {
+            return false;
+        }
         try {
-            return expected.equals(snapshotValue(inputsHash, directory));
+            return expected.equals(prefix + getDirectoryHash(directory));
         } catch (IOException e) {
-            if (logger.isLoggable(Level.FINE)) {
-                logger.log(Level.FINE, "Could not compute snapshot hash", e);
+            if (logger.isLoggable(Level.WARNING)) {
+                logger.log(Level.WARNING, "Could not compute snapshot hash, will re-download", e);
             }
             return false;
         }
+    }
+
+    /**
+     * Returns the running JVM version used in the snapshot fingerprint.
+     *
+     * @return the JVM version string
+     * @throws NullPointerException if the configured supplier returns {@code null}
+     */
+    String jvmVersion() {
+        return Objects.requireNonNull(jvmVersionSupplier_.get().get(), "jvmVersion supplier returned null");
     }
 
     private @Nullable Path relativeSubDirectory(@Nullable Path subDirectory) {
         if (subDirectory == null) {
             return null;
         }
-        var root = sandboxExtensionDirectory_.normalize();
+        var root = sandboxExtensionDirectory_;
         var resolved = root.resolve(subDirectory).normalize();
         if (!resolved.startsWith(root)) {
             throw new IllegalArgumentException(
@@ -449,6 +482,11 @@ public final class Sandbox {
         return relative.toString().isEmpty() ? null : relative;
     }
 
+    /**
+     * Records the fingerprint of a completed download. A read failure aborts (the
+     * existing file is left untouched); a write failure is logged and swallowed so the
+     * downloaded artifacts remain usable and the next run re-downloads.
+     */
     private void saveSnapshot(String snapshotKey, String inputsHash, Path directory) {
         try {
             var value = snapshotValue(inputsHash, directory);
@@ -459,10 +497,6 @@ public final class Sandbox {
                 if (Files.exists(sandboxSnapshotFile_)) {
                     try (var in = Files.newInputStream(sandboxSnapshotFile_)) {
                         snapshot.load(in);
-                    } catch (IOException e) {
-                        if (logger.isLoggable(Level.WARNING)) {
-                            logger.log(Level.WARNING, "Could not load existing snapshot, will overwrite", e);
-                        }
                     }
                 }
                 snapshot.setProperty(snapshotKey, value);
@@ -474,12 +508,15 @@ public final class Sandbox {
                 logger.log(Level.INFO, "Sandbox snapshots saved.");
             }
         } catch (IOException e) {
-            throw new UncheckedIOException("Could not save snapshot", e);
+            if (logger.isLoggable(Level.WARNING)) {
+                logger.log(Level.WARNING,
+                        "Could not save sandbox snapshot; next run will re-download", e);
+            }
         }
     }
 
     private String snapshotValue(String inputsHash, Path directory) throws IOException {
-        return inputsHash + ':' + Runtime.version() + ':' + getDirectoryHash(directory);
+        return inputsHash + ':' + jvmVersion() + ':' + getDirectoryHash(directory);
     }
 
     private void writeSnapshot(Properties snapshot) throws IOException {

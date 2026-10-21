@@ -18,6 +18,8 @@ package rife.bld.extension.tools;
 
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -38,6 +40,7 @@ import java.util.List;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static rife.bld.dependencies.Repository.CENTRAL_SNAPSHOTS;
 import static rife.bld.dependencies.Repository.MAVEN_CENTRAL;
 
 @DisplayName("Sandbox")
@@ -52,11 +55,14 @@ class SandboxTest {
         m.invoke(null, dir);
     }
 
-    static String hashInputs(List<Dependency> deps, List<Repository> repos, VersionResolution vr) throws Exception {
+    static String hashInputs(Sandbox sandbox,
+                             List<Dependency> deps,
+                             List<Repository> repos,
+                             VersionResolution vr) throws Exception {
         var m = Sandbox.class.getDeclaredMethod("hashInputs", Collection.class,
                 Collection.class, VersionResolution.class);
         m.setAccessible(true);
-        return (String) m.invoke(null, deps, repos, vr);
+        return (String) m.invoke(sandbox, deps, repos, vr);
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -107,6 +113,13 @@ class SandboxTest {
     @DisplayName("constructor")
     class ConstructorTests {
 
+        @ParameterizedTest
+        @ValueSource(strings = {"my-ext", "rife.docs", "kotlin_tools", "ext123", "A-B_c.1", "ext-2.0", "foo.bar.baz", "a", "x1"})
+        void acceptsValidName(String name) throws Exception {
+            var proj = project();
+            assertDoesNotThrow(() -> new Sandbox(name, proj));
+        }
+
         @Test
         void initializesDirectories() throws Exception {
             var proj = project();
@@ -117,7 +130,15 @@ class SandboxTest {
 
         @ParameterizedTest
         @NullAndEmptySource
-        @ValueSource(strings = {" ", "   ", "/", "a/b", "../x", "./", ".", "..", "/abs", "a//b"})
+        @ValueSource(strings = {
+                " ", "   ", "/", "a/b", "../x", "./", ".", "..", "/abs", "a//b",
+                "a|b", "a\nb", "a\rb",           // manifest-hostile
+                "a:b", "a*b", "a?b", "a\"b",     // Windows-hostile
+                "a b", "a\tb",                   // whitespace
+                "café",                          // non-ASCII
+                "---", "...", "___", "-a", "a-",  // punctuation-only or edge punctuation
+                ".a", "a.", "_a", "a_",           // leading/trailing punctuation
+        })
         void rejectsInvalidName(String name) throws Exception {
             var proj = project();
             assertThrows(Exception.class, () -> new Sandbox(name, proj));
@@ -175,7 +196,7 @@ class SandboxTest {
             var repos = List.of(MAVEN_CENTRAL);
             var vr = new VersionResolution(null);
 
-            String inputsHash = hashInputs(deps, repos, vr);
+            String inputsHash = hashInputs(sandbox, deps, repos, vr);
             String snapVal = snapshotValue(sandbox, inputsHash, subDir);
 
             var snapshotFile = sandbox.getSandboxDirectory().resolve("sandbox.snapshot");
@@ -236,7 +257,7 @@ class SandboxTest {
             var repos = List.of(MAVEN_CENTRAL);
             var vr = new VersionResolution(null);
 
-            String inputsHash = hashInputs(deps, repos, vr);
+            String inputsHash = hashInputs(sandbox, deps, repos, vr);
             String snapVal = snapshotValue(sandbox, inputsHash, extDir);
 
             var snapshotFile = sandbox.getSandboxDirectory().resolve("sandbox.snapshot");
@@ -264,7 +285,7 @@ class SandboxTest {
             var repos = List.of(MAVEN_CENTRAL);
             var vr = new VersionResolution(null);
 
-            String inputsHash = hashInputs(deps, repos, vr);
+            String inputsHash = hashInputs(sandbox, deps, repos, vr);
             String snapVal = snapshotValue(sandbox, inputsHash, subDir);
 
             var snapshotFile = sandbox.getSandboxDirectory().resolve("sandbox.snapshot");
@@ -324,7 +345,7 @@ class SandboxTest {
                     new VersionNumber(1, 0)));
             var repos = List.of(MAVEN_CENTRAL);
             var vr = new VersionResolution(null);
-            String inputsHash = hashInputs(deps, repos, vr);
+            String inputsHash = hashInputs(sandbox, deps, repos, vr);
             String snapVal = snapshotValue(sandbox, inputsHash, subDir);
             var snapshotFile = sandbox.getSandboxDirectory().resolve("sandbox.snapshot");
             Files.createDirectories(snapshotFile.getParent());
@@ -363,7 +384,7 @@ class SandboxTest {
             var repos = List.of(MAVEN_CENTRAL);
             var vr = new VersionResolution(null);
 
-            String inputsHash = hashInputs(deps, repos, vr);
+            String inputsHash = hashInputs(sandbox, deps, repos, vr);
             String snapVal = snapshotValue(sandbox, inputsHash, extDir);
 
             var snapshotFile = sandbox.getSandboxDirectory().resolve("sandbox.snapshot");
@@ -389,6 +410,72 @@ class SandboxTest {
             var sandbox = new Sandbox("ext-get", project());
             assertEquals(sandbox.getSandboxDirectory().toFile(), sandbox.getSandboxDirectoryAsFile());
             assertEquals(sandbox.getSandboxExtensionDirectory().toFile(), sandbox.getSandboxExtensionDirectoryAsFile());
+        }
+    }
+
+    @Nested
+    @DisplayName("hashInputs canonicalization")
+    class HashInputsCanonicalizationTests {
+
+        @Test
+        void dependencyOrderDoesNotAffectHash() throws Exception {
+            var sandbox = new Sandbox("hash-order", project());
+            var vr = new VersionResolution(null);
+            var repos = List.of(MAVEN_CENTRAL);
+
+            var a = new Dependency("org.example", "aaa", new VersionNumber(1, 0));
+            var b = new Dependency("org.example", "bbb", new VersionNumber(2, 0));
+
+            String forward = hashInputs(sandbox, List.of(a, b), repos, vr);
+            String reverse = hashInputs(sandbox, List.of(b, a), repos, vr);
+
+            assertEquals(forward, reverse);
+        }
+
+        @Test
+        void differentDependenciesProduceDifferentHash() throws Exception {
+            var sandbox = new Sandbox("hash-diff", project());
+            var vr = new VersionResolution(null);
+            var repos = List.of(MAVEN_CENTRAL);
+
+            String h1 = hashInputs(sandbox,
+                    List.of(new Dependency("org.example", "aaa", new VersionNumber(1, 0))), repos, vr);
+            String h2 = hashInputs(sandbox,
+                    List.of(new Dependency("org.example", "aaa", new VersionNumber(2, 0))), repos, vr);
+
+            assertNotEquals(h1, h2);
+        }
+
+        @Test
+        void extensionNameIsPartOfHash() throws Exception {
+            var vr = new VersionResolution(null);
+            var repos = List.of(MAVEN_CENTRAL);
+            var deps = List.of(new Dependency("org.example", "aaa", new VersionNumber(1, 0)));
+
+            var s1 = new Sandbox("ext-one", project());
+            var s2 = new Sandbox("ext-two", project());
+
+            String h1 = hashInputs(s1, deps, repos, vr);
+            String h2 = hashInputs(s2, deps, repos, vr);
+
+            assertNotEquals(h1, h2,
+                    "inputs hash must incorporate the extension name");
+        }
+
+        @Test
+        void repositoryOrderDoesNotAffectHash() throws Exception {
+            var sandbox = new Sandbox("hash-order-repos", project());
+            var vr = new VersionResolution(null);
+            var deps = List.of(new Dependency("org.example", "aaa", new VersionNumber(1, 0)));
+
+            // Two distinct repository instances; use the two well-known constants.
+            var r1 = MAVEN_CENTRAL;
+            var r2 = CENTRAL_SNAPSHOTS;
+
+            String forward = hashInputs(sandbox, deps, List.of(r1, r2), vr);
+            String reverse = hashInputs(sandbox, deps, List.of(r2, r1), vr);
+
+            assertEquals(forward, reverse);
         }
     }
 
@@ -436,6 +523,100 @@ class SandboxTest {
         void setUp() throws Exception {
             hashMethod = Sandbox.class.getDeclaredMethod("getDirectoryHash", Path.class);
             hashMethod.setAccessible(true);
+        }
+    }
+
+    @Nested
+    @DisplayName("JVM version invalidation")
+    @Execution(ExecutionMode.SAME_THREAD) // static supplier in Sandbox; must not run concurrently
+    class JvmVersionTests {
+
+        @Test
+        void differentJvmVersionInvalidatesSnapshot() throws Exception {
+            var sandbox = new Sandbox("jvm-ext", project());
+            var extDir = sandbox.getSandboxExtensionDirectory();
+            Files.createDirectories(extDir);
+            Files.writeString(extDir.resolve("f.txt"), "data");
+
+            var deps = List.of(new Dependency("org.example", "example", new VersionNumber(1, 0)));
+            var repos = List.of(MAVEN_CENTRAL);
+            var vr = new VersionResolution(null);
+            String inputsHash = hashInputs(sandbox, deps, repos, vr);
+
+            // Record a snapshot as if produced on a specific JVM version.
+            Sandbox.setJvmVersionSupplier(() -> "21.0.5");
+            String snapVal = snapshotValue(sandbox, inputsHash, extDir);
+            var snapFile = sandbox.getSandboxDirectory().resolve("sandbox.snapshot");
+            Files.createDirectories(snapFile.getParent());
+            var props = new Properties();
+            props.setProperty("jvm-ext", snapVal);
+            try (var out = Files.newOutputStream(snapFile)) {
+                props.store(out, "test");
+            }
+
+            // Same JVM version -> still valid.
+            assertTrue(isSnapshotValid(sandbox, "jvm-ext", inputsHash, extDir));
+
+            // Different JVM version -> invalidated even though inputs and content are unchanged.
+            Sandbox.setJvmVersionSupplier(() -> "22.0.1");
+            assertFalse(isSnapshotValid(sandbox, "jvm-ext", inputsHash, extDir),
+                    "a JVM version change must invalidate the snapshot");
+        }
+
+        @Test
+        @SuppressWarnings("DataFlowIssue")
+        void nullFromSupplierIsRejected() throws Exception {
+            var sandbox = new Sandbox("jvm-null", project());
+            Sandbox.setJvmVersionSupplier(() -> null);
+            assertThrows(NullPointerException.class, sandbox::jvmVersion);
+        }
+
+        @AfterEach
+        void resetSupplier() {
+            Sandbox.setJvmVersionSupplier(null);
+        }
+
+        @Test
+        void sameJvmVersionRemainsValid() throws Exception {
+            var sandbox = new Sandbox("jvm-ext-same", project());
+            var extDir = sandbox.getSandboxExtensionDirectory();
+            Files.createDirectories(extDir);
+            Files.writeString(extDir.resolve("f.txt"), "data");
+
+            var deps = List.of(new Dependency("org.example", "example", new VersionNumber(1, 0)));
+            var repos = List.of(MAVEN_CENTRAL);
+            var vr = new VersionResolution(null);
+            String inputsHash = hashInputs(sandbox, deps, repos, vr);
+
+            Sandbox.setJvmVersionSupplier(() -> "21.0.5");
+            String snapVal = snapshotValue(sandbox, inputsHash, extDir);
+            var snapFile = sandbox.getSandboxDirectory().resolve("sandbox.snapshot");
+            Files.createDirectories(snapFile.getParent());
+            var props = new Properties();
+            props.setProperty("jvm-ext-same", snapVal);
+            try (var out = Files.newOutputStream(snapFile)) {
+                props.store(out, "test");
+            }
+
+            assertTrue(isSnapshotValid(sandbox, "jvm-ext-same", inputsHash, extDir));
+        }
+
+        @Test
+        void snapshotValueEmbeddedJvmVersionIsPartOfFingerprint() throws Exception {
+            var sandbox = new Sandbox("jvm-ext-fp", project());
+            var extDir = sandbox.getSandboxExtensionDirectory();
+            Files.createDirectories(extDir);
+            Files.writeString(extDir.resolve("f.txt"), "data");
+
+            Sandbox.setJvmVersionSupplier(() -> "21.0.5");
+            String v21 = snapshotValue(sandbox, "inputs", extDir);
+
+            Sandbox.setJvmVersionSupplier(() -> "22.0.1");
+            String v22 = snapshotValue(sandbox, "inputs", extDir);
+
+            assertNotEquals(v21, v22);
+            assertTrue(v21.contains("21.0.5"));
+            assertTrue(v22.contains("22.0.1"));
         }
     }
 
@@ -637,7 +818,7 @@ class SandboxTest {
                     new VersionNumber(1, 0)));
             var repos = List.of(MAVEN_CENTRAL);
             var vr = new VersionResolution(null);
-            String inputsHash = hashInputs(deps, repos, vr);
+            String inputsHash = hashInputs(sandbox, deps, repos, vr);
             var snapFile = sandbox.getSandboxDirectory().resolve("sandbox.snapshot");
             Files.createDirectories(snapFile.getParent());
             var props = new Properties();
@@ -662,7 +843,7 @@ class SandboxTest {
                     new VersionNumber(1, 0)));
             var repos = List.of(MAVEN_CENTRAL);
             var vr = new VersionResolution(null);
-            String inputsHash = hashInputs(deps, repos, vr);
+            String inputsHash = hashInputs(sandbox, deps, repos, vr);
             String snapVal = snapshotValue(sandbox, inputsHash, extDir);
             var snapFile = sandbox.getSandboxDirectory().resolve("sandbox.snapshot");
             Files.createDirectories(snapFile.getParent());
