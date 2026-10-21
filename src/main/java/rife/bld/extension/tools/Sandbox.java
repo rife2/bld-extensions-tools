@@ -257,6 +257,7 @@ public final class Sandbox {
         lock.lock();
         try {
             if (isSnapshotValid(snapshotKey, inputsHash, downloadDirectory)) {
+                logInfo("Reusing valid sandbox snapshot for ''{0}''", snapshotKey);
                 return downloadDirectory;
             }
 
@@ -427,34 +428,74 @@ public final class Sandbox {
      * @throws NullPointerException if the JVM version supplier returns {@code null}
      */
     private boolean isSnapshotValid(String snapshotKey, String inputsHash, Path directory) {
-        if (!Files.exists(sandboxSnapshotFile_) || !Files.exists(directory)) {
+        if (!Files.exists(sandboxSnapshotFile_)) {
+            logInvalidation(snapshotKey, "no snapshot file");
+            return false;
+        }
+        if (!Files.exists(directory)) {
+            logInvalidation(snapshotKey, "no sandbox directory");
             return false;
         }
         var snapshot = new Properties();
         try (var in = Files.newInputStream(sandboxSnapshotFile_)) {
             snapshot.load(in);
         } catch (IOException e) {
-            if (logger.isLoggable(Level.WARNING)) {
-                logger.log(Level.WARNING, "Could not load snapshot, will re-download", e);
-            }
+            logInvalidation(snapshotKey, "snapshot file unreadable: " + e.getMessage());
             return false;
         }
         var expected = snapshot.getProperty(snapshotKey);
         if (expected == null) {
+            logInvalidation(snapshotKey, "no recorded entry");
             return false;
         }
-        // Cheap reject before walking the tree.
-        var prefix = inputsHash + ':' + jvmVersion() + ':';
+        var currentJvm = jvmVersion();
+        var prefix = inputsHash + ':' + currentJvm + ':';
         if (!expected.startsWith(prefix)) {
+            var recordedJvm = recordedJvmVersion(expected);
+            if (recordedJvm != null && !recordedJvm.equals(currentJvm)) {
+                logInvalidation(snapshotKey,
+                        "JVM version changed from " + recordedJvm + " to " + currentJvm);
+            } else {
+                logInvalidation(snapshotKey, "resolution inputs changed");
+            }
             return false;
         }
         try {
-            return expected.equals(prefix + getDirectoryHash(directory));
-        } catch (IOException e) {
-            if (logger.isLoggable(Level.WARNING)) {
-                logger.log(Level.WARNING, "Could not compute snapshot hash, will re-download", e);
+            if (!expected.equals(prefix + getDirectoryHash(directory))) {
+                logInvalidation(snapshotKey, "sandbox content changed");
+                return false;
             }
+        } catch (IOException e) {
+            logInvalidation(snapshotKey, "sandbox content unhashable: " + e.getMessage());
             return false;
+        }
+        return true;
+    }
+
+    /**
+     * Extracts the recorded JVM version from a snapshot value of the form
+     * {@code inputsHash:jvmVersion:directoryHash}, or {@code null} if the value does not have
+     * that shape (e.g. it was written by an older format).
+     */
+    private static @Nullable String recordedJvmVersion(String snapshotValue) {
+        var firstColon = snapshotValue.indexOf(':');
+        if (firstColon < 0) {
+            return null;
+        }
+        var secondColon = snapshotValue.indexOf(':', firstColon + 1);
+        if (secondColon < 0) {
+            return null;
+        }
+        return snapshotValue.substring(firstColon + 1, secondColon);
+    }
+
+    private static void logInvalidation(String snapshotKey, String reason) {
+        logInfo("Invalidating sandbox snapshot for ''{0}'': {1}", snapshotKey, reason);
+    }
+
+    private static void logInfo(String format, Object... params) {
+        if (logger.isLoggable(Level.INFO)) {
+            logger.log(Level.INFO, format, params);
         }
     }
 
@@ -504,9 +545,7 @@ public final class Sandbox {
             } finally {
                 snapshotLock.unlock();
             }
-            if (logger.isLoggable(Level.INFO)) {
-                logger.log(Level.INFO, "Sandbox snapshots saved.");
-            }
+            logInfo("Sandbox snapshot saved for ''{0}''", snapshotKey);
         } catch (IOException e) {
             if (logger.isLoggable(Level.WARNING)) {
                 logger.log(Level.WARNING,
