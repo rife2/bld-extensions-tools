@@ -53,7 +53,8 @@ import java.util.logging.Logger;
  * recorded in {@code lib/bld/.sandbox/sandbox.snapshot} is still valid — validity requires
  * both the resolution inputs (dependencies, repositories, version overrides/boms) and the
  * current on-disk content of the target directory to match what was recorded, so external
- * changes to either force a re-download. Snapshot updates are written atomically.
+ * changes to either force a re-download. The sandbox is also invalidated when the JVM version
+ * differs from the one recorded in the snapshot. Snapshot updates are written atomically.
  * <p>
  * Concurrent downloads for the same extension are serialized; downloads for different
  * extensions may proceed in parallel while still safely sharing the snapshot file.
@@ -478,7 +479,7 @@ public final class Sandbox {
     }
 
     private String snapshotValue(String inputsHash, Path directory) throws IOException {
-        return inputsHash + ':' + getDirectoryHash(directory);
+        return inputsHash + ':' + Runtime.version() + ':' + getDirectoryHash(directory);
     }
 
     private void writeSnapshot(Properties snapshot) throws IOException {
