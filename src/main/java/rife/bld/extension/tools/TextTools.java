@@ -27,15 +27,37 @@ import rife.bld.extension.tools.internal.ToolsSupport;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 /**
  * Utility methods for working with text and character sequences.
  * <p>
- * Provides null‑safe checks for blankness and emptiness across {@link CharSequence}
- * and general {@link Object} inputs, along with a whitespace‑insensitive equality
- * comparison.
+ * Provides null‑safe checks for blankness and emptiness across {@link CharSequence},
+ * {@link CharSequence} varargs arrays, and {@link Iterable}s of {@link CharSequence},
+ * along with a whitespace‑insensitive equality comparison. The {@code require*} guard
+ * methods accept {@link Collection}s of {@link CharSequence} (so the validated collection
+ * can be returned) and {@link CharSequence} varargs.
+ * <p>
+ * <b>Scope.</b> This class operates on {@link CharSequence} and on containers whose
+ * elements are {@link CharSequence}s. Object‑ and container‑level checks on arbitrary
+ * objects (primitive arrays, maps, non‑text collections) live in {@link ObjectTools};
+ * use that class for non‑text inputs. For a container of {@code CharSequence}s the two
+ * classes agree on container emptiness — {@code isEmpty} means "no elements" in both —
+ * while {@code isBlank} on the elements is defined only here.
+ * <p>
+ * <b>Vacuous truth.</b> The varargs and {@link Iterable} predicate overloads treat a
+ * {@code null} or empty input as satisfying "all" conditions and failing "none"
+ * conditions: the all‑conditions forms ({@code isBlank}, {@code isEmpty}) return
+ * {@code true}, while the none‑conditions forms ({@code isNotBlank}, {@code isNotEmpty})
+ * return {@code false}. {@link #equalsIgnoreWhitespace(CharSequence...)} returns
+ * {@code false} for fewer than two arguments.
+ * <p>
+ * <b>Whitespace definition.</b> "Whitespace" means {@link Character#isWhitespace(char)},
+ * matching {@link String#isBlank()}. The same definition drives both the blankness
+ * predicates and {@link #equalsIgnoreWhitespace(CharSequence...)} stripping, so the two
+ * agree on non‑ASCII whitespace such as EM SPACE (U+2003).
  *
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
@@ -53,10 +75,33 @@ public final class TextTools {
     private static final String MUST_NOT_BE_EMPTY = " must not be empty";
     private static final String MUST_NOT_BE_NULL = " must not be null";
     private static final String NULL_MESSAGE = "nullMessage";
-    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
+    /**
+     * Matches characters recognised by {@link Character#isWhitespace(char)}, so
+     * {@link #equalsIgnoreWhitespace(CharSequence...)} and {@link #isBlank(CharSequence)}
+     * agree on what counts as whitespace (including non‑ASCII, e.g. EM SPACE, U+2003).
+     */
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\p{javaWhitespace}+");
 
     private TextTools() {
         // no-op
+    }
+
+    private static boolean allMatch(@Nullable CharSequence @Nullable [] values,
+                                    Predicate<@Nullable CharSequence> predicate) {
+        return values == null || values.length == 0 || Arrays.stream(values).allMatch(predicate);
+    }
+
+    private static boolean allMatch(@Nullable Iterable<? extends @Nullable CharSequence> values,
+                                    Predicate<@Nullable CharSequence> predicate) {
+        if (values == null) {
+            return true;
+        }
+        for (var v : values) {
+            if (!predicate.test(v)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -66,7 +111,9 @@ public final class TextTools {
      * @return {@code true} if all character sequences are equivalent when whitespace is ignored,
      * {@code false} otherwise. Returns {@code false} if {@code null} or fewer than 2 elements
      * @implNote {@code null} elements within the array are treated as empty strings, so
-     * {@code equalsIgnoreWhitespace(null, "")} returns {@code true}.
+     * {@code equalsIgnoreWhitespace(null, "")} returns {@code true}. Because a single
+     * argument is insufficient for comparison, the method is not reflexive for one‑element
+     * invocations.
      * @since 1.0
      */
     public static boolean equalsIgnoreWhitespace(@Nullable CharSequence @Nullable ... strings) {
@@ -85,6 +132,8 @@ public final class TextTools {
      * @param str the character sequence to check
      * @return {@code true} if the character sequence is {@code null}, empty, or whitespace-only;
      * {@code false} otherwise
+     * @implNote Delegates to {@link String#isBlank()}, so an exotic {@link CharSequence} is
+     * first materialised via {@link CharSequence#toString()}.
      * @since 1.0
      */
     public static boolean isBlank(@Nullable CharSequence str) {
@@ -100,37 +149,20 @@ public final class TextTools {
      * @since 1.0
      */
     public static boolean isBlank(@Nullable CharSequence @Nullable ... strings) {
-        return strings == null || strings.length == 0
-                || Arrays.stream(strings).allMatch(TextTools::isBlank);
+        return allMatch(strings, TextTools::isBlank);
     }
 
     /**
-     * Checks if all objects are {@code null}, empty, or contain only whitespace characters.
-     * <p>
-     * {@link CharSequence} instances are checked directly; all other objects are checked via
-     * their {@link Object#toString()} representation. This varargs overload exists to support
-     * mixed-type arrays — prefer the {@code CharSequence...} overload for homogeneous inputs.
+     * Checks if all character sequences in the iterable are {@code null}, empty, or
+     * contain only whitespace characters.
      *
-     * @param objects the objects to check
-     * @return {@code true} if all objects are {@code null}, their string representations are empty,
-     * or their string representations are whitespace-only; {@code false} otherwise.
-     * Returns {@code true} for {@code null} or empty array (vacuous truth)
+     * @param strings the character sequences to check; may be {@code null}
+     * @return {@code true} if all elements are blank; {@code false} otherwise.
+     * Returns {@code true} for a {@code null} or empty iterable (vacuous truth)
      * @since 1.0
      */
-    public static boolean isBlank(@Nullable Object @Nullable ... objects) {
-        if (objects == null) {
-            return true;
-        }
-        for (var obj : objects) {
-            if (obj instanceof CharSequence cs) {
-                if (!isBlank(cs)) {
-                    return false;
-                }
-            } else if (obj != null && !isBlank(obj.toString())) {
-                return false;
-            }
-        }
-        return true;
+    public static boolean isBlank(@Nullable Iterable<? extends @Nullable CharSequence> strings) {
+        return allMatch(strings, TextTools::isBlank);
     }
 
     /**
@@ -153,35 +185,22 @@ public final class TextTools {
      * @since 1.0
      */
     public static boolean isEmpty(@Nullable CharSequence @Nullable ... strings) {
-        return strings == null || strings.length == 0 || Arrays.stream(strings).allMatch(TextTools::isEmpty);
+        return allMatch(strings, TextTools::isEmpty);
     }
 
     /**
-     * Checks if all objects are {@code null} or their string representations are empty.
-     * <p>
-     * {@link CharSequence} instances are checked directly; all other objects are checked via
-     * their {@link Object#toString()} representation. This varargs overload exists to support
-     * mixed-type arrays — prefer the {@code CharSequence...} overload for homogeneous inputs.
+     * Checks if all character sequences in the iterable are {@code null} or empty.
      *
-     * @param objects the objects to check
-     * @return {@code true} if all objects are {@code null} or their string representations are empty;
-     * {@code false} otherwise. Returns {@code true} for {@code null} or empty array (vacuous truth)
+     * <p>For a {@code null} or empty iterable this returns {@code true} (vacuous truth),
+     * matching {@link ObjectTools#isEmpty(Object)} on the same collection.</p>
+     *
+     * @param strings the character sequences to check; may be {@code null}
+     * @return {@code true} if all elements are empty; {@code false} otherwise.
+     * Returns {@code true} for a {@code null} or empty iterable
      * @since 1.0
      */
-    public static boolean isEmpty(@Nullable Object @Nullable ... objects) {
-        if (objects == null) {
-            return true;
-        }
-        for (var obj : objects) {
-            if (obj instanceof CharSequence cs) {
-                if (!isEmpty(cs)) {
-                    return false;
-                }
-            } else if (obj != null && !isEmpty(obj.toString())) {
-                return false;
-            }
-        }
-        return true;
+    public static boolean isEmpty(@Nullable Iterable<? extends @Nullable CharSequence> strings) {
+        return allMatch(strings, TextTools::isEmpty);
     }
 
     /**
@@ -205,40 +224,20 @@ public final class TextTools {
      * @since 1.0
      */
     public static boolean isNotBlank(@Nullable CharSequence @Nullable ... strings) {
-        return strings != null && strings.length > 0
-                && Arrays.stream(strings).noneMatch(TextTools::isBlank);
+        return noneMatch(strings, TextTools::isBlank);
     }
 
     /**
-     * Checks if all objects are not {@code null}, not empty, and not whitespace-only.
-     * <p>
-     * {@link CharSequence} instances are checked directly; all other objects are checked via
-     * their {@link Object#toString()} representation. This varargs overload exists to support
-     * mixed-type arrays — prefer the {@code CharSequence...} overload for homogeneous inputs.
+     * Checks if none of the character sequences in the iterable are {@code null},
+     * empty, or whitespace-only.
      *
-     * @param objects the objects to check
-     * @return {@code true} if all objects are not {@code null}, their string representations
-     * are not empty, and their string representations are not whitespace-only;
-     * {@code false} otherwise
+     * @param strings the character sequences to check; may be {@code null}
+     * @return {@code true} if every element is not blank; {@code false} otherwise.
+     * Returns {@code false} for a {@code null} or empty iterable
      * @since 1.0
      */
-    public static boolean isNotBlank(@Nullable Object @Nullable ... objects) {
-        if (objects == null || objects.length == 0) {
-            return false;
-        }
-        for (var obj : objects) {
-            if (obj == null) {
-                return false;
-            }
-            if (obj instanceof CharSequence cs) {
-                if (isBlank(cs)) {
-                    return false;
-                }
-            } else if (isBlank(obj.toString())) {
-                return false;
-            }
-        }
-        return true;
+    public static boolean isNotBlank(@Nullable Iterable<? extends @Nullable CharSequence> strings) {
+        return noneMatch(strings, TextTools::isBlank);
     }
 
     /**
@@ -261,38 +260,40 @@ public final class TextTools {
      * @since 1.0
      */
     public static boolean isNotEmpty(@Nullable CharSequence @Nullable ... strings) {
-        return strings != null && strings.length > 0
-                && Arrays.stream(strings).noneMatch(TextTools::isEmpty);
+        return noneMatch(strings, TextTools::isEmpty);
     }
 
     /**
-     * Checks if all objects are not {@code null} and their string representations are not empty.
-     * <p>
-     * {@link CharSequence} instances are checked directly; all other objects are checked via
-     * their {@link Object#toString()} representation. This varargs overload exists to support
-     * mixed-type arrays — prefer the {@code CharSequence...} overload for homogeneous inputs.
+     * Checks if none of the character sequences in the iterable are {@code null} or empty.
      *
-     * @param objects the objects to check
-     * @return {@code true} if all objects are not {@code null} and their string representations are not empty;
-     * {@code false} otherwise
+     * @param strings the character sequences to check; may be {@code null}
+     * @return {@code true} if every element is not empty; {@code false} otherwise.
+     * Returns {@code false} for a {@code null} or empty iterable
      * @since 1.0
      */
-    public static boolean isNotEmpty(@Nullable Object @Nullable ... objects) {
-        if (objects == null || objects.length == 0) {
+    public static boolean isNotEmpty(@Nullable Iterable<? extends @Nullable CharSequence> strings) {
+        return noneMatch(strings, TextTools::isEmpty);
+    }
+
+    private static boolean noneMatch(@Nullable CharSequence @Nullable [] values,
+                                     Predicate<@Nullable CharSequence> predicate) {
+        return values != null && values.length > 0 && Arrays.stream(values).noneMatch(predicate);
+    }
+
+    private static boolean noneMatch(@Nullable Iterable<? extends @Nullable CharSequence> values,
+                                     Predicate<@Nullable CharSequence> predicate) {
+        if (values == null) {
             return false;
         }
-        for (var obj : objects) {
-            if (obj == null) {
-                return false;
-            }
-            if (obj instanceof CharSequence cs) {
-                if (isEmpty(cs)) {
-                    return false;
-                }
-            } else if (isEmpty(obj.toString())) {
-                return false;
-            }
+        var it = values.iterator();
+        if (!it.hasNext()) {
+            return false;
         }
+        do {
+            if (predicate.test(it.next())) {
+                return false;
+            }
+        } while (it.hasNext());
         return true;
     }
 
@@ -308,11 +309,11 @@ public final class TextTools {
      * @param blankMessage the supplier of the {@link IllegalArgumentException} message; must not be {@code null}
      * @param <T>          the type of the character sequence
      * @return {@code str} if not blank
-     * @throws NullPointerException     if {@code str} is {@code null}
+     * @throws NullPointerException     if {@code str} or either message supplier is {@code null}
      * @throws IllegalArgumentException if {@code str} is empty or whitespace-only
      * @since 1.0
      */
-    @Contract("null, _, _ -> fail;!null, _, _ ->!null")
+    @Contract("null, _, _ -> fail; !null, _, _ -> !null")
     @NullUnmarked
     @SuppressWarnings("PMD.AvoidThrowingNullPointerException")
     public static <T extends @Nullable Object & CharSequence> @NonNull T requireNotBlank(@Nullable T str,
@@ -334,16 +335,17 @@ public final class TextTools {
      * Checks that the specified character sequence is not {@code null}, not empty, and not whitespace-only.
      *
      * @param str     the character sequence to check
-     * @param context the context description used in the exception messages
+     * @param context the context description used in the exception messages; must not be {@code null}
      * @param <T>     the type of the character sequence
      * @return {@code str} if not blank
      * @throws NullPointerException     if {@code str} or {@code context} is {@code null}
      * @throws IllegalArgumentException if {@code str} is empty or whitespace-only
      * @since 1.0
      */
-    @Contract("null, _ -> fail;!null, _ ->!null")
+    @Contract("null, _ -> fail; !null, _ -> !null")
     @NullUnmarked
-    public static <T extends @Nullable Object & CharSequence> @NonNull T requireNotBlank(@Nullable T str, @NonNull String context) {
+    public static <T extends @Nullable Object & CharSequence> @NonNull T requireNotBlank(@Nullable T str,
+                                                                                         @NonNull String context) {
         ToolsSupport.requireContext(context);
         return requireNotBlank(str, () -> context + MUST_NOT_BE_NULL, () -> context + MUST_NOT_BE_BLANK);
     }
@@ -357,11 +359,12 @@ public final class TextTools {
      * @param nullMessage  the supplier of the {@link NullPointerException} message; must not be {@code null}
      * @param blankMessage the supplier of the {@link IllegalArgumentException} message; must not be {@code null}
      * @return {@code coll} if valid
-     * @throws NullPointerException     if {@code coll} is {@code null} or contains {@code null} elements
+     * @throws NullPointerException     if {@code coll} is {@code null}, contains {@code null} elements,
+     *                                  or either message supplier is {@code null}
      * @throws IllegalArgumentException if {@code coll} is empty or contains blank elements
      * @since 1.0
      */
-    @Contract("null, _, _ -> fail;!null, _, _ ->!null")
+    @Contract("null, _, _ -> fail; !null, _, _ -> !null")
     @NullUnmarked
     @SuppressWarnings({"PMD.AvoidThrowingNullPointerException", "PMD.UnnecessaryCast"})
     public static <T extends CharSequence> @NonNull Collection<@NonNull T> requireNotBlank(@Nullable Collection<@Nullable T> coll,
@@ -393,14 +396,15 @@ public final class TextTools {
      * and contains no {@code null}, empty, or whitespace-only elements.
      *
      * @param coll    the collection to check
-     * @param context the context description used in the exception messages
+     * @param context the context description used in the exception messages; must not be {@code null}
      * @param <T>     the type of the character sequence
      * @return {@code coll} if valid
-     * @throws NullPointerException     if {@code coll} is {@code null} or contains {@code null} elements
+     * @throws NullPointerException     if {@code coll} or {@code context} is {@code null}, or {@code coll}
+     *                                  contains {@code null} elements
      * @throws IllegalArgumentException if {@code coll} is empty or contains blank elements
      * @since 1.0
      */
-    @Contract("null, _ -> fail;!null, _ ->!null")
+    @Contract("null, _ -> fail; !null, _ -> !null")
     @NullUnmarked
     public static <T extends CharSequence> @NonNull Collection<@NonNull T> requireNotBlank(@Nullable Collection<@Nullable T> coll,
                                                                                            @NonNull String context) {
@@ -419,11 +423,12 @@ public final class TextTools {
      * @param elements     the elements to check
      * @param <T>          the type of the character sequence
      * @return {@code elements} if valid
-     * @throws NullPointerException     if {@code elements} is {@code null} or contains {@code null} elements
+     * @throws NullPointerException     if {@code elements} is {@code null}, contains {@code null} elements,
+     *                                  or either message supplier is {@code null}
      * @throws IllegalArgumentException if {@code elements} is empty or contains blank elements
      * @since 1.0
      */
-    @Contract("_, _, null -> fail; _, _,!null ->!null")
+    @Contract("_, _, null -> fail; _, _, !null -> !null")
     @NullUnmarked
     @SafeVarargs
     @SuppressWarnings({"PMD.AvoidThrowingNullPointerException", "PMD.UnnecessaryCast"})
@@ -455,15 +460,19 @@ public final class TextTools {
      * Checks that the specified varargs array of character sequences is not {@code null}, not empty,
      * and contains no {@code null}, empty, or whitespace-only elements.
      *
-     * @param context  the context description used in the exception messages
+     * <p>When {@code elements} is {@code null} or empty, the {@code context}-derived blank
+     * message is used.</p>
+     *
+     * @param context  the context description used in the exception messages; must not be {@code null}
      * @param elements the elements to check
      * @param <T>      the type of the character sequence
      * @return {@code elements} if valid
-     * @throws NullPointerException     if {@code elements} is {@code null} or contains {@code null} elements
+     * @throws NullPointerException     if {@code elements} or {@code context} is {@code null}, or
+     *                                  {@code elements} contains {@code null} elements
      * @throws IllegalArgumentException if {@code elements} is empty or contains blank elements
      * @since 1.0
      */
-    @Contract("_, null -> fail; _,!null ->!null")
+    @Contract("_, null -> fail; _, !null -> !null")
     @NullUnmarked
     @SafeVarargs
     public static <T extends CharSequence> @NonNull T @NonNull [] requireNotBlank(@NonNull String context,
@@ -483,17 +492,16 @@ public final class TextTools {
      * @param nullMessage  the supplier of the {@link NullPointerException} message; must not be {@code null}
      * @param emptyMessage the supplier of the {@link IllegalArgumentException} message; must not be {@code null}
      * @return {@code str} if not empty
-     * @throws NullPointerException     if {@code str} is {@code null}
+     * @throws NullPointerException     if {@code str} or either message supplier is {@code null}
      * @throws IllegalArgumentException if {@code str} is empty
      * @since 1.0
      */
-    @Contract("null, _, _ -> fail;!null, _, _ ->!null")
+    @Contract("null, _, _ -> fail; !null, _, _ -> !null")
     @NullUnmarked
     @SuppressWarnings("PMD.AvoidThrowingNullPointerException")
     public static <T extends @Nullable Object & CharSequence> @NonNull T requireNotEmpty(@Nullable T str,
                                                                                          @NonNull Supplier<String> nullMessage,
                                                                                          @NonNull Supplier<String> emptyMessage) {
-
         Objects.requireNonNull(nullMessage, NULL_MESSAGE);
         Objects.requireNonNull(emptyMessage, EMPTY_MESSAGE);
 
@@ -511,15 +519,16 @@ public final class TextTools {
      *
      * @param str     the character sequence to check
      * @param <T>     the type of the character sequence
-     * @param context the context description used in the exception messages
+     * @param context the context description used in the exception messages; must not be {@code null}
      * @return {@code str} if not empty
-     * @throws NullPointerException     if {@code str} is {@code null}
+     * @throws NullPointerException     if {@code str} or {@code context} is {@code null}
      * @throws IllegalArgumentException if {@code str} is empty
      * @since 1.0
      */
-    @Contract("null, _ -> fail;!null, _ ->!null")
+    @Contract("null, _ -> fail; !null, _ -> !null")
     @NullUnmarked
-    public static <T extends @Nullable Object & CharSequence> @NonNull T requireNotEmpty(@Nullable T str, @NonNull String context) {
+    public static <T extends @Nullable Object & CharSequence> @NonNull T requireNotEmpty(@Nullable T str,
+                                                                                         @NonNull String context) {
         ToolsSupport.requireContext(context);
         return requireNotEmpty(str, () -> context + MUST_NOT_BE_NULL, () -> context + MUST_NOT_BE_EMPTY);
     }
@@ -533,11 +542,12 @@ public final class TextTools {
      * @param nullMessage  the supplier of the {@link NullPointerException} message; must not be {@code null}
      * @param emptyMessage the supplier of the {@link IllegalArgumentException} message; must not be {@code null}
      * @return {@code coll} if valid
-     * @throws NullPointerException     if {@code coll} is {@code null} or contains {@code null} elements
+     * @throws NullPointerException     if {@code coll} is {@code null}, contains {@code null} elements,
+     *                                  or either message supplier is {@code null}
      * @throws IllegalArgumentException if {@code coll} is empty or contains empty elements
      * @since 1.0
      */
-    @Contract("null, _, _ -> fail;!null, _, _ ->!null")
+    @Contract("null, _, _ -> fail; !null, _, _ -> !null")
     @NullUnmarked
     @SuppressWarnings({"PMD.AvoidThrowingNullPointerException", "PMD.UnnecessaryCast"})
     public static <T extends CharSequence> @NonNull Collection<@NonNull T> requireNotEmpty(@Nullable Collection<@Nullable T> coll,
@@ -569,14 +579,15 @@ public final class TextTools {
      * and contains no {@code null} or empty elements.
      *
      * @param coll    the collection to check
-     * @param context the context description used in the exception messages
+     * @param context the context description used in the exception messages; must not be {@code null}
      * @param <T>     the type of the character sequence
      * @return {@code coll} if valid
-     * @throws NullPointerException     if {@code coll} is {@code null} or contains {@code null} elements
+     * @throws NullPointerException     if {@code coll} or {@code context} is {@code null}, or {@code coll}
+     *                                  contains {@code null} elements
      * @throws IllegalArgumentException if {@code coll} is empty or contains empty elements
      * @since 1.0
      */
-    @Contract("null, _ -> fail;!null, _ ->!null")
+    @Contract("null, _ -> fail; !null, _ -> !null")
     @NullUnmarked
     public static <T extends CharSequence> @NonNull Collection<@NonNull T> requireNotEmpty(@Nullable Collection<@Nullable T> coll,
                                                                                            @NonNull String context) {
@@ -595,18 +606,18 @@ public final class TextTools {
      * @param elements     the elements to check
      * @param <T>          the type of the character sequence
      * @return {@code elements} if valid
-     * @throws NullPointerException     if {@code elements} is {@code null} or contains {@code null} elements
+     * @throws NullPointerException     if {@code elements} is {@code null}, contains {@code null} elements,
+     *                                  or either message supplier is {@code null}
      * @throws IllegalArgumentException if {@code elements} is empty or contains empty elements
      * @since 1.0
      */
-    @Contract("_, _, null -> fail; _, _,!null ->!null")
+    @Contract("_, _, null -> fail; _, _, !null -> !null")
     @NullUnmarked
     @SafeVarargs
     @SuppressWarnings({"PMD.AvoidThrowingNullPointerException", "PMD.UnnecessaryCast"})
     public static <T extends CharSequence> @NonNull T @NonNull [] requireNotEmpty(@NonNull Supplier<String> nullMessage,
                                                                                   @NonNull Supplier<String> emptyMessage,
                                                                                   @Nullable T @Nullable ... elements) {
-
         Objects.requireNonNull(nullMessage, NULL_MESSAGE);
         Objects.requireNonNull(emptyMessage, EMPTY_MESSAGE);
 
@@ -632,18 +643,23 @@ public final class TextTools {
      * Checks that the specified varargs array of character sequences is not {@code null}, not empty,
      * and contains no {@code null} or empty elements.
      *
-     * @param context  the context description used in the exception messages
+     * <p>When {@code elements} is {@code null} or empty, the {@code context}-derived empty
+     * message is used.</p>
+     *
+     * @param context  the context description used in the exception messages; must not be {@code null}
      * @param elements the elements to check
      * @param <T>      the type of the character sequence
      * @return {@code elements} if valid
-     * @throws NullPointerException     if {@code elements} is {@code null} or contains {@code null} elements
+     * @throws NullPointerException     if {@code elements} or {@code context} is {@code null}, or
+     *                                  {@code elements} contains {@code null} elements
      * @throws IllegalArgumentException if {@code elements} is empty or contains empty elements
      * @since 1.0
      */
-    @Contract("_, null -> fail; _,!null ->!null")
+    @Contract("_, null -> fail; _, !null -> !null")
     @NullUnmarked
     @SafeVarargs
-    public static <T extends CharSequence> @NonNull T @NonNull [] requireNotEmpty(@NonNull String context, @Nullable T @Nullable ... elements) {
+    public static <T extends CharSequence> @NonNull T @NonNull [] requireNotEmpty(@NonNull String context,
+                                                                                  @Nullable T @Nullable ... elements) {
         ToolsSupport.requireContext(context);
         return requireNotEmpty(
                 () -> context + MUST_NOT_BE_NULL,

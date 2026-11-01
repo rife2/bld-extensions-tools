@@ -40,6 +40,13 @@ class TextToolsTest {
     class EqualsIgnoreWhitespaceTests {
 
         @Test
+        @DisplayName("should agree with isBlank on the whitespace definition")
+        void shouldAgreeWithIsBlankOnWhitespaceDefinition() {
+            assertTrue(TextTools.isBlank("\u2003"));
+            assertTrue(TextTools.equalsIgnoreWhitespace("\u2003", ""));
+        }
+
+        @Test
         @DisplayName("should return false for empty varargs array")
         void shouldReturnFalseForEmptyVarargsArray() {
             assertFalse(TextTools.equalsIgnoreWhitespace());
@@ -158,6 +165,20 @@ class TextToolsTest {
         }
 
         @Test
+        @DisplayName("should strip EM SPACE from within strings")
+        void shouldStripEmSpaceFromWithinStrings() {
+            assertTrue(TextTools.equalsIgnoreWhitespace("a\u2003b", "ab"));
+        }
+
+        @Test
+        @DisplayName("should treat EM SPACE (U+2003) as whitespace")
+        void shouldTreatEmSpaceAsWhitespace() {
+            // EM SPACE is whitespace per Character.isWhitespace but not matched by ASCII \s,
+            // so this would fail before the pattern was changed to \p{javaWhitespace}+.
+            assertTrue(TextTools.equalsIgnoreWhitespace("\u2003", ""));
+        }
+
+        @Test
         @DisplayName("should work with mixed CharSequence types")
         void shouldWorkWithMixedCharSequenceTypes() {
             var sb = new StringBuilder("hello world");
@@ -177,117 +198,61 @@ class TextToolsTest {
     }
 
     @Nested
-    @DisplayName("isBlank(Object...) Tests")
-    class IsBlankObjectTests {
+    @DisplayName("isBlank(Iterable) Tests")
+    class IsBlankIterableTests {
 
         @Test
-        @DisplayName("isBlank(Object...) should continue when CharSequence is blank")
-        @SuppressWarnings("PMD.UnnecessaryVarargsArrayCreation")
-        void isBlankObjectArrayShouldContinueWhenCharSequenceIsBlank() {
-            CharSequence cs = new StringBuffer(" ");
-            var result = TextTools.isBlank(new Object[]{cs, "", " "});
-            assertTrue(result);
+        @DisplayName("should recognize EM SPACE (U+2003) as blank")
+        void shouldRecognizeEmSpaceAsBlank() {
+            assertTrue(TextTools.isBlank(List.of("\u2003")));
         }
 
         @Test
-        @DisplayName("isBlank(Object...) should continue when toString is blank")
-        void isBlankObjectArrayShouldContinueWhenToStringIsBlank() {
-            var obj = new Object() {
-                @Override
-                public String toString() {
-                    return " ";
-                }
-            };
-            var result = TextTools.isBlank(obj, "", " ");
-            assertTrue(result);
+        @DisplayName("should return false when all elements are non-blank")
+        void shouldReturnFalseWhenAllNonBlank() {
+            assertFalse(TextTools.isBlank(List.of("hello", "world")));
         }
 
         @Test
-        @DisplayName("should avoid toString for CharSequence objects")
-        void shouldAvoidToStringForCharSequenceObjects() {
-            var sb = new StringBuilder("text");
-            var result = TextTools.isBlank(sb);
-            assertFalse(result);
+        @DisplayName("should return false when at least one element is non-blank")
+        void shouldReturnFalseWhenOneNonBlank() {
+            assertFalse(TextTools.isBlank(List.of("", "text", " ")));
         }
 
         @Test
-        @DisplayName("should handle mixed CharSequence and non-CharSequence objects")
-        void shouldHandleMixedObjects() {
-            var sb = new StringBuilder("data");
-            var result = TextTools.isBlank(sb, 42, "text");
-            assertFalse(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(ints = {0, 1, 42, -1})
-        @DisplayName("should return false for non-null non-blank objects")
-        void shouldReturnFalseForNonBlankObjects(Integer input) {
-            var result = TextTools.isBlank(input);
-            assertFalse(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {"a", "text", " text ", " text ", "\ttext\n", "123"})
-        @DisplayName("should return false for non-blank string objects")
-        void shouldReturnFalseForNonBlankStringObjects(String input) {
-            var result = TextTools.isBlank((Object) input);
-            assertFalse(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(ints = {0, 1, 42, -1})
-        @DisplayName("should return false when all objects are not blank")
-        void shouldReturnFalseWhenAllObjectsAreNotBlank(Integer input) {
-            var result = TextTools.isBlank(input, 123, "text");
-            assertFalse(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {"a", "text", " text ", " text ", "\ttext\n", "123"})
-        @DisplayName("should return false when at least one object is not blank")
-        void shouldReturnFalseWhenAtLeastOneObjectIsNotBlank(String input) {
-            var result = TextTools.isBlank("", " ", input, "\t");
-            assertFalse(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {"", " ", " ", "\t", "\n", "\r", " \t\n\r "})
-        @DisplayName("should return true for empty or whitespace-only string objects")
-        void shouldReturnTrueForBlankStringObjects(String input) {
-            var result = TextTools.isBlank((Object) input);
-            assertTrue(result);
+        @DisplayName("should return true for empty iterable")
+        void shouldReturnTrueForEmptyIterable() {
+            assertTrue(TextTools.isBlank(List.<String>of()));
         }
 
         @Test
-        @DisplayName("should return true for empty varargs array")
-        void shouldReturnTrueForEmptyVarargsArray() {
-            var result = TextTools.isBlank(new Object[0]);
-            assertTrue(result);
+        @DisplayName("should return true for null iterable")
+        void shouldReturnTrueForNullIterable() {
+            assertTrue(TextTools.isBlank((Iterable<? extends CharSequence>) null));
         }
 
-        @ParameterizedTest
-        @NullSource
-        @DisplayName("should return true for null array")
-        @SuppressWarnings("PMD.UseVarargs")
-        void shouldReturnTrueForNullArray(Object[] input) {
-            var result = TextTools.isBlank(input);
-            assertTrue(result);
+        @Test
+        @DisplayName("should return true when all elements are blank")
+        void shouldReturnTrueWhenAllBlank() {
+            assertTrue(TextTools.isBlank(List.of("", " ", "\t")));
         }
 
-        @ParameterizedTest
-        @NullSource
-        @DisplayName("should return true for null object")
-        void shouldReturnTrueForNullObject(Object input) {
-            var result = TextTools.isBlank(input);
-            assertTrue(result);
+        @Test
+        @DisplayName("should treat null elements as blank")
+        void shouldTreatNullElementsAsBlank() {
+            assertTrue(TextTools.isBlank(Arrays.<CharSequence>asList(null, "", " ")));
         }
 
-        @ParameterizedTest
-        @ValueSource(strings = {"", " ", " ", "\t", "\n", "\r", " \t\n\r "})
-        @DisplayName("should return true when all objects are blank")
-        void shouldReturnTrueWhenAllObjectsAreBlank(String input) {
-            var result = TextTools.isBlank(input, "", " ", "\t");
-            assertTrue(result);
+        @Test
+        @DisplayName("should work with mixed CharSequence types")
+        void shouldWorkWithMixedCharSequenceTypes() {
+            assertTrue(TextTools.isBlank(List.of(new StringBuilder(" "), new StringBuffer("\t"))));
+        }
+
+        @Test
+        @DisplayName("should work with Set")
+        void shouldWorkWithSet() {
+            assertTrue(TextTools.isBlank(Set.of(" ", "\t")));
         }
     }
 
@@ -342,6 +307,12 @@ class TextToolsTest {
         void shouldReturnTrueForBlankStrings(String input) {
             var result = TextTools.isBlank(input);
             assertTrue(result);
+        }
+
+        @Test
+        @DisplayName("should treat EM SPACE (U+2003) as whitespace")
+        void shouldTreatEmSpaceAsBlank() {
+            assertTrue(TextTools.isBlank("\u2003"));
         }
 
         @Test
@@ -416,117 +387,62 @@ class TextToolsTest {
     }
 
     @Nested
-    @DisplayName("isEmpty(Object...) Tests")
-    class IsEmptyObjectTests {
+    @DisplayName("isEmpty(Iterable) Tests")
+    class IsEmptyIterableTests {
 
         @Test
-        @DisplayName("isEmpty(Object...) should continue when CharSequence is empty")
-        @SuppressWarnings("PMD.UnnecessaryVarargsArrayCreation")
-        void isEmptyObjectArrayShouldContinueWhenCharSequenceIsEmpty() {
-            CharSequence cs = new StringBuffer();
-            var result = TextTools.isEmpty(new Object[]{cs, "", null});
-            assertTrue(result);
+        @DisplayName("should agree with ObjectTools on container emptiness")
+        void shouldAgreeWithObjectToolsOnContainerEmptiness() {
+            List<String> list = List.of();
+            assertEquals(ObjectTools.isEmpty(list), TextTools.isEmpty(list));
         }
 
         @Test
-        @DisplayName("isEmpty(Object...) should continue when toString is empty")
-        void isEmptyObjectArrayShouldContinueWhenToStringIsEmpty() {
-            var obj = new Object() {
-                @Override
-                public String toString() {
-                    return "";
-                }
-            };
-            var result = TextTools.isEmpty(obj, null);
-            assertTrue(result);
+        @DisplayName("should return false when at least one element is not empty")
+        void shouldReturnFalseWhenOneNotEmpty() {
+            assertFalse(TextTools.isEmpty(Arrays.asList("", null, "text")));
         }
 
         @Test
-        @DisplayName("should avoid toString for CharSequence objects")
-        void shouldAvoidToStringForCharSequenceObjects() {
-            var sb = new StringBuilder("text");
-            var result = TextTools.isEmpty((Object) sb);
-            assertFalse(result);
+        @DisplayName("should return true for empty iterable")
+        void shouldReturnTrueForEmptyIterable() {
+            assertTrue(TextTools.isEmpty(List.<String>of()));
         }
 
         @Test
-        @DisplayName("should handle mixed CharSequence and non-CharSequence objects")
-        void shouldHandleMixedObjects() {
-            var sb = new StringBuilder();
-            var result = TextTools.isEmpty(sb, null);
-            assertTrue(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {" ", " ", "\t", "\n", "text", " text ", "a"})
-        @DisplayName("should return false for non-empty string objects")
-        void shouldReturnFalseForNonEmptyStringObjects(String input) {
-            var result = TextTools.isEmpty((Object) input);
-            assertFalse(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(ints = {0, 1, 42, -1})
-        @DisplayName("should return false for non-null objects")
-        void shouldReturnFalseForNonNullObjects(Integer input) {
-            var result = TextTools.isEmpty(input);
-            assertFalse(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {" ", " ", "\t", "\n", "text", " text ", "a"})
-        @DisplayName("should return false when all objects are not empty")
-        void shouldReturnFalseWhenAllObjectsAreNotEmpty(String input) {
-            var result = TextTools.isEmpty(input, "text", " ");
-            assertFalse(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {" ", " ", "\t", "\n", "text", " text ", "a"})
-        @DisplayName("should return false when at least one object is not empty")
-        void shouldReturnFalseWhenAtLeastOneObjectIsNotEmpty(String input) {
-            var result = TextTools.isEmpty("", null, input);
-            assertFalse(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {""})
-        @DisplayName("should return true for empty string object")
-        void shouldReturnTrueForEmptyStringObject(String input) {
-            var result = TextTools.isEmpty((Object) input);
-            assertTrue(result);
+        @DisplayName("should return true for null iterable")
+        void shouldReturnTrueForNullIterable() {
+            assertTrue(TextTools.isEmpty((Iterable<? extends CharSequence>) null));
         }
 
         @Test
-        @DisplayName("should return true for empty varargs array")
-        void shouldReturnTrueForEmptyVarargsArray() {
-            var result = TextTools.isEmpty(new Object[0]);
-            assertTrue(result);
+        @DisplayName("should return true when all elements are empty")
+        void shouldReturnTrueWhenAllEmpty() {
+            assertTrue(TextTools.isEmpty(List.of("", "")));
         }
 
-        @ParameterizedTest
-        @NullSource
-        @DisplayName("should return true for null array")
-        @SuppressWarnings("PMD.UseVarargs")
-        void shouldReturnTrueForNullArray(Object[] input) {
-            var result = TextTools.isEmpty(input);
-            assertTrue(result);
+        @Test
+        @DisplayName("should treat null elements as empty")
+        void shouldTreatNullElementsAsEmpty() {
+            assertTrue(TextTools.isEmpty(Arrays.<CharSequence>asList(null, "", null)));
         }
 
-        @ParameterizedTest
-        @NullSource
-        @DisplayName("should return true for null object")
-        void shouldReturnTrueForNullObject(Object input) {
-            var result = TextTools.isEmpty(input);
-            assertTrue(result);
+        @Test
+        @DisplayName("should treat whitespace-only elements as not empty")
+        void shouldTreatWhitespaceAsNotEmpty() {
+            assertFalse(TextTools.isEmpty(List.of(" ")));
         }
 
-        @ParameterizedTest
-        @ValueSource(strings = {""})
-        @DisplayName("should return true when all objects are empty or null")
-        void shouldReturnTrueWhenAllObjectsAreEmpty(String input) {
-            var result = TextTools.isEmpty(input, "", null);
-            assertTrue(result);
+        @Test
+        @DisplayName("should work with mixed CharSequence types")
+        void shouldWorkWithMixedCharSequenceTypes() {
+            assertTrue(TextTools.isEmpty(List.of(new StringBuilder(), new StringBuffer())));
+        }
+
+        @Test
+        @DisplayName("should work with Set")
+        void shouldWorkWithSet() {
+            assertTrue(TextTools.isEmpty(Set.of()));
         }
     }
 
@@ -630,117 +546,55 @@ class TextToolsTest {
     }
 
     @Nested
-    @DisplayName("isNotBlank(Object...) Tests")
-    class IsNotBlankObjectTests {
+    @DisplayName("isNotBlank(Iterable) Tests")
+    class IsNotBlankIterableTests {
 
         @Test
-        @DisplayName("isNotBlank(Object...) should return false when CharSequence is blank")
-        @SuppressWarnings("PMD.UnnecessaryVarargsArrayCreation")
-        void isNotBlankObjectArrayShouldReturnFalseForBlankCharSequence() {
-            CharSequence cs = new StringBuffer(" ");
-            var result = TextTools.isNotBlank(new Object[]{"text", cs});
-            assertFalse(result);
+        @DisplayName("should return false for empty iterable")
+        void shouldReturnFalseForEmptyIterable() {
+            assertFalse(TextTools.isNotBlank(List.<String>of()));
         }
 
         @Test
-        @DisplayName("isNotBlank(Object...) should return false when toString is blank")
-        void isNotBlankObjectArrayShouldReturnFalseForBlankToString() {
-            var obj = new Object() {
-                @Override
-                public String toString() {
-                    return " ";
-                }
-            };
-            var result = TextTools.isNotBlank("text", obj);
-            assertFalse(result);
+        @DisplayName("should return false for null iterable")
+        void shouldReturnFalseForNullIterable() {
+            assertFalse(TextTools.isNotBlank((Iterable<? extends CharSequence>) null));
         }
 
         @Test
-        @DisplayName("should avoid toString for CharSequence objects")
-        void shouldAvoidToStringForCharSequenceObjects() {
-            var sb = new StringBuilder("text");
-            var result = TextTools.isNotBlank(sb);
-            assertTrue(result);
+        @DisplayName("should return false when all elements are blank")
+        void shouldReturnFalseWhenAllBlank() {
+            assertFalse(TextTools.isNotBlank(List.of("", " ", "\t")));
         }
 
         @Test
-        @DisplayName("should handle mixed CharSequence and non-CharSequence objects")
-        void shouldHandleMixedObjects() {
-            var sb = new StringBuilder("data");
-            var result = TextTools.isNotBlank(sb, 42, "text");
-            assertTrue(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {"", " ", " ", "\t", "\n", "\r", " \t\n\r "})
-        @DisplayName("should return false for empty or whitespace-only string objects")
-        void shouldReturnFalseForBlankStringObjects(String input) {
-            var result = TextTools.isNotBlank((Object) input);
-            assertFalse(result);
+        @DisplayName("should return false when at least one element is blank")
+        void shouldReturnFalseWhenOneBlank() {
+            assertFalse(TextTools.isNotBlank(List.of("hello", " ", "world")));
         }
 
         @Test
-        @DisplayName("should return false for empty varargs array")
-        void shouldReturnFalseForEmptyVarargsArray() {
-            var result = TextTools.isNotBlank(new Object[0]);
-            assertFalse(result);
+        @DisplayName("should return true when all elements are non-blank")
+        void shouldReturnTrueWhenAllNonBlank() {
+            assertTrue(TextTools.isNotBlank(List.of("hello", "world")));
         }
 
-        @ParameterizedTest
-        @NullSource
-        @DisplayName("should return false for null array")
-        @SuppressWarnings("PMD.UseVarargs")
-        void shouldReturnFalseForNullArray(Object[] input) {
-            var result = TextTools.isNotBlank(input);
-            assertFalse(result);
+        @Test
+        @DisplayName("should treat null elements as blank")
+        void shouldTreatNullElementsAsBlank() {
+            assertFalse(TextTools.isNotBlank(Arrays.<CharSequence>asList("hello", null)));
         }
 
-        @ParameterizedTest
-        @NullSource
-        @DisplayName("should return false for null object")
-        void shouldReturnFalseForNullObject(Object input) {
-            var result = TextTools.isNotBlank(input);
-            assertFalse(result);
+        @Test
+        @DisplayName("should work with mixed CharSequence types")
+        void shouldWorkWithMixedCharSequenceTypes() {
+            assertTrue(TextTools.isNotBlank(List.of(new StringBuilder("hello"), new StringBuffer("world"))));
         }
 
-        @ParameterizedTest
-        @ValueSource(strings = {"", " ", " ", "\t", "\n", "\r", " \t\n\r "})
-        @DisplayName("should return false when all objects are blank")
-        void shouldReturnFalseWhenAllObjectsAreBlank(String input) {
-            var result = TextTools.isNotBlank(input, "", " ", "\t");
-            assertFalse(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {"", " ", " ", "\t", "\n", "\r", " \t\n\r "})
-        @DisplayName("should return false when at least one object is blank")
-        void shouldReturnFalseWhenAtLeastOneObjectIsBlank(String input) {
-            var result = TextTools.isNotBlank(123, "text", input, "data");
-            assertFalse(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(ints = {0, 1, 42, -1})
-        @DisplayName("should return true for non-null non-blank objects")
-        void shouldReturnTrueForNonBlankObjects(Integer input) {
-            var result = TextTools.isNotBlank(input);
-            assertTrue(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {"a", "text", " text ", " text ", "\ttext\n", "123"})
-        @DisplayName("should return true for non-blank string objects")
-        void shouldReturnTrueForNonBlankStringObjects(String input) {
-            var result = TextTools.isNotBlank((Object) input);
-            assertTrue(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {"a", "text", " text ", " text ", "\ttext\n", "123"})
-        @DisplayName("should return true when all objects are not blank")
-        void shouldReturnTrueWhenAllObjectsAreNotBlank(String input) {
-            var result = TextTools.isNotBlank(input, "text", 42);
-            assertTrue(result);
+        @Test
+        @DisplayName("should work with Set")
+        void shouldWorkWithSet() {
+            assertTrue(TextTools.isNotBlank(Set.of("hello", "world")));
         }
     }
 
@@ -837,117 +691,55 @@ class TextToolsTest {
     }
 
     @Nested
-    @DisplayName("isNotEmpty(Object...) Tests")
-    class IsNotEmptyObjectTests {
+    @DisplayName("isNotEmpty(Iterable) Tests")
+    class IsNotEmptyIterableTests {
 
         @Test
-        @DisplayName("isNotEmpty(Object...) should return false when CharSequence is empty")
-        @SuppressWarnings("PMD.UnnecessaryVarargsArrayCreation")
-        void isNotEmptyObjectArrayShouldReturnFalseForEmptyCharSequence() {
-            CharSequence cs = new StringBuffer();
-            var result = TextTools.isNotEmpty(new Object[]{"text", cs});
-            assertFalse(result);
+        @DisplayName("should return false for empty iterable")
+        void shouldReturnFalseForEmptyIterable() {
+            assertFalse(TextTools.isNotEmpty(List.<String>of()));
         }
 
         @Test
-        @DisplayName("isNotEmpty(Object...) should return false when toString is empty")
-        void isNotEmptyObjectArrayShouldReturnFalseForEmptyToString() {
-            var obj = new Object() {
-                @Override
-                public String toString() {
-                    return "";
-                }
-            };
-            var result = TextTools.isNotEmpty("text", obj);
-            assertFalse(result);
+        @DisplayName("should return false for null iterable")
+        void shouldReturnFalseForNullIterable() {
+            assertFalse(TextTools.isNotEmpty((Iterable<? extends CharSequence>) null));
         }
 
         @Test
-        @DisplayName("should avoid toString for CharSequence objects")
-        void shouldAvoidToStringForCharSequenceObjects() {
-            var sb = new StringBuilder("text");
-            var result = TextTools.isNotEmpty(sb);
-            assertTrue(result);
+        @DisplayName("should return false when all elements are empty")
+        void shouldReturnFalseWhenAllEmpty() {
+            assertFalse(TextTools.isNotEmpty(List.of("", "")));
         }
 
         @Test
-        @DisplayName("should handle mixed CharSequence and non-CharSequence objects")
-        void shouldHandleMixedObjects() {
-            var sb = new StringBuilder("data");
-            var result = TextTools.isNotEmpty(sb, 42, " ");
-            assertTrue(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {""})
-        @DisplayName("should return false for empty string object")
-        void shouldReturnFalseForEmptyStringObject(String input) {
-            var result = TextTools.isNotEmpty((Object) input);
-            assertFalse(result);
+        @DisplayName("should return false when at least one element is empty")
+        void shouldReturnFalseWhenOneEmpty() {
+            assertFalse(TextTools.isNotEmpty(List.of("hello", "", "world")));
         }
 
         @Test
-        @DisplayName("should return false for empty varargs array")
-        void shouldReturnFalseForEmptyVarargsArray() {
-            var result = TextTools.isNotEmpty(new Object[0]);
-            assertFalse(result);
+        @DisplayName("should return true when all elements are not empty")
+        void shouldReturnTrueWhenAllNotEmpty() {
+            assertTrue(TextTools.isNotEmpty(List.of("hello", " ")));
         }
 
-        @ParameterizedTest
-        @NullSource
-        @DisplayName("should return false for null array")
-        @SuppressWarnings("PMD.UseVarargs")
-        void shouldReturnFalseForNullArray(Object[] input) {
-            var result = TextTools.isNotEmpty(input);
-            assertFalse(result);
+        @Test
+        @DisplayName("should treat null elements as empty")
+        void shouldTreatNullElementsAsEmpty() {
+            assertFalse(TextTools.isNotEmpty(Arrays.<CharSequence>asList("hello", null)));
         }
 
-        @ParameterizedTest
-        @NullSource
-        @DisplayName("should return false for null object")
-        void shouldReturnFalseForNullObject(Object input) {
-            var result = TextTools.isNotEmpty(input);
-            assertFalse(result);
+        @Test
+        @DisplayName("should work with mixed CharSequence types")
+        void shouldWorkWithMixedCharSequenceTypes() {
+            assertTrue(TextTools.isNotEmpty(List.of(new StringBuilder("hello"), new StringBuffer(" "))));
         }
 
-        @ParameterizedTest
-        @ValueSource(strings = {""})
-        @DisplayName("should return false when all objects are empty or null")
-        void shouldReturnFalseWhenAllObjectsAreEmpty(String input) {
-            var result = TextTools.isNotEmpty(input, "", null);
-            assertFalse(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {""})
-        @DisplayName("should return false when at least one object is empty or null")
-        void shouldReturnFalseWhenAtLeastOneObjectIsEmpty(String input) {
-            var result = TextTools.isNotEmpty("text", " ", input, "data");
-            assertFalse(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {" ", " ", "\t", "\n", "text", " text ", "a"})
-        @DisplayName("should return true for non-empty string objects")
-        void shouldReturnTrueForNonEmptyStringObjects(String input) {
-            var result = TextTools.isNotEmpty((Object) input);
-            assertTrue(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(ints = {0, 1, 42, -1})
-        @DisplayName("should return true for non-null objects")
-        void shouldReturnTrueForNonNullObjects(Integer input) {
-            var result = TextTools.isNotEmpty(input);
-            assertTrue(result);
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {" ", " ", "\t", "\n", "text", " text ", "a"})
-        @DisplayName("should return true when all objects are not empty")
-        void shouldReturnTrueWhenAllObjectsAreNotEmpty(String input) {
-            var result = TextTools.isNotEmpty(input, "text", " ");
-            assertTrue(result);
+        @Test
+        @DisplayName("should work with Set")
+        void shouldWorkWithSet() {
+            assertTrue(TextTools.isNotEmpty(Set.of("hello")));
         }
     }
 
@@ -1324,8 +1116,8 @@ class TextToolsTest {
         @DisplayName("should throw IllegalArgumentException for blank context")
         void shouldThrowIllegalArgumentExceptionForBlankContext() {
             var ex = assertThrows(IllegalArgumentException.class,
-                    () -> TextTools.requireNotBlank(" ", "hello"));
-            assertEquals("hello must not be blank", ex.getMessage());
+                    () -> TextTools.requireNotBlank(" ", "hello", "world"));
+            assertEquals("context must not be blank", ex.getMessage());
         }
 
         @Test
@@ -1353,11 +1145,12 @@ class TextToolsTest {
         }
 
         @Test
-        @DisplayName("should throw IAE for null context")
+        @DisplayName("should throw NullPointerException for null context")
+        @SuppressWarnings("DataFlowIssue")
         void shouldThrowNullPointerExceptionForNullContext() {
             var ex = assertThrows(NullPointerException.class,
-                    () -> TextTools.requireNotBlank((String) null, "hello"));
-            assertEquals("hello must not be null", ex.getMessage());
+                    () -> TextTools.requireNotBlank(null, "hello", "world"));
+            assertEquals("context must not be null", ex.getMessage());
         }
 
         @Test
@@ -1746,7 +1539,7 @@ class TextToolsTest {
         @DisplayName("should throw IllegalArgumentException for blank context")
         void shouldThrowIllegalArgumentExceptionForBlankContext() {
             var ex = assertThrows(IllegalArgumentException.class,
-                    () -> TextTools.requireNotEmpty(" ", " "));
+                    () -> TextTools.requireNotEmpty(" ", " ", "world"));
             assertEquals("context must not be blank", ex.getMessage());
         }
 
@@ -1779,7 +1572,7 @@ class TextToolsTest {
         @SuppressWarnings("DataFlowIssue")
         void shouldThrowNullPointerExceptionForNullContext() {
             var ex = assertThrows(NullPointerException.class,
-                    () -> TextTools.requireNotEmpty("hello", (String) null));
+                    () -> TextTools.requireNotEmpty(null, "hello", "world"));
             assertEquals("context must not be null", ex.getMessage());
         }
 
@@ -1866,7 +1659,7 @@ class TextToolsTest {
         @DisplayName("should throw NullPointerException with supplier message for null array")
         void shouldThrowNullPointerExceptionWithSupplierMessage() {
             var ex = assertThrows(NullPointerException.class,
-                    () -> TextTools.requireNotEmpty(() -> "custom null msg", () -> "null", (String[]) null));
+                    () -> TextTools.requireNotEmpty(() -> "custom null msg", () -> "empty", (String[]) null));
             assertEquals("custom null msg", ex.getMessage());
         }
 
