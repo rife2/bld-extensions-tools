@@ -29,10 +29,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -69,7 +66,9 @@ public final class Sandbox {
     private static final Pattern EXTENSION_NAME_PATTERN =
             Pattern.compile("[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?");
 
+    private static final String GITIGNORE = ".gitignore";
     private static final String REPOSITORIES = "repositories";
+    private static final String SANDBOX_DIRECTORY = ".sandbox";
     private static final ArtifactRetriever artifactRetriever = ArtifactRetriever.cachingInstance();
     private static final ConcurrentMap<Path, ReentrantLock> directoryLocks = new ConcurrentHashMap<>();
     private static final AtomicReference<Supplier<String>> jvmVersionSupplier_ =
@@ -96,7 +95,7 @@ public final class Sandbox {
         requireValidExtensionName(extensionName_);
         // Sibling of lib/bld, not a child: keeps the sandbox off the wrapper's classpath.
         sandboxDirectory_ = project.libBldDirectory().toPath()
-                .resolveSibling(".sandbox")
+                .resolveSibling(SANDBOX_DIRECTORY)
                 .toAbsolutePath()
                 .normalize();
         sandboxExtensionDirectory_ = sandboxDirectory_.resolve(extensionName_).normalize();
@@ -115,6 +114,48 @@ public final class Sandbox {
         }
         if (Files.exists(directory)) {
             throw new IllegalStateException("Could not delete sandbox directory: " + directory);
+        }
+    }
+
+    /**
+     * Creates a {@code .gitignore} file in the sandbox's parent directory (e.g. {@code lib})
+     * containing {@code .sandbox/}, so that git ignores the sandbox directory. The file is
+     * only created if one does not already exist; an existing file is left untouched.
+     *
+     * @param sandboxDirectory the sandbox root directory
+     */
+    private static void ensureGitIgnore(Path sandboxDirectory) {
+        var parent = sandboxDirectory.getParent();
+        if (parent == null) {
+            if (logger.isLoggable(Level.FINE)) {
+                logger.log(Level.FINE,
+                        "Skipping git ignore setup: no parent for {0}", sandboxDirectory);
+            }
+            return;
+        }
+        var gitIgnore = parent.resolve(GITIGNORE);
+        if (Files.exists(gitIgnore)) {
+            if (logger.isLoggable(Level.FINE)) {
+                logger.log(Level.FINE, "Git ignore file already exists: {0}", gitIgnore);
+            }
+            return;
+        }
+        try {
+            Files.writeString(gitIgnore, SANDBOX_DIRECTORY + "/\n", StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+            if (logger.isLoggable(Level.INFO)) {
+                logger.log(Level.INFO, "Created git ignore file: {0} (ignoring {1}/)",
+                        new Object[]{gitIgnore, SANDBOX_DIRECTORY});
+            }
+        } catch (FileAlreadyExistsException e) {
+            if (logger.isLoggable(Level.FINE)) {
+                logger.log(Level.FINE, "Git ignore file already exists: {0}", gitIgnore);
+            }
+        } catch (IOException e) {
+            if (logger.isLoggable(Level.WARNING)) {
+                logger.log(Level.WARNING,
+                        "Could not create " + gitIgnore + "; sandbox contents may be tracked by git", e);
+            }
         }
     }
 
@@ -273,6 +314,13 @@ public final class Sandbox {
         var lock = directoryLocks.computeIfAbsent(sandboxExtensionDirectory_, k -> new ReentrantLock());
         lock.lock();
         try {
+            try {
+                Files.createDirectories(sandboxDirectory_);
+            } catch (IOException e) {
+                throw new UncheckedIOException("Could not create sandbox directory: " + sandboxDirectory_, e);
+            }
+            ensureGitIgnore(sandboxDirectory_);
+
             if (isSnapshotValid(snapshotKey, inputsHash, downloadDirectory)) {
                 if (logger.isLoggable(Level.INFO)) {
                     logger.log(Level.INFO, "Reusing valid sandbox snapshot for ''{0}''", snapshotKey);
