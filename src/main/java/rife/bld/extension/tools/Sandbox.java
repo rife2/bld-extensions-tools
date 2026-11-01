@@ -147,6 +147,23 @@ public final class Sandbox {
         }
     }
 
+    /**
+     * Extracts the recorded JVM version from a snapshot value of the form
+     * {@code inputsHash:jvmVersion:directoryHash}, or {@code null} if the value does not have
+     * that shape (e.g. it was written by an older format).
+     */
+    private static @Nullable String recordedJvmVersion(String snapshotValue) {
+        var firstColon = snapshotValue.indexOf(':');
+        if (firstColon < 0) {
+            return null;
+        }
+        var secondColon = snapshotValue.indexOf(':', firstColon + 1);
+        if (secondColon < 0) {
+            return null;
+        }
+        return snapshotValue.substring(firstColon + 1, secondColon);
+    }
+
     private static void requireValidExtensionName(String name) {
         if (!EXTENSION_NAME_PATTERN.matcher(name).matches()) {
             throw new IllegalArgumentException(
@@ -164,16 +181,16 @@ public final class Sandbox {
         jvmVersionSupplier_.set((supplier != null) ? supplier : () -> Runtime.version().toString());
     }
 
-    private static String sha256(String text) {
-        return HexFormat.of().formatHex(newSha256().digest(text.getBytes(StandardCharsets.UTF_8)));
-    }
-
     private static String sha256(Path file) throws IOException {
         var digest = newSha256();
         try (var in = new DigestInputStream(Files.newInputStream(file), digest)) {
             in.transferTo(OutputStream.nullOutputStream());
         }
         return HexFormat.of().formatHex(digest.digest());
+    }
+
+    private static String sha256(String text) {
+        return HexFormat.of().formatHex(newSha256().digest(text.getBytes(StandardCharsets.UTF_8)));
     }
 
     private static String toPortableString(Path path) {
@@ -500,23 +517,6 @@ public final class Sandbox {
             return false;
         }
         return true;
-    }
-
-    /**
-     * Extracts the recorded JVM version from a snapshot value of the form
-     * {@code inputsHash:jvmVersion:directoryHash}, or {@code null} if the value does not have
-     * that shape (e.g. it was written by an older format).
-     */
-    private static @Nullable String recordedJvmVersion(String snapshotValue) {
-        var firstColon = snapshotValue.indexOf(':');
-        if (firstColon < 0) {
-            return null;
-        }
-        var secondColon = snapshotValue.indexOf(':', firstColon + 1);
-        if (secondColon < 0) {
-            return null;
-        }
-        return snapshotValue.substring(firstColon + 1, secondColon);
     }
 
     /**

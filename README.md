@@ -16,8 +16,8 @@ To use, include the following in your `bld` build file:
 repositories = List.of(RIFE2_SNAPSHOTS, RIFE2_RELEASES);
 
 scope(compile).include(
-    dependency("com.uwyn.rife2", "bld-extensions-tools", version(1, 2, 0))
-);
+        dependency("com.uwyn.rife2", "bld-extensions-tools", version(1, 5, 0))
+        );
 ```
 
 Please check the [documentation](https://rife2.github.io/bld-extensions-tools)
@@ -31,16 +31,16 @@ The following static methods are provided:
 | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------- |
 | [`combine(Collection<T>... collections)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combine(java.util.Collection...))                                 | Combine collections into a list.                 |
 | [`combineFilesToPaths(Collection<File>... collections)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineFilesToPaths(java.util.Collection...))      | Combine `File` collections into a `Path` list.   |
-| [`combineFilesToPaths(File... files`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineFilesToPaths(java.io.File...))                                 | Combine files into a `Path` list.                |
-| [`combineFilesToStrings(Collection<File>... collections`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineFilesToStrings(java.util.Collection...))   | Combine `File` collections into a `String` list. |
-| [`combineFilesToStrings(File... files`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineFilesToStrings(java.io.File...))                             | Combine files into a `String` list.              |
-| [`combinePathsToFiles(Collection<Path>... collections`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combinePathsToFiles(java.util.Collection...))       | Combine `Path` collections into a `String` list. |
-| [`combinePathsToFiles(Path... paths`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combinePathsToFiles(java.nio.file.Path...))                           | Combine paths into a `String` list.              |
-| [`combinePathsToStrings(Collection<Path>... collections`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combinePathsToStrings(java.util.Collection...))   | Combine `Path` collections into a `String` list. |
-| [`combinePathsToStrings(Path... paths`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combinePathsToStrings(java.nio.file.Path...))                       | Combine  paths to a `String` list.               |
-| [`combineStringsToFiles(Collection<String>... collections`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineStringsToFiles(java.util.Collection...)) | Combine `String` collections into a `File` list. |
-| [`combineStringsToFiles(String... strings`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineStringsToFiles(java.lang.String...))                     | Combine strings into a `File` list.              |
-| [`combineStringsToPaths(Collection<String>... collections`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineStringsToPaths(java.util.Collection...)) | Combine `String` collections into a `Path` list. |
+| [`combineFilesToPaths(File... files)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineFilesToPaths(java.io.File...))                                 | Combine files into a `Path` list.                |
+| [`combineFilesToStrings(Collection<File>... collections)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineFilesToStrings(java.util.Collection...))   | Combine `File` collections into a `String` list. |
+| [`combineFilesToStrings(File... files)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineFilesToStrings(java.io.File...))                             | Combine files into a `String` list.              |
+| [`combinePathsToFiles(Collection<Path>... collections)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combinePathsToFiles(java.util.Collection...))       | Combine `Path` collections into a `String` list. |
+| [`combinePathsToFiles(Path... paths)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combinePathsToFiles(java.nio.file.Path...))                           | Combine paths into a `String` list.              |
+| [`combinePathsToStrings(Collection<Path>... collections)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combinePathsToStrings(java.util.Collection...))   | Combine `Path` collections into a `String` list. |
+| [`combinePathsToStrings(Path... paths)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combinePathsToStrings(java.nio.file.Path...))                       | Combine  paths to a `String` list.               |
+| [`combineStringsToFiles(Collection<String>... collections)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineStringsToFiles(java.util.Collection...)) | Combine `String` collections into a `File` list. |
+| [`combineStringsToFiles(String... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineStringsToFiles(java.lang.String...))                     | Combine strings into a `File` list.              |
+| [`combineStringsToPaths(Collection<String>... collections)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineStringsToPaths(java.util.Collection...)) | Combine `String` collections into a `Path` list. |
 | [`combineStringsToPaths(String... strings)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/CollectionTools.html#combineStringsToPaths(java.lang.String...))                    | Combine strings into a `Path` list.              |
 
 NOTE: All methods properly handle null values
@@ -162,15 +162,17 @@ The following methods are provided:
 The [Sandbox](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html)
 class manages an isolated download directory for a bld extension.
 
-Each extension gets its own subdirectory under `lib/bld/.sandbox/<extensionName>`
+Each extension gets its own subdirectory under `lib/.sandbox/<extensionName>`
 where its compile and runtime dependencies are downloaded. To avoid unnecessary
 re-downloads, the state is tracked with a hash-based snapshot in
-`lib/bld/.sandbox/sandbox.snapshot`. If the snapshot is valid,
+`lib/.sandbox/sandbox.snapshot`. The snapshot is invalidated when the JVM version
+changes, and snapshot handling is hardened for concurrent access. Sandbox
+activities are logged to aid diagnostics. If the snapshot is valid,
 `downloadDependencies` becomes a no-op.
 
-Downloads are serialized per-extension within a single JVM. Concurrent
-processes sharing the same sandbox directory are not coordinated; the worst
-case is a redundant download.
+Downloads are serialized per-extension within a single JVM; different
+extensions can download in parallel. Concurrent processes sharing the same
+sandbox directory are not coordinated; the worst case is a redundant download.
 
 To use, create a `Sandbox` for your extension name and download:
 
@@ -182,7 +184,7 @@ var dir = sandbox.downloadDependencies(
     List.of(MAVEN_CENTRAL),
     new VersionResolution(null)
 );
-// artifacts in lib/bld/.sandbox/my-extension
+// artifacts in lib/.sandbox/my-extension
 ```
 
 The following methods are provided:
@@ -194,10 +196,10 @@ The following methods are provided:
 | [`downloadDependencies(List<Dependency>, List<Repository>, VersionResolution)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadDependencies(java.util.List,java.util.List,rife.bld.dependencies.VersionResolution)) | Downloads dependencies with a resolution into the extension root, skips if snapshot is valid. |
 | [`downloadDependencies(List<Dependency>, List<Repository>, VersionResolution, Path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadDependencies(java.util.List,java.util.List,rife.bld.dependencies.VersionResolution,java.nio.file.Path)) | Downloads dependencies into the sandbox, optionally under a subdirectory. |
 | [`downloadDependencies(List<Dependency>, List<Repository>, VersionResolution, File)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadDependencies(java.util.List,java.util.List,rife.bld.dependencies.VersionResolution,java.io.File)) | File-based overload for backward compatibility.                    |
-| [`getSandboxDirectory()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxDirectory()) | Returns `lib/bld/.sandbox`.                                        |
-| [`getSandboxDirectoryAsFile()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxDirectoryAsFile()) | Returns `lib/bld/.sandbox` as a `File`.                            |
-| [`getSandboxExtensionDirectory()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxExtensionDirectory()) | Returns `lib/bld/.sandbox/<extensionName>`.                        |
-| [`getSandboxExtensionDirectoryAsFile()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxExtensionDirectoryAsFile()) | Returns `lib/bld/.sandbox/<extensionName>` as a `File`.            |
+| [`getSandboxDirectory()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxDirectory()) | Returns `lib/.sandbox`.                                            |
+| [`getSandboxDirectoryAsFile()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxDirectoryAsFile()) | Returns `lib/.sandbox` as a `File`.                                |
+| [`getSandboxExtensionDirectory()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxExtensionDirectory()) | Returns `lib/.sandbox/<extensionName>`.                            |
+| [`getSandboxExtensionDirectoryAsFile()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxExtensionDirectoryAsFile()) | Returns `lib/.sandbox/<extensionName>` as a `File`.                |
 
 ## System Tools
 
