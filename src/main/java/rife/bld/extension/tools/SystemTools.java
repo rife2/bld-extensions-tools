@@ -537,6 +537,28 @@ public final class SystemTools {
     }
 
     /**
+     * Resolves the {@code java} executable of the JVM currently running.
+     * <p>
+     * Prefers the {@code java} binary of the running JVM (via {@code java.home}),
+     * falling back to the bare {@code java}/{@code java.exe} name (to be resolved
+     * via {@code PATH} at process launch) when that binary is not executable.
+     *
+     * @return the resolved java executable, or the bare name when not resolvable
+     * @since 1.5.1
+     */
+    public static String javaExecutable() {
+        var javaHome = System.getProperty("java.home");
+        if (javaHome != null && !javaHome.isBlank()) {
+            var exe = Path.of(javaHome, "bin",
+                    isWindows() ? "java.exe" : "java").toFile();
+            if (IOTools.canExecute(exe)) {
+                return exe.getAbsolutePath();
+            }
+        }
+        return isWindows() ? "java.exe" : "java";
+    }
+
+    /**
      * Normalize the given OS name.
      *
      * @param osName the OS name string to normalize
