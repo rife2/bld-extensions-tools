@@ -99,7 +99,8 @@ public final class IOTools {
      * If the directory already exists, this method does nothing and returns {@code true}.
      *
      * @param path the directory to create, may be {@code null}
-     * @return {@code true} if the directory exists after the call, {@code false} if {@code path} is {@code null}
+     * @return {@code true} if the directory was created or already exists after the call;
+     * {@code false} if {@code path} is {@code null}
      * @throws java.nio.file.FileAlreadyExistsException if {@code path} exists and is not a directory
      * @throws java.nio.file.AccessDeniedException      if the process does not have permission to create the directory
      * @throws IOException                              if an I/O error occurs while creating the directory
@@ -121,7 +122,8 @@ public final class IOTools {
      * <p>If {@code file} is {@code null}, this method does nothing and returns {@code false}.
      *
      * @param file the directory to create, may be {@code null}
-     * @return {@code true} if the directory exists after the call, {@code false} if {@code file} is {@code null}
+     * @return {@code true} if the directory was created or already exists after the call;
+     * {@code false} if {@code file} is {@code null}
      * @throws java.nio.file.FileAlreadyExistsException if {@code file} exists and is not a directory
      * @throws java.nio.file.AccessDeniedException      if the process does not have permission to create the directory
      * @throws IOException                              if an I/O error occurs while creating the directory
@@ -139,7 +141,8 @@ public final class IOTools {
      * <p>If {@code path} is {@code null} or blank, this method does nothing and returns {@code false}.
      *
      * @param path the path string of the directory to create, may be {@code null} or blank
-     * @return {@code true} if the directory exists after the call, {@code false} if {@code path} is {@code null} or blank
+     * @return {@code true} if the directory was created or already exists after the call;
+     * {@code false} if {@code path} is {@code null} or blank
      * @throws java.nio.file.InvalidPathException       if {@code path} cannot be converted to a {@code Path}
      * @throws java.nio.file.FileAlreadyExistsException if {@code path} exists and is not a directory
      * @throws java.nio.file.AccessDeniedException      if the process does not have permission to create the directory
@@ -200,6 +203,12 @@ public final class IOTools {
      * <p>
      * This is non-recursive - it does not search subdirectories. If the directory
      * cannot be read, an empty list is returned.
+     *
+     * <p><b>Note:</b> Unlike most methods in this class, this method does
+     * <em>not</em> tolerate {@code null} arguments: it throws
+     * {@link NullPointerException} if {@code directory} or {@code extensions}
+     * is {@code null}. This asymmetry is intentional, since collection-style
+     * operations have no sensible null default.</p>
      *
      * @param directory  the directory to list, must not be null
      * @param extensions one or more extensions to match, e.g. ".java" or "java"
@@ -351,7 +360,8 @@ public final class IOTools {
             return false;
         }
         try {
-            // InvalidPathException is not caught by mkdirs(Path), so handle it here
+            // Path.of(path) can throw InvalidPathException before mkdirs(Path) is invoked,
+            // so it must be caught here rather than relying on mkdirs(Path)'s handling.
             return mkdirs(Path.of(path));
         } catch (InvalidPathException e) {
             return false;
@@ -418,8 +428,9 @@ public final class IOTools {
      * the leading slash stripped before resolving. This is a deliberate design choice
      * that prevents absolute segments from resetting the path to the filesystem root,
      * which would violate the expectation that resolution is relative to the base.
-     * Callers passing absolute Unix paths should pre-strip the slash themselves if
-     * they intend root-relative semantics.</p>
+     * <strong>This means absolute Unix paths passed as segments are silently
+     * reinterpreted as relative.</strong> Callers that need root-relative semantics
+     * must not use this method, or must handle the absolute path outside of it.</p>
      * <p>If {@code base} is {@code null}, this behaves like {@code new File("")}:
      * segments are resolved against the current directory.</p>
      *
@@ -429,6 +440,8 @@ public final class IOTools {
      * @return a {@link File} representing the resolved path
      * @since 1.0
      */
+    // Note: the first @Nullable applies to the varargs array itself (may be null);
+    // the second @Nullable applies to each element (null elements are skipped).
     public static File resolveFile(@Nullable File base, @Nullable String @Nullable ... segments) {
         var path = (base == null ? Path.of("") : base.toPath());
 
