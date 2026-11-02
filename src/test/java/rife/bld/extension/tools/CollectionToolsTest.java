@@ -25,8 +25,10 @@ import rife.bld.testing.LoggingExtension;
 import rife.bld.testing.TestLogHandler;
 
 import java.io.File;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -331,6 +333,14 @@ class CollectionToolsTest {
     class CombineFilesToStrings {
 
         @Test
+        @DisplayName("keeps an already-absolute path unchanged")
+        void absolutePathUnchanged() {
+            var file = new File("/tmp/a.txt").getAbsoluteFile();
+            var result = CollectionTools.combineFilesToStrings(List.of(file));
+            assertEquals(file.getAbsolutePath(), result.get(0));
+        }
+
+        @Test
         @DisplayName("returns absolute paths for all files")
         void absolutePaths() {
             var file1 = new File("foo/bar.txt");
@@ -384,6 +394,16 @@ class CollectionToolsTest {
             list.add(new File("/tmp/b.txt"));
             var result = CollectionTools.combineFilesToStrings(list);
             assertEquals(2, result.size());
+        }
+
+        @Test
+        @DisplayName("collapses redundant parent segments during normalization")
+        void redundantSegmentsNormalized() {
+            var file = new File("foo/./bar/../baz.txt");
+            var result = CollectionTools.combineFilesToStrings(List.of(file));
+            assertFalse(result.get(0).contains("./"));
+            assertFalse(result.get(0).contains(".."));
+            assertEquals(new File("foo/baz.txt").getAbsolutePath(), result.get(0));
         }
 
         @Test
@@ -839,10 +859,25 @@ class CollectionToolsTest {
     class CombineStringsToPaths {
 
         @Test
+        @DisplayName("returns empty list when all collections are null")
+        void allNullCollectionsReturnEmpty() {
+            var result = CollectionTools.combineStringsToPaths(
+                    (Collection<String>) null, null);
+            assertTrue(result.isEmpty());
+        }
+
+        @Test
         @DisplayName("returns empty list for empty collections")
         void emptyCollectionsReturnEmpty() {
             var result = CollectionTools.combineStringsToPaths(List.of());
             assertTrue(result.isEmpty());
+        }
+
+        @Test
+        @DisplayName("propagates InvalidPathException for malformed path strings")
+        void malformedStringThrows() {
+            assertThrows(InvalidPathException.class,
+                    () -> CollectionTools.combineStringsToPaths("\u0000bad"));
         }
 
         @Test
@@ -1041,6 +1076,21 @@ class CollectionToolsTest {
         }
 
         @Test
+        @DisplayName("reports combined categories in stable order")
+        @SuppressWarnings("unchecked")
+        void combinedCategoriesInStableOrder() {
+            var collections = new Collection[]{
+                    null,
+                    Collections.emptyList(),
+                    Arrays.asList(null, "x")
+            };
+            CollectionTools.<String, String>combineAndMap(
+                    collections, s -> s.equals("x") ? null : s);
+            assertTrue(testLogHandler.containsExactMessage(
+                    "Dropped null collections, null elements, null mapper results, empty collections"));
+        }
+
+        @Test
         @DisplayName("logs when empty collections are dropped")
         void logsEmptyCollections() {
             var result = CollectionTools.combineFilesToPaths(
@@ -1118,6 +1168,17 @@ class CollectionToolsTest {
         }
 
         @Test
+        @DisplayName("logs when null mapper results are dropped")
+        @SuppressWarnings("unchecked")
+        void logsNullMappedResults() {
+            var collections = new Collection[]{List.of("a", "b")};
+            var result = CollectionTools.<String, String>combineAndMap(
+                    collections, s -> s.equals("a") ? s.toUpperCase() : null);
+            assertEquals(List.of("A"), result);
+            assertTrue(testLogHandler.containsExactMessage("Dropped null mapper results"));
+        }
+
+        @Test
         @DisplayName("logs when varargs array is null")
         void logsNullVarargsArray() {
             var result = CollectionTools.combine((String[]) null);
@@ -1131,6 +1192,63 @@ class CollectionToolsTest {
             var result = CollectionTools.combine(new String[0]);
             assertTrue(result.isEmpty());
             assertTrue(testLogHandler.isEmpty());
+        }
+
+        @Test
+        @DisplayName("does not log when FINE level is disabled")
+        void noLoggingWhenFineDisabled() {
+            var logger = Logger.getLogger(CollectionTools.class.getName());
+            var previous = logger.getLevel();
+            logger.setLevel(Level.INFO);
+            try {
+                var result = CollectionTools.combineFilesToPaths(
+                        null, List.of(new File("a")));
+                assertEquals(1, result.size());
+                assertTrue(testLogHandler.isEmpty());
+            } finally {
+                logger.setLevel(previous);
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("no-argument overloads")
+    class NoArgumentOverloads {
+
+        @Test
+        @DisplayName("combineFilesToPaths() returns empty list")
+        void combineFilesToPathsNoArgs() {
+            assertTrue(CollectionTools.combineFilesToPaths().isEmpty());
+        }
+
+        @Test
+        @DisplayName("combineFilesToStrings() returns empty list")
+        void combineFilesToStringsNoArgs() {
+            assertTrue(CollectionTools.combineFilesToStrings().isEmpty());
+        }
+
+        @Test
+        @DisplayName("combinePathsToFiles() returns empty list")
+        void combinePathsToFilesNoArgs() {
+            assertTrue(CollectionTools.combinePathsToFiles().isEmpty());
+        }
+
+        @Test
+        @DisplayName("combinePathsToStrings() returns empty list")
+        void combinePathsToStringsNoArgs() {
+            assertTrue(CollectionTools.combinePathsToStrings().isEmpty());
+        }
+
+        @Test
+        @DisplayName("combineStringsToFiles() returns empty list")
+        void combineStringsToFilesNoArgs() {
+            assertTrue(CollectionTools.combineStringsToFiles().isEmpty());
+        }
+
+        @Test
+        @DisplayName("combineStringsToPaths() returns empty list")
+        void combineStringsToPathsNoArgs() {
+            assertTrue(CollectionTools.combineStringsToPaths().isEmpty());
         }
     }
 }

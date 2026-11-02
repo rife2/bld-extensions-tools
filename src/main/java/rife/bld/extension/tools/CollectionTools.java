@@ -21,10 +21,9 @@ import org.jspecify.annotations.Nullable;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -36,6 +35,11 @@ import java.util.logging.Logger;
  * <p>
  * The internal methods {@code combineAndMap} and {@code combineAndMapVarargs} are implementation
  * details and not part of the public API.
+ * <p>
+ * Conversion methods may propagate {@link java.nio.file.InvalidPathException}
+ * (malformed path strings), {@link UnsupportedOperationException} (paths that
+ * cannot be converted to a {@link File}), or {@link java.io.IOError} (when
+ * resolving an absolute path).
  *
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
@@ -90,7 +94,8 @@ public final class CollectionTools {
      * case no collections are processed.
      * <p>
      * Returns an unmodifiable list. Returns an empty list if the input array
-     * reference is {@code null}. Mapper results that are {@code null} are ignored.
+     * reference is {@code null}. Mapper results that are {@code null} are ignored,
+     * so the returned list never contains {@code null} elements.
      *
      * @since 1.0
      */
@@ -102,52 +107,33 @@ public final class CollectionTools {
         }
 
         List<R> result = new ArrayList<>();
-        boolean droppedNullCollection = false;
-        boolean droppedNullElement = false;
-        boolean droppedEmpty = false;
-        boolean droppedNullMapped = false;
+        Set<DropReason> dropped = EnumSet.noneOf(DropReason.class);
 
         for (@Nullable Collection<@Nullable T> c : collections) {
             if (c == null) {
-                droppedNullCollection = true;
+                dropped.add(DropReason.NULL_COLLECTION);
                 continue;
             }
             if (c.isEmpty()) {
-                droppedEmpty = true;
+                dropped.add(DropReason.EMPTY_COLLECTION);
                 continue;
             }
             //noinspection NullableProblems
             for (@Nullable T e : c) {
                 if (e == null) {
-                    droppedNullElement = true;
+                    dropped.add(DropReason.NULL_ELEMENT);
                     continue;
                 }
                 R mapped = mapper.apply(e);
                 if (mapped == null) {
-                    droppedNullMapped = true;
+                    dropped.add(DropReason.NULL_MAPPED);
                     continue;
                 }
                 result.add(mapped);
             }
         }
 
-        if (droppedNullCollection || droppedNullElement || droppedEmpty || droppedNullMapped) {
-            List<String> reasons = new ArrayList<>();
-            if (droppedNullCollection) {
-                reasons.add("null collections");
-            }
-            if (droppedNullElement) {
-                reasons.add("null elements");
-            }
-            if (droppedNullMapped) {
-                reasons.add("null mapper results");
-            }
-            if (droppedEmpty) {
-                reasons.add("empty collections");
-            }
-            logger.fine("Dropped " + String.join(", ", reasons));
-        }
-
+        logDropped(dropped);
         return List.copyOf(result);
     }
 
@@ -161,7 +147,8 @@ public final class CollectionTools {
      * are not applicable for varargs.
      * <p>
      * Returns an unmodifiable list. Returns an empty list if the input array
-     * reference is {@code null}. Mapper results that are {@code null} are ignored.
+     * reference is {@code null}. Mapper results that are {@code null} are ignored,
+     * so the returned list never contains {@code null} elements.
      *
      * @since 1.0
      */
@@ -173,29 +160,22 @@ public final class CollectionTools {
         }
 
         List<R> result = new ArrayList<>();
-        boolean droppedNullElement = false;
-        boolean droppedNullMapped = false;
+        Set<DropReason> dropped = EnumSet.noneOf(DropReason.class);
 
         for (@Nullable T e : elements) {
             if (e == null) {
-                droppedNullElement = true;
+                dropped.add(DropReason.NULL_ELEMENT);
                 continue;
             }
             R mapped = mapper.apply(e);
             if (mapped == null) {
-                droppedNullMapped = true;
+                dropped.add(DropReason.NULL_MAPPED);
                 continue;
             }
             result.add(mapped);
         }
 
-        if (droppedNullElement || droppedNullMapped) {
-            String reason = droppedNullElement && droppedNullMapped
-                    ? "null elements or null mapper results"
-                    : droppedNullElement ? "null elements" : "null mapper results";
-            logger.fine("Dropped " + reason);
-        }
-
+        logDropped(dropped);
         return List.copyOf(result);
     }
 
@@ -228,6 +208,16 @@ public final class CollectionTools {
     }
 
     /**
+     * Returns an empty unmodifiable list, disambiguating the no-argument call.
+     *
+     * @return an empty unmodifiable list
+     * @since 1.0
+     */
+    public static List<Path> combineFilesToPaths() {
+        return List.of();
+    }
+
+    /**
      * Combines multiple {@link File} collections into a list of normalized absolute path strings.
      * <p>
      * Uses {@link Path#toAbsolutePath()} and {@link Path#normalize()}.
@@ -257,6 +247,16 @@ public final class CollectionTools {
     }
 
     /**
+     * Returns an empty unmodifiable list, disambiguating the no-argument call.
+     *
+     * @return an empty unmodifiable list
+     * @since 1.0
+     */
+    public static List<String> combineFilesToStrings() {
+        return List.of();
+    }
+
+    /**
      * Combines multiple {@link Path} collections into a list of {@link File} objects.
      * <p>
      * Null collections, empty collections, and null elements are ignored.
@@ -282,6 +282,16 @@ public final class CollectionTools {
      */
     public static List<File> combinePathsToFiles(@Nullable Path @Nullable ... paths) {
         return combineAndMapVarargs(paths, CollectionTools::toFile);
+    }
+
+    /**
+     * Returns an empty unmodifiable list, disambiguating the no-argument call.
+     *
+     * @return an empty unmodifiable list
+     * @since 1.0
+     */
+    public static List<File> combinePathsToFiles() {
+        return List.of();
     }
 
     /**
@@ -314,6 +324,16 @@ public final class CollectionTools {
     }
 
     /**
+     * Returns an empty unmodifiable list, disambiguating the no-argument call.
+     *
+     * @return an empty unmodifiable list
+     * @since 1.0
+     */
+    public static List<String> combinePathsToStrings() {
+        return List.of();
+    }
+
+    /**
      * Combines multiple string collections into a list of {@link File} objects.
      * <p>
      * Null collections, empty collections, and null elements are ignored.
@@ -342,6 +362,17 @@ public final class CollectionTools {
     }
 
     /**
+     * Returns an empty unmodifiable list, disambiguating the no-argument call.
+     *
+     * @return an empty unmodifiable list
+     * @since 1.0
+     */
+    public static List<File> combineStringsToFiles() {
+        return List.of();
+    }
+
+    /**
+     *
      * Combines multiple string collections into a list of {@link Path} objects.
      * <p>
      * Null collections, empty collections, and null elements are ignored.
@@ -369,6 +400,36 @@ public final class CollectionTools {
         return combineAndMapVarargs(strings, CollectionTools::toPath);
     }
 
+    /**
+     * Returns an empty unmodifiable list, disambiguating the no-argument call.
+     *
+     * @return an empty unmodifiable list
+     * @since 1.0
+     */
+    public static List<Path> combineStringsToPaths() {
+        return List.of();
+    }
+
+    /**
+     * Logs a single FINE message summarizing the categories of inputs that were
+     * dropped during a combine operation.
+     * <p>
+     * The message is only constructed when FINE logging is enabled, and categories
+     * are reported in a stable order.
+     *
+     * @param reasons the set of drop reasons, may be empty
+     */
+    private static void logDropped(Set<DropReason> reasons) {
+        if (reasons.isEmpty() || !logger.isLoggable(Level.FINE)) {
+            return;
+        }
+        var messages = new ArrayList<String>(reasons.size());
+        for (DropReason reason : reasons) {
+            messages.add(reason.message());
+        }
+        logger.fine("Dropped " + String.join(", ", messages));
+    }
+
     private static File toFile(Path p) {
         return p.toFile();
     }
@@ -391,5 +452,25 @@ public final class CollectionTools {
 
     private static Path toPath(String s) {
         return Path.of(s);
+    }
+
+    /**
+     * Categories of inputs that a combine operation may drop.
+     */
+    private enum DropReason {
+        NULL_COLLECTION("null collections"),
+        NULL_ELEMENT("null elements"),
+        NULL_MAPPED("null mapper results"),
+        EMPTY_COLLECTION("empty collections");
+
+        private final String message;
+
+        DropReason(String message) {
+            this.message = message;
+        }
+
+        String message() {
+            return message;
+        }
     }
 }
