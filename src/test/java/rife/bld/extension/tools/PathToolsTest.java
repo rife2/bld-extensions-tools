@@ -16,6 +16,7 @@
 
 package rife.bld.extension.tools;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -95,6 +96,13 @@ class PathToolsTest {
         void shellMetaChars() {
             List<String> args = List.of("echo", "$HOME", "`rm -rf /`");
             assertEquals("echo '$HOME' '`rm -rf /`'", PathTools.formatCommandLine(args));
+        }
+
+        @Test
+        @DisplayName("accepts a wildcard collection of nullables")
+        void wildcardCollection() {
+            List<@Nullable String> args = Arrays.asList("echo", null, "");
+            assertEquals("echo '' ''", PathTools.formatCommandLine(args));
         }
 
         @Test
@@ -186,6 +194,15 @@ class PathToolsTest {
                     var parts = result.split(File.pathSeparator);
                     assertEquals(expectedParts, parts.length);
                 }
+            }
+
+            @Test
+            @DisplayName("accepts a wildcard collection")
+            void wildcardCollection() {
+                var file = new File("path" + FILE_SEP + "to" + FILE_SEP + "wild.jar");
+                List<? extends File> jars = List.of(file);
+                assertEquals(file.toPath().toAbsolutePath().normalize().toString(),
+                        PathTools.joinClasspath(jars));
             }
         }
 
@@ -315,6 +332,15 @@ class PathToolsTest {
                 var cp = PathTools.joinClasspath(withNull);
                 assertEquals(file.toAbsolutePath().normalize().toString(), cp);
             }
+
+            @Test
+            @DisplayName("accepts a wildcard collection")
+            void wildcardCollection() throws IOException {
+                var file = Files.createFile(tempDir.resolve("wild.jar"));
+                List<? extends Path> paths = List.of(file);
+                assertEquals(file.toAbsolutePath().normalize().toString(),
+                        PathTools.joinClasspath(paths));
+            }
         }
 
         @Nested
@@ -411,6 +437,15 @@ class PathToolsTest {
             }
 
             @Test
+            @DisplayName("should NOT normalize or absolutize entries")
+            void noNormalization() {
+                var relative = "lib" + FILE_SEP + "." + FILE_SEP + ".." + FILE_SEP + "a.jar";
+                var result = PathTools.joinClasspath(relative);
+                assertEquals(relative, result);
+                assertFalse(result.contains(Path.of(relative).toAbsolutePath().toString()));
+            }
+
+            @Test
             @DisplayName("should build classpath with single valid path")
             void singleValidPath() {
                 var path = "path" + FILE_SEP + "to" + FILE_SEP + "jar.jar";
@@ -422,6 +457,15 @@ class PathToolsTest {
         @Nested
         @DisplayName("joinClasspath() - no args")
         class NoArgsTests {
+
+            @Test
+            @DisplayName("should equal an empty varargs result")
+            void consistentWithEmptyVarargs() {
+                assertEquals(PathTools.joinClasspath(new File[0]), PathTools.joinClasspath());
+                assertEquals(PathTools.joinClasspath(new Path[0]), PathTools.joinClasspath());
+                assertEquals(PathTools.joinClasspath(new String[0]), PathTools.joinClasspath());
+                assertEquals(PathTools.joinClasspath(List.<File>of()), PathTools.joinClasspath());
+            }
 
             @Test
             @DisplayName("should return empty string")

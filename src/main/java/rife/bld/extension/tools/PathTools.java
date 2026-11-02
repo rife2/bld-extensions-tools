@@ -66,7 +66,7 @@ public final class PathTools {
      * an empty string if the collection is {@code null} or empty
      * @since 1.0
      */
-    public static String formatCommandLine(@Nullable Collection<@Nullable String> args) {
+    public static String formatCommandLine(@Nullable Collection<? extends @Nullable String> args) {
         if (args == null || args.isEmpty()) {
             return "";
         }
@@ -108,7 +108,7 @@ public final class PathTools {
      * @since 1.0
      */
     @SafeVarargs
-    public static String joinClasspath(@Nullable Collection<File> @Nullable ... files) {
+    public static String joinClasspath(@Nullable Collection<? extends @Nullable File> @Nullable ... files) {
         if (files == null) {
             return "";
         }
@@ -116,7 +116,7 @@ public final class PathTools {
                 .filter(Objects::nonNull)
                 .flatMap(Collection::stream)
                 .filter(Objects::nonNull)
-                .map(f -> Objects.requireNonNull(f).toPath().toAbsolutePath().normalize().toString())
+                .map(f -> normalizePath(f.toPath()))
                 .collect(Collectors.joining(File.pathSeparator));
     }
 
@@ -145,7 +145,7 @@ public final class PathTools {
         }
         return Arrays.stream(files)
                 .filter(Objects::nonNull)
-                .map(f -> f.toPath().toAbsolutePath().normalize().toString())
+                .map(f -> normalizePath(f.toPath()))
                 .collect(Collectors.joining(File.pathSeparator));
     }
 
@@ -154,6 +154,10 @@ public final class PathTools {
      * paths using the system's path separator.
      *
      * <p>Blank or {@code null} paths are ignored.</p>
+     *
+     * <p>Unlike the {@link File} and {@link Path} overloads, entries are used
+     * verbatim and are <em>not</em> converted to absolute or normalized paths.
+     * This permits classpath globs and other non-path entries.</p>
      *
      * @param paths an array of strings representing individual classpath entries;
      *              may be {@code null}, and individual {@code null} or blank strings
@@ -190,7 +194,7 @@ public final class PathTools {
      * is {@code null} or contains no valid paths
      * @since 1.0
      */
-    public static String joinClasspath(@Nullable Collection<@Nullable Path> paths) {
+    public static String joinClasspath(@Nullable Collection<? extends @Nullable Path> paths) {
         if (paths == null) {
             return "";
         }
@@ -224,7 +228,11 @@ public final class PathTools {
         }
         return Arrays.stream(paths)
                 .filter(Objects::nonNull)
-                .map(p -> p.toAbsolutePath().normalize().toString())
+                .map(PathTools::normalizePath)
                 .collect(Collectors.joining(File.pathSeparator));
+    }
+
+    private static String normalizePath(final Path path) {
+        return Objects.requireNonNull(path).toAbsolutePath().normalize().toString();
     }
 }
