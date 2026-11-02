@@ -47,7 +47,7 @@ public final class SystemTools {
     private static final String OS_ARCH = System.getProperty("os.arch", "").toLowerCase(Locale.ROOT);
     private static final String OS_NAME = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
     private static final boolean IS_OTHER_OS = isOtherOs(OS_NAME);
-    private static final boolean IS_WSL = computeWsl(OS_NAME, () -> {
+    private static final boolean IS_WSL = isWsl(OS_NAME, () -> {
         try {
             return readProcVersion();
         } catch (IOException e) {
@@ -71,27 +71,6 @@ public final class SystemTools {
      */
     public static String arch() {
         return OS_ARCH;
-    }
-
-    /**
-     * Determines if the environment is Windows Subsystem for Linux based on
-     * the provided OS name and /proc/version content supplier.
-     *
-     * @param osName              the name of the operating system
-     * @param procVersionSupplier supplier for /proc/version content
-     * @return {@code true} if WSL, {@code false} otherwise
-     * @since 1.3
-     */
-    private static boolean computeWsl(@Nullable String osName, Supplier<@Nullable String> procVersionSupplier) {
-        if (osName == null || !isLinux(osName)) {
-            return false;
-        }
-        var version = procVersionSupplier.get();
-        if (version == null) {
-            return false;
-        }
-        var lower = version.toLowerCase(Locale.ROOT);
-        return lower.contains("microsoft") || lower.contains("wsl");
     }
 
     /**
@@ -200,6 +179,12 @@ public final class SystemTools {
      * Determines if the environment is running in a Cygwin environment based on
      * the provided OS name and environment variables.
      *
+     * <p>Only explicit Cygwin markers are matched. Generic Unix shell paths
+     * (such as {@code /usr/bin/bash}) and terminal types (such as {@code xterm})
+     * are intentionally excluded because they are also common in MSYS2, Git Bash,
+     * and other Unix-like Windows environments, and would otherwise cause false
+     * positives that could misclassify those environments as Cygwin.
+     *
      * @param osName      the name of the operating system
      * @param envProvider a function to retrieve environment variables
      * @return {@code true} if the environment is detected as Cygwin, {@code false} otherwise
@@ -214,19 +199,9 @@ public final class SystemTools {
         var path = envProvider.apply("PATH");
         var term = envProvider.apply("TERM");
 
-        boolean hasCygwinShell = shell != null &&
-                (shell.contains("cygwin")
-                        || shell.startsWith("/bin/")
-                        || shell.startsWith("/usr/bin/"));
-
-        boolean hasCygwinPath = path != null &&
-                (path.contains("/cygdrive/")
-                        || path.contains("/usr/bin/cygwin"));
-
-        // FIX: removed xterm from hasCygwinTerm — xterm is a generic terminal type common in
-        //      many non-Cygwin Windows environments (Git Bash, VS Code, etc.) and produces
-        //      false positives. Only match an explicit "cygwin" term value.
-        boolean hasCygwinTerm = term != null && term.contains("cygwin");
+        var hasCygwinShell = shell != null && shell.contains("cygwin");
+        var hasCygwinPath = path != null && path.contains("/cygdrive/");
+        var hasCygwinTerm = term != null && term.contains("cygwin");
 
         return hasCygwinShell || hasCygwinPath || hasCygwinTerm;
     }
@@ -270,7 +245,6 @@ public final class SystemTools {
      * {@code false} otherwise
      * @since 1.0
      */
-    // FIX: inlined the redundant local variable `n` to match the style of other single-condition methods
     static boolean isLinux(@Nullable String osName) {
         return normalize(osName).contains("linux");
     }
@@ -319,6 +293,11 @@ public final class SystemTools {
      * Determines if the environment is running in a MinGW environment based on
      * the provided OS name and environment variables.
      *
+     * <p>The {@code MSYSTEM} value is matched case-insensitively and covers the
+     * full MSYS2 MINGW family ({@code MINGW*}, {@code MSYS*}, {@code UCRT*},
+     * {@code CLANG*}); presence of {@code MINGW_PREFIX} or {@code MINGW_CHOST}
+     * is also treated as a positive signal.
+     *
      * @param osName      the name of the operating system
      * @param envProvider a function to retrieve environment variables
      * @return {@code true} if the environment is detected as MinGW/MSYS2, {@code false} otherwise
@@ -330,26 +309,28 @@ public final class SystemTools {
         }
 
         var msystem = envProvider.apply("MSYSTEM");
-        boolean hasMsystem = msystem != null && (msystem.contains("MINGW") || msystem.contains("MSYS"));
-        if (hasMsystem) {
-            return true;
+        if (msystem != null) {
+            var ms = msystem.toUpperCase(Locale.ROOT);
+            if (ms.contains("MINGW") || ms.contains("MSYS")
+                    || ms.startsWith("UCRT") || ms.startsWith("CLANG")) {
+                return true;
+            }
         }
 
         var mingwPrefix = envProvider.apply("MINGW_PREFIX");
         var mingwChost = envProvider.apply("MINGW_CHOST");
-        boolean hasMingwVars = mingwPrefix != null || mingwChost != null;
-        if (hasMingwVars) {
+        if (mingwPrefix != null || mingwChost != null) {
             return true;
         }
 
         var path = envProvider.apply("PATH");
         var shell = envProvider.apply("SHELL");
-        boolean hasMingwPath = path != null
+        var hasMingwPath = path != null
                 && (path.contains("/mingw")
                 || path.contains("\\mingw")
                 || path.contains("/msys")
                 || path.contains("\\msys"));
-        boolean hasMingwShell = shell != null && (shell.contains("/bin/bash") || shell.contains("/bin/sh"));
+        var hasMingwShell = shell != null && (shell.contains("/bin/bash") || shell.contains("/bin/sh"));
 
         return hasMingwPath && hasMingwShell;
     }
@@ -396,13 +377,14 @@ public final class SystemTools {
      * @since 1.0
      */
     static boolean isOtherOs(@Nullable String osName) {
-        return !isAix(osName)
-                && !isFreeBsd(osName)
-                && !isLinux(osName)
-                && !isMacOS(osName)
-                && !isOpenVms(osName)
-                && !isSolaris(osName)
-                && !isWindows(osName);
+        var n = normalize(osName);
+        return !isAix(n)
+                && !isFreeBsd(n)
+                && !isLinux(n)
+                && !isMacOS(n)
+                && !isOpenVms(n)
+                && !isSolaris(n)
+                && !isWindows(n);
     }
 
     /**
@@ -468,7 +450,8 @@ public final class SystemTools {
      * Determines if the environment is Windows Subsystem for Linux based on
      * the provided OS name and /proc/version content supplier.
      *
-     * <p>For testing. Production code should use {@link #isWsl()}.
+     * <p>This is the single implementation used both by {@link #isWsl()} (via the
+     * cached {@code IS_WSL} flag) and by tests with a custom supplier.
      *
      * @param osName              the name of the operating system
      * @param procVersionSupplier supplier for /proc/version content
@@ -476,7 +459,15 @@ public final class SystemTools {
      * @since 1.3
      */
     static boolean isWsl(@Nullable String osName, Supplier<@Nullable String> procVersionSupplier) {
-        return computeWsl(osName, procVersionSupplier);
+        if (osName == null || !isLinux(osName)) {
+            return false;
+        }
+        var version = procVersionSupplier.get();
+        if (version == null) {
+            return false;
+        }
+        var lower = version.toLowerCase(Locale.ROOT);
+        return lower.contains("microsoft") || lower.contains("wsl");
     }
 
     /**

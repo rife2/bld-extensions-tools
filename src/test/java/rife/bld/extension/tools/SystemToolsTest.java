@@ -125,14 +125,13 @@ class SystemToolsTest {
 
         static Stream<Arguments> provideCygwinEnvironments() {
             return Stream.of(
-                    Arguments.of("Unix shell /bin/bash", Map.of("SHELL", "/bin/bash")),
-                    Arguments.of("Unix shell /bin/sh", Map.of("SHELL", "/bin/sh")),
-                    Arguments.of("Unix shell /usr/bin/zsh", Map.of("SHELL", "/usr/bin/zsh")),
                     Arguments.of("PATH with /cygdrive/", Map.of("PATH", "/usr/bin:/cygdrive/c/Windows")),
                     Arguments.of("PATH with both indicators", Map.of("PATH", "/cygdrive/c/Windows:/usr/bin")),
                     Arguments.of("TERM cygwin", Map.of("TERM", "cygwin")),
+                    Arguments.of("SHELL cygwin", Map.of("SHELL", "/usr/bin/cygwin")),
                     Arguments.of("Complete Cygwin environment",
-                            Map.of("TERM", "xterm", "SHELL", "/bin/bash", "PATH", "/usr/bin:/cygdrive/c/Windows"))
+                            Map.of("TERM", "cygwin", "SHELL", "/usr/bin/cygwin",
+                                    "PATH", "/usr/bin:/cygdrive/c/Windows"))
             );
         }
 
@@ -144,7 +143,16 @@ class SystemToolsTest {
                     Arguments.of("Windows TERM", Map.of("TERM", "dumb")),
                     Arguments.of("PowerShell environment",
                             Map.of("SHELL", "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
-                                    "PATH", "C:\\Windows\\System32"))
+                                    "PATH", "C:\\Windows\\System32")),
+                    // Bare Unix shells are NOT Cygwin markers: they are also used by
+                    // MSYS2, Git Bash, and other Unix-like Windows environments.
+                    Arguments.of("Bare Unix shell /bin/bash", Map.of("SHELL", "/bin/bash")),
+                    Arguments.of("Bare Unix shell /bin/sh", Map.of("SHELL", "/bin/sh")),
+                    Arguments.of("Bare Unix shell /usr/bin/zsh", Map.of("SHELL", "/usr/bin/zsh")),
+                    Arguments.of("Generic xterm terminal", Map.of("TERM", "xterm")),
+                    Arguments.of("Git Bash environment",
+                            Map.of("SHELL", "/usr/bin/bash", "TERM", "xterm",
+                                    "PATH", "/mingw64/bin:/usr/bin"))
             );
         }
 
@@ -168,7 +176,8 @@ class SystemToolsTest {
         @ValueSource(strings = {"Linux", "Mac OS X", "FreeBSD"})
         @DisplayName("Should reject non-Windows systems even with Cygwin indicators")
         void shouldRejectNonWindowsSystems(String osName) {
-            var env = Map.of("TERM", "xterm", "SHELL", "/bin/bash", "PATH", "/usr/bin:/cygdrive/c");
+            var env = Map.of("TERM", "cygwin", "SHELL", "/usr/bin/cygwin",
+                    "PATH", "/usr/bin:/cygdrive/c");
             assertFalse(SystemTools.isCygwin(osName, createEnvProvider(env)));
         }
 
@@ -177,7 +186,8 @@ class SystemToolsTest {
                 "Linux, false", "Mac OS X, false"})
         @DisplayName("Should require Windows OS for Cygwin detection")
         void shouldRequireWindowsForCygwin(String osName, boolean expected) {
-            var env = Map.of("SHELL", "/bin/bash");
+            // TERM=cygwin is an explicit Cygwin marker (not a bare Unix shell).
+            var env = Map.of("TERM", "cygwin");
             assertEquals(expected, SystemTools.isCygwin(osName, createEnvProvider(env)));
         }
 
@@ -197,7 +207,7 @@ class SystemToolsTest {
         void shouldDetectCygwin() {
             var cygwinEnv = Map.of(
                     "PATH", "/usr/bin:/cygdrive/c/Windows",
-                    "SHELL", "/usr/bin/bash"
+                    "TERM", "cygwin"
             );
             var provider = createEnvProvider(cygwinEnv);
             assertTrue(SystemTools.isCygwin("Windows 10", provider));
@@ -388,6 +398,10 @@ class SystemToolsTest {
                     Arguments.of("MSYSTEM=MINGW64", Map.of("MSYSTEM", "MINGW64")),
                     Arguments.of("MSYSTEM=MINGW32", Map.of("MSYSTEM", "MINGW32")),
                     Arguments.of("MSYSTEM=MSYS", Map.of("MSYSTEM", "MSYS")),
+                    // MSYS2 environments: UCRT and CLANG variants are valid MinGW-family.
+                    Arguments.of("MSYSTEM=UCRT64", Map.of("MSYSTEM", "UCRT64")),
+                    Arguments.of("MSYSTEM=CLANG64", Map.of("MSYSTEM", "CLANG64")),
+                    Arguments.of("MSYSTEM=CLANGARM64", Map.of("MSYSTEM", "CLANGARM64")),
                     Arguments.of("MINGW_PREFIX", Map.of("MINGW_PREFIX", "/mingw64")),
                     Arguments.of("MINGW_CHOST", Map.of("MINGW_CHOST", "x86_64-w64-mingw32")),
                     Arguments.of("Both MINGW variables",
@@ -418,8 +432,8 @@ class SystemToolsTest {
                     Arguments.of("PowerShell environment",
                             Map.of("PATH", "C:\\Windows\\System32;C:\\Program Files",
                                     "SHELL", "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe")),
-                    Arguments.of("MSYSTEM=UCRT64", Map.of("MSYSTEM", "UCRT64")),
-                    Arguments.of("MSYSTEM=CLANG64", Map.of("MSYSTEM", "CLANG64"))
+                    Arguments.of("MSYSTEM=MSVC", Map.of("MSYSTEM", "MSVC")),
+                    Arguments.of("MSYSTEM=FOO", Map.of("MSYSTEM", "FOO"))
             );
         }
 
@@ -437,26 +451,31 @@ class SystemToolsTest {
             var mingwEnv = Map.of("MSYSTEM", "MINGW64", "MINGW_PREFIX", "/mingw64", "SHELL", "/bin/bash");
             var mingwProvider = createEnvProvider(mingwEnv);
 
-            var cygwinEnv = Map.of("TERM", "xterm", "SHELL", "/bin/bash");
+            // Explicit Cygwin marker; bare Unix shells are no longer a Cygwin signal.
+            var cygwinEnv = Map.of("TERM", "cygwin");
             var cygwinProvider = createEnvProvider(cygwinEnv);
 
             assertTrue(SystemTools.isMinGw("Windows 10", mingwProvider));
-            assertTrue(SystemTools.isCygwin("Windows 10", mingwProvider));
+            assertFalse(SystemTools.isCygwin("Windows 10", mingwProvider));
             assertFalse(SystemTools.isMinGw("Windows 10", cygwinProvider));
             assertTrue(SystemTools.isCygwin("Windows 10", cygwinProvider));
         }
 
         @Test
-        @DisplayName("Should handle case-sensitive MSYSTEM values")
+        @DisplayName("Should handle case-insensitive MSYSTEM values")
         @SuppressWarnings("PMD.UnitTestShouldIncludeAssert")
-        void shouldHandleCaseSensitiveMsystem() {
+        void shouldHandleCaseInsensitiveMsystem() {
             var testCases = Map.of(
                     "MINGW64", true,
                     "MSYS", true,
                     "mingw_MINGW64", true,
-                    "mingw64", false,
-                    "MiNgW64", false,
-                    "msys", false
+                    "mingw64", true,
+                    "MiNgW64", true,
+                    "msys", true,
+                    "UCRT64", true,
+                    "ucrt64", true,
+                    "CLANG64", true,
+                    "clang64", true
             );
 
             testCases.forEach((msystem, expected) -> {
@@ -737,6 +756,14 @@ class SystemToolsTest {
         @DisplayName("Should handle null proc version")
         void shouldHandleNullProcVersion() {
             assertFalse(SystemTools.isWsl("Linux", () -> null));
+        }
+
+        @Test
+        @DisplayName("Should not invoke supplier for non-Linux OS")
+        void shouldNotInvokeSupplierForNonLinux() {
+            assertFalse(SystemTools.isWsl("Windows 10", () -> {
+                throw new AssertionError("Supplier must not be invoked for non-Linux OS");
+            }));
         }
 
         @Test
