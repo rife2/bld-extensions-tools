@@ -76,6 +76,7 @@ import java.util.function.Supplier;
  */
 @NullMarked
 @SuppressWarnings("PMD.CouplingBetweenObjects")
+@SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
 public final class ObjectTools {
 
     /**
@@ -550,9 +551,9 @@ public final class ObjectTools {
      * @throws IllegalStateException    if nesting exceeds {@value #MAX_NESTING_DEPTH} levels
      * @since 1.3
      */
-    @Contract("_, _ -> !null")
+    @Contract("null, _ -> fail; _, _ -> param1")
     @NullUnmarked
-    public static <T extends @Nullable Object> @NonNull T requireEmpty(@NonNull T value, @NonNull String message) {
+    public static <T extends @Nullable Object> @NonNull T requireEmpty(@Nullable T value, @NonNull String message) {
         ToolsSupport.requireMessage(message);
         Objects.requireNonNull(value, message);
         checkForNulls(value, message);
@@ -577,9 +578,9 @@ public final class ObjectTools {
      * @throws IllegalStateException    if nesting exceeds {@value #MAX_NESTING_DEPTH} levels
      * @since 1.3
      */
-    @Contract("_, _ -> param1")
+    @Contract("null, _ -> fail; _, _ -> param1")
     @NullUnmarked
-    public static <T extends @Nullable Object> @NonNull T requireEmpty(@NonNull T value,
+    public static <T extends @Nullable Object> @NonNull T requireEmpty(@Nullable T value,
                                                                        @NonNull Supplier<String> messageSupplier) {
         Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
         Objects.requireNonNull(value, messageSupplier);
@@ -610,9 +611,9 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
-    @Contract("_, _ -> param1")
+    @Contract("null, _ -> fail; _, _ -> param1")
     @NullUnmarked
-    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNegative(@NonNull T value,
+    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNegative(@Nullable T value,
                                                                                           @NonNull String context) {
         ToolsSupport.requireContext(context);
         Objects.requireNonNull(value, context + MUST_NOT_BE_NULL);
@@ -631,9 +632,9 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
-    @Contract("_, _ -> param1")
+    @Contract("null, _ -> fail; _, _ -> param1")
     @NullUnmarked
-    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNegative(@NonNull T value,
+    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNegative(@Nullable T value,
                                                                                           @NonNull Supplier<String> messageSupplier) {
         Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
         Objects.requireNonNull(value, "value" + MUST_NOT_BE_NULL);
@@ -658,9 +659,9 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
-    @Contract("_, _ -> param1")
+    @Contract("null, _ -> fail; _, _ -> param1")
     @NullUnmarked
-    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNonNegative(@NonNull T value,
+    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNonNegative(@Nullable T value,
                                                                                              @NonNull String context) {
         ToolsSupport.requireContext(context);
         Objects.requireNonNull(value, context + MUST_NOT_BE_NULL);
@@ -679,9 +680,9 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
-    @Contract("_, _ -> param1")
+    @Contract("null, _ -> fail; _, _ -> param1")
     @NullUnmarked
-    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNonNegative(@NonNull T value,
+    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNonNegative(@Nullable T value,
                                                                                              @NonNull Supplier<String> messageSupplier) {
         Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
         Objects.requireNonNull(value, "value" + MUST_NOT_BE_NULL);
@@ -708,9 +709,9 @@ public final class ObjectTools {
      * @throws IllegalStateException    if nesting exceeds {@value #MAX_NESTING_DEPTH} levels
      * @since 1.3
      */
-    @Contract("_, _ -> param1")
+    @Contract("null, _ -> fail; _, _ -> param1")
     @NullUnmarked
-    public static <T extends @Nullable Object> @NonNull T requireNonNull(@NonNull T value, @NonNull String context) {
+    public static <T extends @Nullable Object> @NonNull T requireNonNull(@Nullable T value, @NonNull String context) {
         ToolsSupport.requireContext(context);
         Objects.requireNonNull(value, context + MUST_NOT_BE_NULL);
         checkForNulls(value, context + " must not contain null elements");
@@ -733,9 +734,9 @@ public final class ObjectTools {
      * @throws IllegalStateException if nesting exceeds {@value #MAX_NESTING_DEPTH} levels
      * @since 1.3
      */
-    @Contract("_, _ -> param1")
+    @Contract("null, _ -> fail; _, _ -> param1")
     @NullUnmarked
-    public static <T extends @Nullable Object> @NonNull T requireNonNull(@NonNull T value,
+    public static <T extends @Nullable Object> @NonNull T requireNonNull(@Nullable T value,
                                                                          @NonNull Supplier<String> messageSupplier) {
         Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
         Objects.requireNonNull(value, messageSupplier);   // lazy — only if value is null
@@ -761,9 +762,9 @@ public final class ObjectTools {
      * @throws IllegalStateException    if nesting exceeds {@value #MAX_NESTING_DEPTH} levels
      * @since 1.3
      */
-    @Contract("_, _ -> param1")
+    @Contract("null, _ -> fail; _, _ -> param1")
     @NullUnmarked
-    public static <T extends @Nullable Object> @NonNull T requireNotEmpty(@NonNull T value, @NonNull String context) {
+    public static <T extends @Nullable Object> @NonNull T requireNotEmpty(@Nullable T value, @NonNull String context) {
         ToolsSupport.requireContext(context);
         Objects.requireNonNull(value, context + MUST_NOT_BE_NULL);
         checkForNulls(value, context + " must not contain null elements");
@@ -791,9 +792,9 @@ public final class ObjectTools {
      * @throws IllegalStateException    if nesting exceeds {@value #MAX_NESTING_DEPTH} levels
      * @since 1.3
      */
-    @Contract("_, _, _ -> param1")
+    @Contract("null, _, _ -> fail; _, _, _ -> param1")
     @NullUnmarked
-    public static <T extends @Nullable Object> @NonNull T requireNotEmpty(@NonNull T value,
+    public static <T extends @Nullable Object> @NonNull T requireNotEmpty(@Nullable T value,
                                                                           @NonNull String nullMessage,
                                                                           @NonNull String emptyMessage) {
         ToolsSupport.requireMessage(nullMessage);
@@ -820,9 +821,9 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
-    @Contract("_, _ -> param1")
+    @Contract("null, _ -> fail; _, _ -> param1")
     @NullUnmarked
-    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requirePositive(@NonNull T value,
+    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requirePositive(@Nullable T value,
                                                                                           @NonNull String context) {
         ToolsSupport.requireContext(context);
         Objects.requireNonNull(value, context + MUST_NOT_BE_NULL);
@@ -841,9 +842,9 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
-    @Contract("_, _ -> param1")
+    @Contract("null, _ -> fail; _, _ -> param1")
     @NullUnmarked
-    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requirePositive(@NonNull T value,
+    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requirePositive(@Nullable T value,
                                                                                           @NonNull Supplier<String> messageSupplier) {
         Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
         Objects.requireNonNull(value, "value" + MUST_NOT_BE_NULL);
