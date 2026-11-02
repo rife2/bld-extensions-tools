@@ -30,6 +30,7 @@ import java.math.BigInteger;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
@@ -135,19 +136,25 @@ class ObjectToolsTest {
             for (int i = 0; i < ObjectTools.MAX_NESTING_DEPTH + 2; i++) {
                 root = List.of(root);
             }
+            Object finalRoot = root;
 
+            // Contract: exceeding MAX_NESTING_DEPTH throws, rather than returning an
+            // unreliable (truncated) result. It does not log a warning.
             var handler = new Handler() {
                 boolean warned = false;
 
+                @Override
                 public void publish(LogRecord r) {
-                    if (r.getMessage().contains("Validation stopped")) {
+                    if (r.getMessage() != null && r.getMessage().contains("Validation stopped")) {
                         warned = true;
                     }
                 }
 
+                @Override
                 public void flush() {
                 }
 
+                @Override
                 public void close() {
                 }
             };
@@ -156,14 +163,15 @@ class ObjectToolsTest {
             logger.addHandler(handler);
 
             try {
-                assertTrue(ObjectTools.allEmpty(root), "beyond MAX_NESTING_DEPTH should be assumed empty");
+                assertThrows(IllegalStateException.class,
+                        () -> ObjectTools.allEmpty(finalRoot),
+                        "beyond MAX_NESTING_DEPTH should throw, not truncate");
 
-                assertTrue(ObjectTools.allNotEmpty(root), "beyond limit assumed not empty");
+                assertThrows(IllegalStateException.class,
+                        () -> ObjectTools.allNotEmpty(finalRoot),
+                        "beyond MAX_NESTING_DEPTH should throw, not truncate");
 
-                assertTrue(handler.warned, "should log warning at depth limit");
-
-                var wide = List.of(root, "not-empty");
-                assertFalse(ObjectTools.allEmpty(wide), "other branches must still be checked");
+                assertFalse(handler.warned, "ObjectTools does not log at the depth limit; it throws");
             } finally {
                 logger.removeHandler(handler);
             }
@@ -707,9 +715,17 @@ class ObjectToolsTest {
         }
 
         @Test
-        void supplierNullMessage() {
-            assertThrows(NullPointerException.class,
-                    () -> ObjectTools.requireEmpty("", () -> null));
+        void supplierNotInvokedWhenValid() {
+            // "" is empty, so requireEmpty succeeds; the supplier must never be called.
+            var invoked = new AtomicBoolean(false);
+
+            var result = ObjectTools.requireEmpty("", () -> {
+                invoked.set(true);
+                return null;
+            });
+
+            assertEquals("", result);
+            assertFalse(invoked.get(), "supplier must not be invoked on successful validation");
         }
 
         @Test
@@ -741,6 +757,7 @@ class ObjectToolsTest {
         }
 
         @Test
+        @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNull() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireEmpty(null, "ctx"));
@@ -887,6 +904,7 @@ class ObjectToolsTest {
         }
 
         @Test
+        @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNullValue() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNegative(null, "value"));
@@ -1011,6 +1029,7 @@ class ObjectToolsTest {
         }
 
         @Test
+        @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNullValue() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNonNegative(null, "value"));
@@ -1042,8 +1061,13 @@ class ObjectToolsTest {
                 root = List.of(root);
             }
             Object finalRoot = root;
-            assertDoesNotThrow(() -> ObjectTools.requireNonNull(finalRoot, "deep"));
 
+            // Per contract: exceeding MAX_NESTING_DEPTH throws, it does not silently truncate.
+            assertThrows(IllegalStateException.class,
+                    () -> ObjectTools.requireNonNull(finalRoot, "deep"));
+
+            // A null at the current level is found before the deep branch is descended,
+            // so NPE wins over the depth limit here.
             var wide = Arrays.asList(root, null);
             assertThrows(NullPointerException.class, () -> ObjectTools.requireNonNull(wide, "wide"));
 
@@ -1064,6 +1088,7 @@ class ObjectToolsTest {
         }
 
         @Test
+        @SuppressWarnings("ConstantValue")
         void passesForEmptyCollection() {
             assertTrue(ObjectTools.requireNonNull(List.of(), "list").isEmpty());
         }
@@ -1163,6 +1188,7 @@ class ObjectToolsTest {
         }
 
         @Test
+        @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNullValue() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNonNull(null, "userList"));
@@ -1170,6 +1196,7 @@ class ObjectToolsTest {
         }
 
         @Test
+        @SuppressWarnings("DataFlowIssue")
         void throwsNpeWithFormattedMessage() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNonNull(null, () -> String.format("user %s must not be null", "admin")));
@@ -1271,6 +1298,7 @@ class ObjectToolsTest {
         }
 
         @Test
+        @SuppressWarnings("DataFlowIssue")
         void throwsNpeUsingNullMessageForNullValue() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNotEmpty(null, "value must not be null", "value must not be empty"));
@@ -1408,6 +1436,7 @@ class ObjectToolsTest {
         }
 
         @Test
+        @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNull() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNotEmpty(null, "ctx"));
@@ -1537,6 +1566,7 @@ class ObjectToolsTest {
         }
 
         @Test
+        @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNullValue() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requirePositive(null, "value"));

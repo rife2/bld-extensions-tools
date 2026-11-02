@@ -30,8 +30,6 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Object Tools.
@@ -44,9 +42,10 @@ import java.util.logging.Logger;
  * {@link Map}, and arrays. All other non-{@code null} objects are considered not empty.
  * {@link #allEmpty(Object)}, {@link #allNotEmpty(Object)}, and the container-checking
  * {@code require*} methods check containers recursively, up to {@value #MAX_NESTING_DEPTH}
- * levels deep per branch (see {@link #MAX_NESTING_DEPTH}). {@link #anyEmpty(Object)} and
- * {@link #anyNotEmpty(Object)} check only the container's direct elements/entries — they
- * do not descend into nested containers.</p>
+ * levels deep per branch (see {@link #MAX_NESTING_DEPTH}). Exceeding this limit causes an
+ * {@link IllegalStateException} to be thrown, rather than returning a potentially
+ * unreliable result. {@link #anyEmpty(Object)} and {@link #anyNotEmpty(Object)} check only
+ * the container's direct elements/entries — they do not descend into nested containers.</p>
  *
  * <p><b>Map key checking:</b> both keys and values are evaluated by emptiness predicates.
  * Keys of non-container, non-{@link CharSequence} types (e.g. {@link Integer}, enum
@@ -66,6 +65,10 @@ import java.util.logging.Logger;
  * {@code null}, then {@link IllegalArgumentException} if the value fails its specific check
  * (empty, wrong sign, etc.).</p>
  *
+ * <p><b>Supplier overloads.</b> Every {@code Supplier<String>} overload in this class
+ * invokes its supplier lazily — at most once, and only when validation actually fails.
+ * The supplier's output is used as-is and is not itself validated.</p>
+ *
  * <p>For text-specific operations like blank-checking, see {@link TextTools}.</p>
  *
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
@@ -76,13 +79,17 @@ import java.util.logging.Logger;
 public final class ObjectTools {
 
     /**
-     * Maximum nesting depth checked during null/emptiness validation. Containers nested
-     * deeper than this limit along a given branch are not traversed further, preventing
-     * {@link StackOverflowError} on pathologically deep structures.
+     * Maximum nesting depth checked during null/emptiness validation.
      *
      * <p>Depth is tracked per traversal branch, not the total number of containers visited
      * across the whole structure — a wide structure with many sibling containers at the
      * same level does not count against this limit.</p>
+     *
+     * <p>Traversal is iterative, so {@link StackOverflowError} is not the concern; the limit
+     * exists to bound work and memory on cyclic or pathologically deep structures. Containers
+     * nested deeper than this limit along a given branch cause an {@link IllegalStateException}
+     * to be thrown, rather than silently truncating the traversal and returning a potentially
+     * unreliable result.</p>
      */
     static final int MAX_NESTING_DEPTH = 128;
 
@@ -91,12 +98,14 @@ public final class ObjectTools {
 
     /**
      * Zero values keyed by boxed numeric type, used by {@link #zeroOf(Object)}.
+     *
+     * <p>{@link Double} and {@link Float} are intentionally absent: the sign-check methods
+     * compare them via primitive operators so that {@code NaN} and {@code -0.0} are handled
+     * correctly, which {@link Comparable#compareTo} does not do.</p>
      */
     private static final Map<Class<?>, Object> ZERO_BY_TYPE = Map.of(
             Integer.class, 0,
             Long.class, 0L,
-            Double.class, 0.0d,
-            Float.class, 0.0f,
             Short.class, (short) 0,
             Byte.class, (byte) 0,
             BigInteger.class, BigInteger.ZERO,
@@ -105,7 +114,6 @@ public final class ObjectTools {
 
     private static final Predicate<@Nullable Object> isEmptyPredicate = ObjectTools::isEmpty;
     private static final Predicate<@Nullable Object> isNotEmptyPredicate = ObjectTools::isNotEmpty;
-    private static final Logger logger = Logger.getLogger(ObjectTools.class.getName());
 
     private ObjectTools() {
     }
@@ -125,6 +133,7 @@ public final class ObjectTools {
      *
      * @param value the value to inspect; may be {@code null}
      * @return {@code true} if the value and all nested elements are {@code null} or empty
+     * @throws IllegalStateException if nesting exceeds {@value #MAX_NESTING_DEPTH} levels
      * @apiNote An empty container vacuously satisfies this and returns {@code true} — the
      * logical complement of requiring <em>any</em> element non-empty, not the inverse of
      * {@link #allNotEmpty(Object)} for empty containers. A {@code null} element is treated
@@ -218,6 +227,7 @@ public final class ObjectTools {
      *
      * @param value the value to inspect; may be {@code null}
      * @return {@code true} if the value and all nested elements are not {@code null} and not empty
+     * @throws IllegalStateException if nesting exceeds {@value #MAX_NESTING_DEPTH} levels
      * @apiNote An empty container returns {@code false} — there are no non-empty elements
      * to satisfy the condition. This is intentionally asymmetric with {@link #allEmpty(Object)}
      * for empty containers. A {@code null} element is treated as empty and causes this method
@@ -267,7 +277,7 @@ public final class ObjectTools {
             return true;
         }
         return isContainer(value)
-                ? isEmpty(value) || checkAny(value, isEmptyPredicate)
+                ? isEmpty(value) || forEachElement(value, isEmptyPredicate)
                 : isEmpty(value);
     }
 
@@ -287,21 +297,8 @@ public final class ObjectTools {
             return false;
         }
         return isContainer(value)
-                ? checkAny(value, isNotEmptyPredicate)
+                ? forEachElement(value, isNotEmptyPredicate)
                 : isNotEmpty(value);
-    }
-
-    /**
-     * Iterates {@code container} and returns {@code true} if {@code predicate} holds for
-     * at least one direct element (or key/value for {@link Map}s); {@code false} for empty
-     * containers.
-     *
-     * <p>Pass {@link #isEmptyPredicate} or {@link #isNotEmptyPredicate} directly (not a
-     * freshly-created lambda) so the primitive-array fast path in {@link #isPrimitiveFastPath}
-     * can activate.</p>
-     */
-    private static boolean checkAny(Object container, Predicate<@Nullable Object> predicate) {
-        return forEachElement(container, predicate);
     }
 
     /**
@@ -348,20 +345,16 @@ public final class ObjectTools {
     }
 
     /**
-     * Shared any-match iteration for {@link #checkAny}: {@code true} as soon as
-     * {@code predicate} holds for one element/key/value, {@code false} otherwise
-     * (including empty containers).
+     * Shared any-match iteration for {@link #anyEmpty} and {@link #anyNotEmpty}:
+     * {@code true} as soon as {@code predicate} holds for one element/key/value,
+     * {@code false} otherwise (including empty containers).
      *
      * @implNote The primitive-array fast path compares {@code predicate} by reference
      * identity against the cached {@link #isEmptyPredicate}/{@link #isNotEmptyPredicate}
      * fields. A newly-created lambda or method reference with equivalent behavior would
      * not match and would silently fall back to the slower boxing path.
      */
-    private static boolean forEachElement(@Nullable Object container, Predicate<@Nullable Object> predicate) {
-        if (container == null) {
-            return predicate.test(null);
-        }
-
+    private static boolean forEachElement(Object container, Predicate<@Nullable Object> predicate) {
         if (container instanceof @Nullable Object[] arr) {
             return forEachObjectArray(arr, predicate);
         }
@@ -374,11 +367,10 @@ public final class ObjectTools {
         if (container.getClass().isArray()) {
             return forEachPrimitiveArray(container, predicate);
         }
-        // Should never be reached: only called from checkAny, which is only called
-        // when isContainer() returned true. If isContainer() gains new types, update here too.
+        // Should never be reached: callers guard with isContainer(), which covers exactly
+        // the four branches above. Update this method if isContainer() gains new types.
         throw new IllegalStateException("forEachElement called on unhandled container type: "
-                + container.getClass().getName()
-                + ". Update forEachElement to handle this type.");
+                + container.getClass().getName());
     }
 
     private static boolean forEachMap(Map<? extends @Nullable Object, ? extends @Nullable Object> m,
@@ -416,6 +408,8 @@ public final class ObjectTools {
      * Returns {@code true} if {@code value} is a container holding a {@code null} element/entry,
      * checked recursively up to {@value #MAX_NESTING_DEPTH} levels deep per branch (see
      * {@link #MAX_NESTING_DEPTH}).
+     *
+     * @throws IllegalStateException if nesting exceeds {@value #MAX_NESTING_DEPTH} levels
      */
     private static boolean hasNullElement(Object value) {
         if (!isContainer(value)) {
@@ -541,7 +535,10 @@ public final class ObjectTools {
     }
 
     /**
-     * Requires the value to be empty (and, for containers, every element/entry to be empty).
+     * Requires the value to be empty. For containers, every element/entry must also be
+     * empty, and {@code null} elements are rejected with {@link NullPointerException}
+     * (note: {@link #allEmpty(Object)} treats {@code null} as empty, but this method does
+     * not — consistent with all other {@code require*} methods).
      *
      * @param value   the value to validate and return; must not be {@code null}
      * @param message the exception message; must not be {@code null}, empty, or blank
@@ -550,12 +547,12 @@ public final class ObjectTools {
      * @throws NullPointerException     if the value or any element is {@code null}
      * @throws IllegalArgumentException if the value is not empty
      * @throws IllegalArgumentException if {@code message} is {@code null}, empty, or blank
+     * @throws IllegalStateException    if nesting exceeds {@value #MAX_NESTING_DEPTH} levels
      * @since 1.3
      */
-    @Contract("null, _ -> fail; !null, _ -> !null")
+    @Contract("_, _ -> !null")
     @NullUnmarked
-    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
-    public static <T extends @Nullable Object> @NonNull T requireEmpty(@Nullable T value, @NonNull String message) {
+    public static <T extends @Nullable Object> @NonNull T requireEmpty(@NonNull T value, @NonNull String message) {
         ToolsSupport.requireMessage(message);
         Objects.requireNonNull(value, message);
         checkForNulls(value, message);
@@ -568,8 +565,8 @@ public final class ObjectTools {
     /**
      * Requires the value to be empty. See {@link #requireEmpty(Object, String)}.
      *
-     * <p>{@code messageSupplier} is invoked unconditionally, once, so its produced message
-     * is validated (non-{@code null}, non-blank) regardless of whether {@code value} passes.</p>
+     * <p>{@code messageSupplier} is invoked lazily — at most once, and only when validation
+     * actually fails. Its output is used as-is and is not itself validated.</p>
      *
      * @param <T>             the value type
      * @param value           the value to validate and return; must not be {@code null}
@@ -577,15 +574,20 @@ public final class ObjectTools {
      * @return the validated value
      * @throws NullPointerException     if the value or any element is {@code null}
      * @throws IllegalArgumentException if the value is not empty
-     * @throws IllegalArgumentException if {@code messageSupplier} produces a {@code null}, empty, or blank message
+     * @throws IllegalStateException    if nesting exceeds {@value #MAX_NESTING_DEPTH} levels
      * @since 1.3
      */
-    @Contract("null, _ -> fail; !null, _ -> !null")
+    @Contract("_, _ -> param1")
     @NullUnmarked
-    public static <T extends @Nullable Object> @NonNull T requireEmpty(@Nullable T value,
+    public static <T extends @Nullable Object> @NonNull T requireEmpty(@NonNull T value,
                                                                        @NonNull Supplier<String> messageSupplier) {
         Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
-        return requireEmpty(value, messageSupplier.get());
+        Objects.requireNonNull(value, messageSupplier);
+        checkForNulls(value, messageSupplier);
+        if (!allEmpty(value)) {
+            throw new IllegalArgumentException(messageSupplier.get());
+        }
+        return value;
     }
 
     /**
@@ -608,12 +610,12 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
-    @Contract("null, _ -> fail; !null, _ -> !null")
+    @Contract("_, _ -> param1")
     @NullUnmarked
-    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNegative(@Nullable T value,
+    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNegative(@NonNull T value,
                                                                                           @NonNull String context) {
         ToolsSupport.requireContext(context);
-        requireNonNull(value, context);
+        Objects.requireNonNull(value, context + MUST_NOT_BE_NULL);
         return requireNegative(value, () -> context + " must be negative, got: " + value);
     }
 
@@ -629,13 +631,12 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
-    @Contract("null, _ -> fail; !null, _ -> !null")
+    @Contract("_, _ -> param1")
     @NullUnmarked
-    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
-    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNegative(@Nullable T value,
+    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNegative(@NonNull T value,
                                                                                           @NonNull Supplier<String> messageSupplier) {
         Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
-        requireNonNull(value, "value");
+        Objects.requireNonNull(value, "value" + MUST_NOT_BE_NULL);
 
         if (!isStrictlyNegative(value)) {
             throw new IllegalArgumentException(messageSupplier.get());
@@ -657,12 +658,12 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
-    @Contract("null, _ -> fail; !null, _ -> !null")
+    @Contract("_, _ -> param1")
     @NullUnmarked
-    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNonNegative(@Nullable T value,
+    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNonNegative(@NonNull T value,
                                                                                              @NonNull String context) {
         ToolsSupport.requireContext(context);
-        requireNonNull(value, context);
+        Objects.requireNonNull(value, context + MUST_NOT_BE_NULL);
         return requireNonNegative(value, () -> context + " must be non-negative, got: " + value);
     }
 
@@ -678,13 +679,12 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
-    @Contract("null, _ -> fail; !null, _ -> !null")
+    @Contract("_, _ -> param1")
     @NullUnmarked
-    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
-    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNonNegative(@Nullable T value,
+    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNonNegative(@NonNull T value,
                                                                                              @NonNull Supplier<String> messageSupplier) {
         Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
-        requireNonNull(value, "value");
+        Objects.requireNonNull(value, "value" + MUST_NOT_BE_NULL);
 
         if (!isNonNegative(value)) {
             throw new IllegalArgumentException(messageSupplier.get());
@@ -705,12 +705,12 @@ public final class ObjectTools {
      * @throws NullPointerException     if the {@code value} is {@code null} or contains {@code null} elements
      * @throws NullPointerException     if {@code context} is {@code null}
      * @throws IllegalArgumentException if {@code context} is empty, or blank
+     * @throws IllegalStateException    if nesting exceeds {@value #MAX_NESTING_DEPTH} levels
      * @since 1.3
      */
-    @Contract("null, _ -> fail; !null, _ -> !null")
+    @Contract("_, _ -> param1")
     @NullUnmarked
-    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
-    public static <T extends @Nullable Object> @NonNull T requireNonNull(@Nullable T value, @NonNull String context) {
+    public static <T extends @Nullable Object> @NonNull T requireNonNull(@NonNull T value, @NonNull String context) {
         ToolsSupport.requireContext(context);
         Objects.requireNonNull(value, context + MUST_NOT_BE_NULL);
         checkForNulls(value, context + " must not contain null elements");
@@ -721,26 +721,25 @@ public final class ObjectTools {
      * Requires the value to be not {@code null}, and all elements/entries to be not
      * {@code null}. See {@link #requireNonNull(Object, String)}.
      *
-     * <p>Unlike the {@code String} overload, {@code messageSupplier} is invoked lazily —
-     * only when the value actually fails validation — so it is never evaluated on the
-     * success path.</p>
+     * <p>{@code messageSupplier} is invoked lazily — at most once, and only when validation
+     * actually fails. Its output is used as-is and is not itself validated.</p>
      *
      * @param value           the value to validate and return; must not be {@code null}
      * @param messageSupplier the supplier of the exception message; must not be {@code null}
      * @param <T>             the value type
      * @return the validated value, never {@code null}
-     * @throws NullPointerException if the {@code value} is {@code null} or contains {@code null} elements
-     * @throws NullPointerException if {@code messageSupplier} is {@code null}
+     * @throws NullPointerException  if the {@code value} is {@code null} or contains {@code null} elements
+     * @throws NullPointerException  if {@code messageSupplier} is {@code null}
+     * @throws IllegalStateException if nesting exceeds {@value #MAX_NESTING_DEPTH} levels
      * @since 1.3
      */
-    @Contract("null, _ -> fail; !null, _ -> !null")
+    @Contract("_, _ -> param1")
     @NullUnmarked
-    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
-    public static <T extends @Nullable Object> @NonNull T requireNonNull(@Nullable T value,
+    public static <T extends @Nullable Object> @NonNull T requireNonNull(@NonNull T value,
                                                                          @NonNull Supplier<String> messageSupplier) {
         Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
-        Objects.requireNonNull(value, messageSupplier.get());
-        checkForNulls(value, messageSupplier);
+        Objects.requireNonNull(value, messageSupplier);   // lazy — only if value is null
+        checkForNulls(value, messageSupplier);            // lazy — only if nulls found
         return value;
     }
 
@@ -759,12 +758,12 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if the {@code value} is empty
      * @throws NullPointerException     if {@code context} is {@code null}
      * @throws IllegalArgumentException if {@code context} is empty, or blank
+     * @throws IllegalStateException    if nesting exceeds {@value #MAX_NESTING_DEPTH} levels
      * @since 1.3
      */
-    @Contract("null, _ -> fail; !null, _ -> !null")
+    @Contract("_, _ -> param1")
     @NullUnmarked
-    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
-    public static <T extends @Nullable Object> @NonNull T requireNotEmpty(@Nullable T value, @NonNull String context) {
+    public static <T extends @Nullable Object> @NonNull T requireNotEmpty(@NonNull T value, @NonNull String context) {
         ToolsSupport.requireContext(context);
         Objects.requireNonNull(value, context + MUST_NOT_BE_NULL);
         checkForNulls(value, context + " must not contain null elements");
@@ -789,12 +788,12 @@ public final class ObjectTools {
      * @throws NullPointerException     if the {@code value} or any element is {@code null}
      * @throws IllegalArgumentException if the {@code value} is empty
      * @throws IllegalArgumentException if either message is {@code null}, empty, or blank
+     * @throws IllegalStateException    if nesting exceeds {@value #MAX_NESTING_DEPTH} levels
      * @since 1.3
      */
-    @Contract("null, _, _ -> fail; !null, _, _ -> !null")
+    @Contract("_, _, _ -> param1")
     @NullUnmarked
-    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
-    public static <T extends @Nullable Object> @NonNull T requireNotEmpty(@Nullable T value,
+    public static <T extends @Nullable Object> @NonNull T requireNotEmpty(@NonNull T value,
                                                                           @NonNull String nullMessage,
                                                                           @NonNull String emptyMessage) {
         ToolsSupport.requireMessage(nullMessage);
@@ -821,12 +820,12 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
-    @Contract("null, _ -> fail; !null, _ -> !null")
+    @Contract("_, _ -> param1")
     @NullUnmarked
-    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requirePositive(@Nullable T value,
+    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requirePositive(@NonNull T value,
                                                                                           @NonNull String context) {
         ToolsSupport.requireContext(context);
-        requireNonNull(value, context);
+        Objects.requireNonNull(value, context + MUST_NOT_BE_NULL);
         return requirePositive(value, () -> context + " must be positive, got: " + value);
     }
 
@@ -842,13 +841,12 @@ public final class ObjectTools {
      * @throws IllegalArgumentException if {@code value} is of an unsupported type
      * @since 1.3
      */
-    @Contract("null, _ -> fail; !null, _ -> !null")
+    @Contract("_, _ -> param1")
     @NullUnmarked
-    @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
-    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requirePositive(@Nullable T value,
+    public static <T extends @Nullable Object & Comparable<T>> @NonNull T requirePositive(@NonNull T value,
                                                                                           @NonNull Supplier<String> messageSupplier) {
         Objects.requireNonNull(messageSupplier, MESSAGE_SUPPLIER + MUST_NOT_BE_NULL);
-        requireNonNull(value, "value");
+        Objects.requireNonNull(value, "value" + MUST_NOT_BE_NULL);
 
         if (!isStrictlyPositive(value)) {
             throw new IllegalArgumentException(messageSupplier.get());
@@ -875,7 +873,7 @@ public final class ObjectTools {
 
     /**
      * A container value paired with its nesting depth (number of containers enclosing it,
-     * counted along the traversal branch from the root - not the total number of containers
+     * counted along the traversal branch from the root — not the total number of containers
      * visited across the whole structure).
      */
     private record DepthEntry(Object value, int depth) {
@@ -884,19 +882,13 @@ public final class ObjectTools {
 
     /**
      * Iterative depth-tracked stack shared by {@link #allEmpty}, {@link #allNotEmpty}, and
-     * {@link #hasNullElement} to traverse nested containers without recursion, stopping each
-     * branch at {@link #MAX_NESTING_DEPTH}.
+     * {@link #hasNullElement} to traverse nested containers without recursion. Pushing past
+     * {@link #MAX_NESTING_DEPTH} throws {@link IllegalStateException} rather than silently
+     * truncating the traversal.
      */
     private static final class DepthStack {
 
         private final Deque<DepthEntry> deque = new ArrayDeque<>();
-
-        private static void logDepthLimit() {
-            if (logger.isLoggable(Level.WARNING)) {
-                logger.warning("Validation stopped at depth " + MAX_NESTING_DEPTH +
-                        " to prevent StackOverflowError.");
-            }
-        }
 
         @Nullable DepthEntry pop() {
             return deque.isEmpty() ? null : deque.pop();
@@ -907,6 +899,8 @@ public final class ObjectTools {
          * stopping and returning {@code true} as soon as a {@code null} is found (used by
          * {@link #hasNullElement} and {@link #allNotEmpty}, where a null child already fails
          * the check the caller is performing).
+         *
+         * @throws IllegalStateException if a child would exceed {@link #MAX_NESTING_DEPTH}
          */
         @SuppressFBWarnings("ITC_INHERITANCE_TYPE_CHECKING")
         boolean pushAllOrNull(Object container, int parentDepth) {
@@ -941,14 +935,15 @@ public final class ObjectTools {
         }
 
         /**
-         * Pushes {@code child} at {@code parentDepth + 1}, or drops it (logging a warning)
-         * if that exceeds {@link #MAX_NESTING_DEPTH}.
+         * Pushes {@code child} at {@code parentDepth + 1}.
+         *
+         * @throws IllegalStateException if that depth exceeds {@link #MAX_NESTING_DEPTH}
          */
         void tryPush(Object child, int parentDepth) {
             int childDepth = parentDepth + 1;
             if (childDepth > MAX_NESTING_DEPTH) {
-                logDepthLimit();
-                return;
+                throw new IllegalStateException(
+                        "Maximum validation nesting depth of " + MAX_NESTING_DEPTH + " exceeded");
             }
             deque.push(new DepthEntry(child, childDepth));
         }
