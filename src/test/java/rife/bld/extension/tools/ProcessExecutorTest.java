@@ -895,7 +895,8 @@ class ProcessExecutorTest {
                 assertNotNull(thread);
                 thread.join(1000);
 
-                assertEquals(List.of("héllo"), lines);
+                //noinspection UnnecessaryUnicodeEscape
+                assertEquals(List.of("h\u00E9llo"), lines);
             }
 
             @Test
