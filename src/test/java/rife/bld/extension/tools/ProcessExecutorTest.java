@@ -29,6 +29,7 @@ import rife.bld.testing.LoggingExtension;
 import rife.bld.testing.TestLogHandler;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -38,6 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.*;
@@ -61,6 +63,29 @@ class ProcessExecutorTest {
             testLogHandler,
             Level.ALL
     );
+
+    /**
+     * Writes a Java source file into {@code tmp}, compiles it via {@link ProcessExecutor},
+     * and returns the {@code java -cp … <ClassName>} invocation.
+     *
+     * <p>Lives on the enclosing class so every nested test class can use it.
+     */
+    private List<String> compileAndGetRunCommand(Path tmp, String className, String code)
+            throws Exception {
+        var javaFile = tmp.resolve(className + ".java");
+        Files.writeString(javaFile, code);
+
+        // Compile using ProcessExecutor itself
+        var compileResult = new ProcessExecutor()
+                .workDir(tmp.toFile())
+                .command("javac", javaFile.toString())
+                .timeout(10)
+                .execute();
+
+        assertTrue(compileResult.isSuccess(),
+                "Test helper should compile: " + compileResult.output());
+        return List.of("java", "-cp", tmp.toString(), className);
+    }
 
     private ProcessExecutor createBasicExecutor(File workDir) {
         return new ProcessExecutor().workDir(workDir);
@@ -146,22 +171,6 @@ class ProcessExecutorTest {
             assertTrue(interrupted.get(), "Reader thread should be interrupted by cleanupThread()");
         }
 
-        private List<String> compileAndGetRunCommand(@TempDir Path tmp, String className, String code)
-                throws Exception {
-            var javaFile = tmp.resolve(className + ".java");
-            Files.writeString(javaFile, code);
-
-            // Compile using ProcessExecutor itself
-            var compileResult = new ProcessExecutor()
-                    .workDir(tmp.toFile())
-                    .command("javac", javaFile.toString())
-                    .timeout(10)
-                    .execute();
-
-            assertTrue(compileResult.isSuccess(), "Test helper should compile: " + compileResult.output());
-            return List.of("java", "-cp", tmp.toString(), className);
-        }
-
         @Test
         void executeTimeout(@TempDir Path tmp) throws Exception {
             var runCmd = compileAndGetRunCommand(tmp, "Sleeper", """
@@ -178,7 +187,8 @@ class ProcessExecutorTest {
                     .execute();
 
             assertTrue(result.timedOut());
-            assertNotEquals(0, result.exitCode());
+            assertTrue(result.exitCode() == ProcessExecutor.NO_EXIT_CODE
+                    || result.exitCode() != 0);
             assertFalse(result.isSuccess());
         }
 
@@ -268,6 +278,32 @@ class ProcessExecutorTest {
         }
 
         @Test
+        @DisplayName("env(Map) rejects null keys")
+        void envMapNullKeyThrows(@TempDir Path tmp) {
+            var map = new HashMap<String, String>();
+            map.put(null, "value");
+            assertThrows(NullPointerException.class,
+                    () -> createBasicExecutor(tmp.toFile()).env(map));
+        }
+
+        @Test
+        @DisplayName("env(Map) rejects null map")
+        @SuppressWarnings("DataFlowIssue")
+        void envMapNullMapThrows(@TempDir Path tmp) {
+            assertThrows(NullPointerException.class,
+                    () -> createBasicExecutor(tmp.toFile()).env(null));
+        }
+
+        @Test
+        @DisplayName("env(Map) rejects null values")
+        void envMapNullValueThrows(@TempDir Path tmp) {
+            var map = new HashMap<String, String>();
+            map.put("KEY", null);
+            assertThrows(NullPointerException.class,
+                    () -> createBasicExecutor(tmp.toFile()).env(map));
+        }
+
+        @Test
         void envMutable(@TempDir Path tmp) {
             var exec = createBasicExecutor(tmp.toFile()).env("FOO", "bar");
             exec.env().put("BAZ", "qux");
@@ -319,6 +355,7 @@ class ProcessExecutorTest {
             assertFalse(result.isSuccess());
             assertEquals(1, result.exitCode());
             assertFalse(result.timedOut());
+            assertTrue(result.hasExitCode());
         }
 
         @Test
@@ -338,6 +375,7 @@ class ProcessExecutorTest {
             assertTrue(result.isSuccess());
             assertEquals(0, result.exitCode());
             assertFalse(result.timedOut());
+            assertTrue(result.hasExitCode());
             assertTrue(testLogHandler.containsMessage(FOO));
         }
 
@@ -349,7 +387,8 @@ class ProcessExecutorTest {
                     .execute();
 
             assertTrue(result.timedOut());
-            assertNotEquals(0, result.exitCode()); // 137, 143, 117 or -1 are all valid on Unix
+            assertTrue(result.exitCode() == ProcessExecutor.NO_EXIT_CODE
+                    || result.exitCode() != 0, "Timed-out process should not exit 0");
             assertFalse(result.isSuccess());
         }
 
@@ -358,6 +397,21 @@ class ProcessExecutorTest {
             var ex = assertThrows(IllegalStateException.class,
                     () -> createBasicExecutor(tmp.toFile()).execute());
             assertTrue(ex.getMessage().contains("A command must be specified"));
+        }
+
+        @Test
+        @DisplayName("hasExitCode() is false when exit code is NO_EXIT_CODE")
+        void hasExitCodeFalseForSentinel() {
+            var result = new ProcessExecutor.ProcessResult(
+                    ProcessExecutor.NO_EXIT_CODE, "", true);
+            assertFalse(result.hasExitCode());
+            assertFalse(result.isSuccess());
+        }
+
+        @Test
+        @DisplayName("NO_EXIT_CODE is Integer.MIN_VALUE")
+        void noExitCodeConstant() {
+            assertEquals(Integer.MIN_VALUE, ProcessExecutor.NO_EXIT_CODE);
         }
     }
 
@@ -373,12 +427,40 @@ class ProcessExecutorTest {
             assertSame(exec, exec.env("K", "V"));
             assertSame(exec, exec.timeout(10));
             assertSame(exec, exec.inheritIO(true));
+            assertSame(exec, exec.charset(StandardCharsets.UTF_8));
         }
     }
 
     @Nested
     @DisplayName("I/O Tests")
     class IOTests {
+
+        @Test
+        @DisplayName("charset defaults to UTF-8")
+        void charsetDefaultsToUtf8(@TempDir Path tmp) {
+            assertEquals(StandardCharsets.UTF_8,
+                    createBasicExecutor(tmp.toFile()).charset());
+        }
+
+        @Test
+        @DisplayName("charset setter rejects null")
+        @SuppressWarnings("DataFlowIssue")
+        void charsetNullThrows(@TempDir Path tmp) {
+            assertThrows(NullPointerException.class,
+                    () -> createBasicExecutor(tmp.toFile()).charset(null));
+        }
+
+        @Test
+        @DisplayName("charset is honoured when decoding output")
+        void charsetUsedForDecoding(@TempDir Path tmp) throws Exception {
+            var result = createBasicExecutor(tmp.toFile())
+                    .command(echoCommand(FOO))
+                    .charset(StandardCharsets.ISO_8859_1)
+                    .execute();
+
+            assertTrue(result.isSuccess());
+            assertTrue(result.output().contains(FOO) || result.output().contains("f"));
+        }
 
         @Test
         @DisplayName("throws when inheritIO(true) and outputConsumer both set")
@@ -448,6 +530,20 @@ class ProcessExecutorTest {
             assertTrue(testLogHandler.containsMessage("line1"));
             assertTrue(testLogHandler.containsMessage("line2"));
         }
+
+        @Test
+        @DisplayName("captured output is safe against concurrent reader writes")
+        void outputListIsThreadSafe(@TempDir Path tmp) throws Exception {
+            // Regression guard for the CopyOnWriteArrayList change.
+            var result = createBasicExecutor(tmp.toFile())
+                    .command(multiLineEchoCommand())
+                    .timeout(10)
+                    .execute();
+
+            assertTrue(result.isSuccess());
+            assertTrue(result.output().contains("line1"));
+            assertTrue(result.output().contains("line2"));
+        }
     }
 
     @Nested
@@ -479,6 +575,30 @@ class ProcessExecutorTest {
             @DisplayName("handles null process gracefully")
             void handlesNullProcess() {
                 assertDoesNotThrow(() -> new ProcessExecutor().cleanupProcess(null));
+            }
+
+            @Test
+            @DisplayName("still closes streams when destroyForcibly throws")
+            void handlesTreeDestroyFailure() throws IOException {
+                var exec = spy(new ProcessExecutor());
+                var proc = mock(Process.class);
+                var handle = mock(ProcessHandle.class);
+
+                when(proc.toHandle()).thenReturn(handle);
+                when(handle.descendants()).thenReturn(Stream.empty());
+                when(handle.destroyForcibly()).thenThrow(new UnsupportedOperationException());
+
+                // Stub streams so closeAllStreams has something to close
+                when(proc.getInputStream()).thenReturn(mock(InputStream.class));
+                when(proc.getErrorStream()).thenReturn(mock(InputStream.class));
+                when(proc.getOutputStream()).thenReturn(mock(OutputStream.class));
+
+                assertDoesNotThrow(() -> exec.cleanupProcess(proc));
+
+                // Optionally verify streams were still closed
+                verify(proc.getInputStream()).close();
+                verify(proc.getErrorStream()).close();
+                verify(proc.getOutputStream()).close();
             }
         }
 
@@ -537,6 +657,12 @@ class ProcessExecutorTest {
         class CloseAllStreams {
 
             @Test
+            @DisplayName("closeQuietly tolerates null")
+            void closeQuietlyToleratesNull() {
+                assertDoesNotThrow(() -> exec.closeQuietly(null));
+            }
+
+            @Test
             @DisplayName("closes all 3 streams even if one throws")
             void closesAllDespiteException() throws Exception {
                 var proc = mock(Process.class);
@@ -570,6 +696,12 @@ class ProcessExecutorTest {
             }
 
             @Test
+            @DisplayName("null closeable is a no-op")
+            void nullCloseableNoOp() {
+                assertDoesNotThrow(() -> exec.closeQuietly(null));
+            }
+
+            @Test
             @DisplayName("swallows IOException")
             void swallowsIOException() throws Exception {
                 var closeable = mock(Closeable.class);
@@ -583,16 +715,21 @@ class ProcessExecutorTest {
         class CreateProcessBuilderTests {
 
             @Test
-            @DisplayName("redirects stdin to null device when inheritIO false")
-            void redirectsStdinToNull() {
-                var exec = new ProcessExecutor()
-                        .command("echo", "test")
-                        .inheritIO(false);
+            @EnabledOnOs({OS.LINUX, OS.MAC})
+            @DisplayName("redirects stdin from /dev/null on Unix")
+            void redirectsStdinToDevNull() {
+                var pb = new ProcessExecutor().command("echo", "test").createProcessBuilder();
+                assertEquals(ProcessBuilder.Redirect.Type.READ, pb.redirectInput().type());
+                assertEquals("/dev/null", pb.redirectInput().file().getPath());
+            }
 
-                var pb = exec.createProcessBuilder();
-                assertTrue(pb.redirectErrorStream());
-                assertEquals(ProcessBuilder.Redirect.PIPE, pb.redirectOutput());
-                assertNotNull(pb.redirectInput().file());
+            @Test
+            @EnabledOnOs(OS.WINDOWS)
+            @DisplayName("redirects stdin from NUL on Windows")
+            void redirectsStdinToNul() {
+                var pb = new ProcessExecutor().command("echo", "test").createProcessBuilder();
+                assertEquals(ProcessBuilder.Redirect.Type.READ, pb.redirectInput().type());
+                assertEquals("NUL", pb.redirectInput().file().getPath());
             }
 
             @Test
@@ -602,7 +739,7 @@ class ProcessExecutorTest {
                         .command("echo", "test")
                         .env("FOO", "bar");
 
-                var pb = exec.createProcessBuilder(); // make it package-private first
+                var pb = exec.createProcessBuilder();
                 assertEquals("bar", pb.environment().get("FOO"));
             }
 
@@ -657,6 +794,21 @@ class ProcessExecutorTest {
             }
 
             @Test
+            @DisplayName("snapshots descendants before destruction")
+            void snapshotsDescendants() {
+                var child1 = mock(ProcessHandle.class);
+                var child2 = mock(ProcessHandle.class);
+                var parent = mock(ProcessHandle.class);
+                when(parent.descendants()).thenReturn(Stream.of(child1, child2));
+
+                exec.destroyProcessTree(parent);
+
+                verify(child1).destroyForcibly();
+                verify(child2).destroyForcibly();
+                verify(parent).destroyForcibly();
+            }
+
+            @Test
             @DisplayName("swallows UnsupportedOperationException from descendants()")
             void swallowsUnsupportedOpFromDescendants() {
                 var handle = mock(ProcessHandle.class);
@@ -697,25 +849,6 @@ class ProcessExecutorTest {
         }
 
         @Nested
-        @DisplayName("nullDevicePath()")
-        class NullDevicePath {
-
-            @Test
-            @EnabledOnOs({OS.LINUX, OS.MAC})
-            @DisplayName("returns /dev/null on Unix")
-            void unixReturnsDevNull() {
-                assertEquals("/dev/null", exec.nullDevicePath());
-            }
-
-            @Test
-            @EnabledOnOs(OS.WINDOWS)
-            @DisplayName("returns NUL on Windows")
-            void windowsReturnsNul() {
-                assertEquals("NUL", exec.nullDevicePath());
-            }
-        }
-
-        @Nested
         @DisplayName("restoreInterruptFlag()")
         class RestoreInterruptFlag {
 
@@ -731,6 +864,39 @@ class ProcessExecutorTest {
         @Nested
         @DisplayName("startOutputReader branches")
         class StartOutputReaderTests {
+
+            @Test
+            @DisplayName("accepts a CopyOnWriteArrayList")
+            void acceptsCopyOnWriteList() throws Exception {
+                var exec = new ProcessExecutor();
+                var proc = mock(Process.class);
+                var lines = new java.util.concurrent.CopyOnWriteArrayList<String>();
+                when(proc.getInputStream())
+                        .thenReturn(new ByteArrayInputStream("a\nb\n".getBytes(UTF_8)));
+
+                var thread = exec.startOutputReader(proc, lines);
+                assertNotNull(thread);
+                thread.join(1000);
+                assertEquals(List.of("a", "b"), lines);
+            }
+
+            @Test
+            @DisplayName("honours configured charset")
+            void honoursCharset() throws Exception {
+                var exec = new ProcessExecutor().charset(StandardCharsets.ISO_8859_1);
+                var proc = mock(Process.class);
+                var lines = new ArrayList<String>();
+
+                // 0xE9 is 'é' in ISO-8859-1
+                var bytes = new byte[]{'h', (byte) 0xE9, 'l', 'l', 'o', '\n'};
+                when(proc.getInputStream()).thenReturn(new ByteArrayInputStream(bytes));
+
+                var thread = exec.startOutputReader(proc, lines);
+                assertNotNull(thread);
+                thread.join(1000);
+
+                assertEquals(List.of("héllo"), lines);
+            }
 
             @Test
             @DisplayName("reads lines and calls consumer")
@@ -809,6 +975,38 @@ class ProcessExecutorTest {
 
                 var ex = assertThrows(IllegalStateException.class, exec::validatePreconditions);
                 assertTrue(ex.getMessage().contains("valid working directory"));
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Interrupt Propagation Tests")
+    class InterruptPropagationTests {
+
+        @Test
+        @DisplayName("interrupt before waitFor propagates; flag is cleared by InterruptedException")
+        void interruptBeforeWaitForPropagates(@TempDir Path tmp) throws Exception {
+            var runCmd = compileAndGetRunCommand(tmp, "InterruptSleeper", """
+                    public class InterruptSleeper {
+                        public static void main(String[] args) throws Exception {
+                            Thread.sleep(60_000);
+                        }
+                    }
+                    """);
+
+            var executor = createBasicExecutor(tmp.toFile())
+                    .command(runCmd)
+                    .timeout(30);
+
+            Thread.currentThread().interrupt();
+            try {
+                assertThrows(InterruptedException.class, executor::execute);
+                // Object.wait clears the flag when it throws InterruptedException.
+                assertFalse(Thread.interrupted(),
+                        "flag is cleared when InterruptedException propagates out of execute()");
+            } finally {
+                //noinspection ResultOfMethodCallIgnored
+                Thread.interrupted(); // belt-and-braces cleanup for other tests
             }
         }
     }

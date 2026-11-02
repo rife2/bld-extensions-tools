@@ -22,9 +22,11 @@ import org.jspecify.annotations.Nullable;
 import rife.bld.testing.VisibleForTesting;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -48,12 +50,59 @@ public class ProcessExecutor {
      */
     public static final long DEFAULT_TIMEOUT_SECONDS = 30L;
 
+    /**
+     * Sentinel exit code used when the process did not terminate and no exit code is available.
+     *
+     * @see ProcessResult#exitCode()
+     */
+    public static final int NO_EXIT_CODE = Integer.MIN_VALUE;
+
+    /**
+     * Maximum time to wait for the output reader thread to drain when the process finished normally.
+     */
+    private static final long OUTPUT_DRAIN_TIMEOUT_MS = 10_000L;
+
+    /**
+     * Shorter drain timeout used when the process was killed due to a timeout.
+     */
+    private static final long OUTPUT_DRAIN_TIMEOUT_ON_TIMEOUT_MS = 5_000L;
+
+    /**
+     * Join timeout used while interrupting a stuck reader thread during cleanup.
+     */
+    private static final long THREAD_JOIN_CLEANUP_MS = 100L;
+
     private final List<String> command_ = new ArrayList<>();
     private final Map<String, String> env_ = new HashMap<>();
+    private Charset charset_ = StandardCharsets.UTF_8;
     private boolean inheritIO_;
     private @Nullable Consumer<String> outputConsumer_;
     private long timeout_ = DEFAULT_TIMEOUT_SECONDS;
     private @Nullable File workDir_;
+
+    /**
+     * Sets the charset used to decode the child process output.
+     * <p>
+     * Defaults to UTF-8. On platforms where native tools emit the console codepage
+     * (for example, Windows CP437/CP1252), set this to the matching charset.
+     *
+     * @param charset the charset, must not be null
+     * @return this instance
+     * @throws NullPointerException if charset is null
+     */
+    public ProcessExecutor charset(Charset charset) {
+        charset_ = Objects.requireNonNull(charset, "charset must not be null");
+        return this;
+    }
+
+    /**
+     * Returns the charset used to decode the child process output.
+     *
+     * @return the charset, never null
+     */
+    public Charset charset() {
+        return charset_;
+    }
 
     /**
      * Sets the command and arguments to be executed, replacing any previously configured command.
@@ -114,12 +163,17 @@ public class ProcessExecutor {
     /**
      * Adds environment variables for the command.
      *
-     * @param vars the map of environment variables, must not be null
+     * @param vars the map of environment variables, must not be null and must not contain null
+     *             keys or values
      * @return this instance
-     * @throws NullPointerException if vars is null
+     * @throws NullPointerException if vars, or any key or value in vars, is null
      */
     public ProcessExecutor env(Map<String, String> vars) {
         ObjectTools.requireNonNull(vars, "environment variables");
+        vars.forEach((k, v) -> {
+            Objects.requireNonNull(k, "environment variable name must not be null");
+            Objects.requireNonNull(v, "environment variable value must not be null");
+        });
         env_.putAll(vars);
         return this;
     }
@@ -138,16 +192,17 @@ public class ProcessExecutor {
      *
      * @return the process result containing exit code and captured output
      * @throws IOException           if the process cannot be started
-     * @throws InterruptedException  if the thread is interrupted while waiting
+     * @throws InterruptedException  if the thread is interrupted while waiting or cleaning up
      * @throws IllegalStateException if no command is set, the working directory is invalid,
      *                               or both {@link #inheritIO()} and {@link #outputConsumer(Consumer)} are configured
      */
+    // Streams are closed in the finally block; PMD's static analysis cannot see through the helper.
     @SuppressWarnings("PMD.CloseResource")
     public ProcessResult execute() throws IOException, InterruptedException {
         validatePreconditions();
 
         var pb = createProcessBuilder();
-        var outputLines = new ArrayList<String>();
+        var outputLines = new CopyOnWriteArrayList<String>();
         Process proc = null;
         Thread outputThread = null;
         boolean timedOut = false;
@@ -169,23 +224,25 @@ public class ProcessExecutor {
                 // Must destroy BEFORE we try exitValue() - on macOS waitFor(1) is racy
                 // and process is still alive here
                 destroyProcessTree(proc.toHandle());
-                // Give the OS a chance to reap the process tree
-                // waitFor() without timeout after destroy will return quickly
                 try {
+                    // Give the OS a chance to reap the process tree
                     if (!proc.waitFor(1, TimeUnit.SECONDS)) {
                         // Forceful fallback if graceful tree kill didn't work
                         proc.destroyForcibly();
                         proc.waitFor(1, TimeUnit.SECONDS);
                     }
                 } catch (InterruptedException e) {
-                    // Preserve interrupt status but continue cleanup
+                    // Preserve interrupt status, finish cleanup, and propagate
                     Thread.currentThread().interrupt();
                     proc.destroyForcibly();
+                    throw e;
                 }
             }
 
             if (outputThread != null) {
-                outputThread.join(timedOut ? 5_000 : 10_000);
+                outputThread.join(timedOut
+                        ? OUTPUT_DRAIN_TIMEOUT_ON_TIMEOUT_MS
+                        : OUTPUT_DRAIN_TIMEOUT_MS);
             }
 
             int exitCode;
@@ -193,7 +250,7 @@ public class ProcessExecutor {
                 exitCode = proc.exitValue();
             } catch (IllegalThreadStateException e) {
                 // Still alive even after destroy - treat as timeout
-                exitCode = -1;
+                exitCode = NO_EXIT_CODE;
                 timedOut = true;
                 proc.destroyForcibly();
             }
@@ -236,7 +293,10 @@ public class ProcessExecutor {
      * Sets a consumer to receive output lines as they arrive.
      * <p>
      * Only effective when {@link #inheritIO()} is {@code false}. The consumer is called from a
-     * background thread. Setting this implies output should be captured, not inherited.
+     * background thread.
+     * <p>
+     * Must not be combined with {@link #inheritIO(boolean) inheritIO(true)}; doing so causes
+     * {@link #execute()} to throw {@link IllegalStateException}.
      * <p>
      * Exceptions thrown by the consumer are silently ignored to protect the output reader thread.
      * Ensure the consumer handles its own errors if reliable delivery is required.
@@ -352,7 +412,7 @@ public class ProcessExecutor {
         if (outputThread != null && outputThread.isAlive()) {
             outputThread.interrupt();
             try {
-                outputThread.join(100);
+                outputThread.join(THREAD_JOIN_CLEANUP_MS);
             } catch (InterruptedException ignored) {
                 restoreInterruptFlag();
             }
@@ -372,10 +432,13 @@ public class ProcessExecutor {
     }
 
     /**
-     * Closes a {@code Closeable}, ignoring any {@code IOException}.
+     * Closes a {@code Closeable}, ignoring any {@code IOException}. Null-safe.
      */
     @VisibleForTesting
-    void closeQuietly(Closeable closeable) {
+    void closeQuietly(@Nullable Closeable closeable) {
+        if (closeable == null) {
+            return;
+        }
         try {
             closeable.close();
         } catch (IOException ignored) {
@@ -402,8 +465,9 @@ public class ProcessExecutor {
             pb.inheritIO();
         } else {
             pb.redirectErrorStream(true);
-            pb.redirectInput(ProcessBuilder.Redirect.from(new File(nullDevicePath())));
+            pb.redirectInput(ProcessBuilder.Redirect.from(nullDeviceFile()));
         }
+
         return pb;
     }
 
@@ -423,12 +487,14 @@ public class ProcessExecutor {
     /**
      * Destroys the process and all its descendants.
      * <p>
-     * Attempts graceful cleanup on platforms that support it.
+     * Descendants are snapshotted before destruction so that the live stream evaluation
+     * does not miss children whose parent exits mid-iteration.
      */
     @VisibleForTesting
     void destroyProcessTree(ProcessHandle handle) {
         try {
-            handle.descendants().forEach(this::destroyHandleQuietly);
+            // Snapshot the stream first; descendants() evaluates lazily against a live tree.
+            handle.descendants().toList().forEach(this::destroyHandleQuietly);
             destroyHandleQuietly(handle);
         } catch (UnsupportedOperationException ignored) {
         }
@@ -450,14 +516,9 @@ public class ProcessExecutor {
         }
     }
 
-    /**
-     * Returns the platform-specific null device path.
-     * <p>
-     * Used to redirect stdin when output is captured.
-     */
     @VisibleForTesting
-    String nullDevicePath() {
-        return SystemTools.isWindows() ? "NUL" : "/dev/null";
+    File nullDeviceFile() {
+        return new File(SystemTools.isWindows() ? "NUL" : "/dev/null");
     }
 
     /**
@@ -476,19 +537,19 @@ public class ProcessExecutor {
      * the {@link #outputConsumer(Consumer)} if set.
      *
      * @param proc        the process to read from
-     * @param outputLines collection to append captured lines to
+     * @param outputLines list to append captured lines to (must be safe for concurrent iteration)
      * @return the started thread, or null if I/O is inherited
      */
     @VisibleForTesting
     @Nullable
-    Thread startOutputReader(Process proc, Collection<String> outputLines) {
+    Thread startOutputReader(Process proc, List<String> outputLines) {
         if (inheritIO_) {
             return null;
         }
 
         var thread = new Thread(() -> {
             try (var reader = new BufferedReader(
-                    new InputStreamReader(proc.getInputStream(), StandardCharsets.UTF_8))) {
+                    new InputStreamReader(proc.getInputStream(), charset_))) {
                 reader.lines().forEach(line -> {
                     outputLines.add(line);
                     notifyOutputConsumer(line);
@@ -526,12 +587,20 @@ public class ProcessExecutor {
     /**
      * Result of a process execution.
      *
-     * @param exitCode the exit code, or -1 if timed out or process did not terminate
+     * @param exitCode the exit code, or {@link ProcessExecutor#NO_EXIT_CODE} if the process
+     *                 did not terminate
      * @param output   the captured stdout/stderr joined with the system line separator;
      *                 empty string when {@link #inheritIO()} was {@code true}
      * @param timedOut true if the process exceeded the timeout
      */
     public record ProcessResult(int exitCode, String output, boolean timedOut) {
+
+        /**
+         * Returns true if an exit code is available (i.e. the process terminated).
+         */
+        public boolean hasExitCode() {
+            return exitCode != NO_EXIT_CODE;
+        }
 
         /**
          * Returns true if the process exited with code 0 and did not time out.
