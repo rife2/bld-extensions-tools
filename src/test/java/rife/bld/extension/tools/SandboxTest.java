@@ -30,14 +30,20 @@ import rife.bld.dependencies.VersionNumber;
 import rife.bld.dependencies.VersionResolution;
 
 import java.io.File;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static rife.bld.dependencies.Repository.CENTRAL_SNAPSHOTS;
@@ -48,6 +54,13 @@ class SandboxTest {
 
     @TempDir
     Path tmp;
+
+    static Path anyFile(Path dir) throws Exception {
+        try (var walk = Files.walk(dir)) {
+            return walk.filter(Files::isRegularFile).findFirst()
+                    .orElseThrow(() -> new IllegalStateException("No regular files under " + dir));
+        }
+    }
 
     static void deleteDirectory(Path dir) throws Exception {
         var m = Sandbox.class.getDeclaredMethod("deleteDirectory", Path.class);
@@ -65,6 +78,12 @@ class SandboxTest {
         return (String) m.invoke(sandbox, deps, repos, vr);
     }
 
+    static String hashZipInputs(Sandbox sandbox, URL url, String version) throws Exception {
+        var m = Sandbox.class.getDeclaredMethod("hashZipInputs", URL.class, String.class);
+        m.setAccessible(true);
+        return (String) m.invoke(sandbox, url, version);
+    }
+
     @SuppressWarnings("SameParameterValue")
     static boolean isSnapshotValid(Sandbox sandbox, String key, String inputsHash, Path dir) throws Exception {
         var m = Sandbox.class.getDeclaredMethod("isSnapshotValid", String.class, String.class, Path.class);
@@ -72,10 +91,27 @@ class SandboxTest {
         return (boolean) m.invoke(sandbox, key, inputsHash, dir);
     }
 
+    static Properties readSnapshot(Sandbox sandbox) throws Exception {
+        var snapFile = sandbox.getSandboxDirectory().resolve("sandbox.snapshot");
+        var props = new Properties();
+        try (var in = Files.newInputStream(snapFile)) {
+            props.load(in);
+        }
+        return props;
+    }
+
     static String snapshotValue(Sandbox sandbox, String inputsHash, Path dir) throws Exception {
         var m = Sandbox.class.getDeclaredMethod("snapshotValue", String.class, Path.class);
         m.setAccessible(true);
         return (String) m.invoke(sandbox, inputsHash, dir);
+    }
+
+    static URL toUrl(String s) {
+        try {
+            return URI.create(s).toURL();
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException(s, e);
+        }
     }
 
     BaseProject project() throws Exception {
@@ -402,6 +438,327 @@ class SandboxTest {
     }
 
     @Nested
+    @DisplayName("downloadZip - hash & cache path")
+    class DownloadZipCacheTests {
+
+        @Test
+        void createsGitIgnoreAfterDownload() throws Exception {
+            var zip = tmp.resolve("simple.zip");
+            try (var zos = new ZipOutputStream(Files.newOutputStream(zip))) {
+                zos.putNextEntry(new ZipEntry("hello.txt"));
+                zos.write("hello".getBytes());
+                zos.closeEntry();
+            }
+            var proj = project();
+            var sandbox = new Sandbox("zip-gitignore", proj);
+            sandbox.downloadZip(zip.toUri().toURL(), "v1");
+
+            var gitignore = tmp.resolve("lib/.gitignore");
+            assertTrue(Files.exists(gitignore), "expected .gitignore to be created");
+            assertTrue(Files.readString(gitignore).contains(".sandbox/"));
+        }
+
+        @Test
+        void extensionNameIsPartOfZipHash() throws Exception {
+            var url = toUrl("https://example.com/x.zip");
+            var s1 = new Sandbox("ext-zip-one", project());
+            var s2 = new Sandbox("ext-zip-two", project());
+            assertNotEquals(
+                    hashZipInputs(s1, url, "v1"),
+                    hashZipInputs(s2, url, "v1"));
+        }
+
+        @Test
+        void fileOverloadReturnsTargetDirOnCacheHit() throws Exception {
+            var proj = project();
+            var sandbox = new Sandbox("zip-file-cache", proj);
+            var subDir = sandbox.getSandboxExtensionDirectory().resolve("jbang");
+            Files.createDirectories(subDir);
+            Files.writeString(subDir.resolve("x.txt"), "content");
+
+            var url = toUrl("https://example.com/x.zip");
+            var version = "v1";
+            var inputsHash = hashZipInputs(sandbox, url, version);
+            var snapVal = snapshotValue(sandbox, inputsHash, subDir);
+
+            var snapFile = sandbox.getSandboxDirectory().resolve("sandbox.snapshot");
+            Files.createDirectories(snapFile.getParent());
+            var props = new Properties();
+            props.setProperty("zip-file-cache/jbang", snapVal);
+            try (var out = Files.newOutputStream(snapFile)) {
+                props.store(out, "test");
+            }
+
+            var result = sandbox.downloadZip(url, version, new File("jbang"));
+            assertEquals(subDir, result);
+        }
+
+        @Test
+        void returnsSubDirectoryOnCacheHit() throws Exception {
+            var proj = project();
+            var sandbox = new Sandbox("zip-sub-cache", proj);
+            var subDir = sandbox.getSandboxExtensionDirectory().resolve("tools");
+            Files.createDirectories(subDir);
+            Files.writeString(subDir.resolve("a.txt"), "content");
+
+            var url = toUrl("https://example.com/dummy.zip");
+            var version = "1.0";
+            var inputsHash = hashZipInputs(sandbox, url, version);
+            var snapVal = snapshotValue(sandbox, inputsHash, subDir);
+
+            var snapFile = sandbox.getSandboxDirectory().resolve("sandbox.snapshot");
+            Files.createDirectories(snapFile.getParent());
+            var props = new Properties();
+            props.setProperty("zip-sub-cache/tools", snapVal);
+            try (var out = Files.newOutputStream(snapFile)) {
+                props.store(out, "test");
+            }
+
+            var result = sandbox.downloadZip(url, version, Path.of("tools"));
+            assertEquals(subDir, result);
+        }
+
+        @Test
+        void returnsTargetDirOnCacheHit() throws Exception {
+            var proj = project();
+            var sandbox = new Sandbox("zip-cache", proj);
+            var extDir = sandbox.getSandboxExtensionDirectory();
+            Files.createDirectories(extDir);
+            Files.writeString(extDir.resolve("extracted.txt"), "content");
+
+            var url = toUrl("https://example.com/dummy.zip");
+            var version = "1.0";
+            var inputsHash = hashZipInputs(sandbox, url, version);
+            var snapVal = snapshotValue(sandbox, inputsHash, extDir);
+
+            var snapFile = sandbox.getSandboxDirectory().resolve("sandbox.snapshot");
+            Files.createDirectories(snapFile.getParent());
+            var props = new Properties();
+            props.setProperty("zip-cache", snapVal);
+            try (var out = Files.newOutputStream(snapFile)) {
+                props.store(out, "test");
+            }
+
+            // Must return without any network access.
+            var result = sandbox.downloadZip(url, version);
+            assertEquals(extDir, result);
+            assertTrue(Files.exists(extDir.resolve("extracted.txt")));
+        }
+
+        @Test
+        void urlIsPartOfHash() throws Exception {
+            var sandbox = new Sandbox("zip-hash", project());
+            assertNotEquals(
+                    hashZipInputs(sandbox, toUrl("https://example.com/a.zip"), "v1"),
+                    hashZipInputs(sandbox, toUrl("https://example.com/b.zip"), "v1"));
+        }
+
+        @Test
+        void versionIsPartOfHash() throws Exception {
+            var sandbox = new Sandbox("zip-hash", project());
+            var url = toUrl("https://example.com/x.zip");
+            assertNotEquals(
+                    hashZipInputs(sandbox, url, "v1"),
+                    hashZipInputs(sandbox, url, "v2"));
+        }
+    }
+
+    @Nested
+    @DisplayName("downloadZip - live")
+    @Tag("live")
+    class DownloadZipLiveTests {
+
+        static final String BLD_ZIP =
+                "https://github.com/rife2/bld/releases/download/3.0.1/bld-3.0.1.zip";
+        static final String JBANG_ZIP =
+                "https://github.com/jbangdev/jbang/releases/download/v0.143.0/jbang.zip";
+
+        @Test
+        void cacheHitDoesNotTouchFiles() throws Exception {
+            var sandbox = new Sandbox("zip-live-cache", project());
+            var url = toUrl(BLD_ZIP);
+
+            var dir1 = sandbox.downloadZip(url, "3.0.1");
+            var file = anyFile(dir1);
+            var oldTime = FileTime.fromMillis(1234567890000L);
+            Files.setLastModifiedTime(file, oldTime);
+
+            // Second call with the same version must be served from the snapshot,
+            // so nothing should be re-extracted (mtime preserved).
+            var dir2 = sandbox.downloadZip(url, "3.0.1");
+            assertEquals(dir1, dir2);
+            assertEquals(oldTime, Files.getLastModifiedTime(file),
+                    "cache hit must not re-extract files");
+        }
+
+        @Test
+        void downloadsAndExtractsJbangToSubDirectory() throws Exception {
+            var sandbox = new Sandbox("zip-live-jbang", project());
+            var sub = Path.of("jbang");
+            var result = sandbox.downloadZip(toUrl(JBANG_ZIP), "0.143.0", sub);
+
+            assertEquals(sandbox.getSandboxExtensionDirectory().resolve(sub), result);
+            assertTrue(Files.isDirectory(result));
+            assertTrue(Files.exists(anyFile(result)));
+
+            var props = readSnapshot(sandbox);
+            assertTrue(props.containsKey("zip-live-jbang/jbang"));
+        }
+
+        @Test
+        void downloadsAndExtractsRifeBld() throws Exception {
+            var sandbox = new Sandbox("zip-live-bld", project());
+            var result = sandbox.downloadZip(toUrl(BLD_ZIP), "3.0.1");
+
+            assertEquals(sandbox.getSandboxExtensionDirectory(), result);
+            assertTrue(Files.isDirectory(result));
+            assertTrue(Files.exists(anyFile(result)));
+
+            var snapFile = sandbox.getSandboxDirectory().resolve("sandbox.snapshot");
+            assertTrue(Files.exists(snapFile));
+            var props = readSnapshot(sandbox);
+            assertTrue(props.containsKey("zip-live-bld"));
+            assertTrue(props.getProperty("zip-live-bld").contains(":"));
+        }
+
+        @Test
+        void fileOverloadDownloads() throws Exception {
+            var sandbox = new Sandbox("zip-live-file", project());
+            var result = sandbox.downloadZip(
+                    toUrl(JBANG_ZIP), "0.143.0", new File("jbang-file"));
+
+            assertEquals(sandbox.getSandboxExtensionDirectory().resolve("jbang-file"), result);
+            assertTrue(Files.isDirectory(result));
+            assertTrue(Files.exists(anyFile(result)));
+        }
+
+        @Test
+        void recoversFromDirectoryDeletion() throws Exception {
+            var sandbox = new Sandbox("zip-live-recover", project());
+            var url = toUrl(BLD_ZIP);
+
+            var dir = sandbox.downloadZip(url, "3.0.1");
+            assertTrue(Files.isDirectory(dir));
+
+            deleteDirectory(dir);
+            assertFalse(Files.exists(dir));
+
+            var restored = sandbox.downloadZip(url, "3.0.1");
+            assertTrue(Files.isDirectory(restored));
+            assertTrue(Files.exists(anyFile(restored)));
+        }
+
+        @Test
+        void versionChangeInvalidatesCache() throws Exception {
+            var sandbox = new Sandbox("zip-live-version", project());
+            var url = toUrl(BLD_ZIP);
+
+            var dir1 = sandbox.downloadZip(url, "3.0.1");
+            var snap1 = readSnapshot(sandbox).getProperty("zip-live-version");
+
+            // Same URL, different version: inputs hash changes, so the snapshot must
+            // be invalidated and the archive re-extracted.
+            var dir2 = sandbox.downloadZip(url, "3.0.1-other");
+            assertEquals(dir1, dir2);
+            var snap2 = readSnapshot(sandbox).getProperty("zip-live-version");
+
+            assertNotNull(snap1);
+            assertNotNull(snap2);
+            assertNotEquals(snap1, snap2,
+                    "changing the version must invalidate the snapshot");
+        }
+    }
+
+    @Nested
+    @DisplayName("downloadZip - security")
+    class DownloadZipSecurityTests {
+
+        @Test
+        void extractsNestedDirectories() throws Exception {
+            var zip = tmp.resolve("nested.zip");
+            try (var zos = new ZipOutputStream(Files.newOutputStream(zip))) {
+                zos.putNextEntry(new ZipEntry("a/"));
+                zos.closeEntry();
+                zos.putNextEntry(new ZipEntry("a/b/"));
+                zos.closeEntry();
+                zos.putNextEntry(new ZipEntry("a/b/c.txt"));
+                zos.write("c".getBytes());
+                zos.closeEntry();
+            }
+
+            var sandbox = new Sandbox("zip-nested", project());
+            var result = sandbox.downloadZip(zip.toUri().toURL(), "v1");
+            assertEquals("c", Files.readString(result.resolve("a/b/c.txt")));
+        }
+
+        @Test
+        void rejectsZipSlipEntry() throws Exception {
+            var zip = tmp.resolve("evil.zip");
+            try (var zos = new ZipOutputStream(Files.newOutputStream(zip))) {
+                zos.putNextEntry(new ZipEntry("ok.txt"));
+                zos.write("ok".getBytes());
+                zos.closeEntry();
+                zos.putNextEntry(new ZipEntry("../evil.txt"));
+                zos.write("evil".getBytes());
+                zos.closeEntry();
+            }
+
+            var sandbox = new Sandbox("zip-slip", project());
+            var ex = assertThrows(UncheckedIOException.class,
+                    () -> sandbox.downloadZip(zip.toUri().toURL(), "v1"));
+            assertNotNull(ex.getCause());
+            assertTrue(ex.getCause().getMessage().contains("escapes"));
+
+            // The escaping file must not have been written.
+            assertFalse(Files.exists(sandbox.getSandboxDirectory().resolve("evil.txt")));
+        }
+    }
+
+    @Nested
+    @DisplayName("downloadZip - validation")
+    class DownloadZipValidationTests {
+
+        @Test
+        void rejectsEscapingFileSubDirectory() throws Exception {
+            var sandbox = new Sandbox("zip-escape-file", project());
+            var url = toUrl("https://example.com/x.zip");
+            assertThrows(IllegalArgumentException.class,
+                    () -> sandbox.downloadZip(url, "v1", new File("../../escape")));
+        }
+
+        @Test
+        void rejectsEscapingPathSubDirectory() throws Exception {
+            var sandbox = new Sandbox("zip-escape", project());
+            var url = toUrl("https://example.com/x.zip");
+            assertThrows(IllegalArgumentException.class,
+                    () -> sandbox.downloadZip(url, "v1", Path.of("../../escape")));
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        @ValueSource(strings = {" ", "   "})
+        void rejectsNullOrBlankVersion(String version) throws Exception {
+            var sandbox = new Sandbox("zip-bad-version", project());
+            var url = toUrl("https://example.com/x.zip");
+            assertThrows(Exception.class, () -> sandbox.downloadZip(url, version));
+        }
+
+        @Test
+        @SuppressWarnings("DataFlowIssue")
+        void rejectsNullUrl() throws Exception {
+            var sandbox = new Sandbox("zip-null-url", project());
+            assertThrows(NullPointerException.class, () -> sandbox.downloadZip(null, "v1"));
+        }
+
+        @Test
+        void rejectsVersionWithColon() throws Exception {
+            var sandbox = new Sandbox("zip-colon", project());
+            var url = toUrl("https://example.com/x.zip");
+            assertThrows(IllegalArgumentException.class, () -> sandbox.downloadZip(url, "v1:beta"));
+        }
+    }
+
+    @Nested
     @DisplayName("getters")
     class GettersTests {
 
@@ -468,7 +825,6 @@ class SandboxTest {
             var vr = new VersionResolution(null);
             var deps = List.of(new Dependency("org.example", "aaa", new VersionNumber(1, 0)));
 
-            // Two distinct repository instances; use the two well-known constants.
             var r1 = MAVEN_CENTRAL;
             var r2 = CENTRAL_SNAPSHOTS;
 
@@ -543,7 +899,6 @@ class SandboxTest {
             var vr = new VersionResolution(null);
             String inputsHash = hashInputs(sandbox, deps, repos, vr);
 
-            // Record a snapshot as if produced on a specific JVM version.
             Sandbox.setJvmVersionSupplier(() -> "21.0.5");
             String snapVal = snapshotValue(sandbox, inputsHash, extDir);
             var snapFile = sandbox.getSandboxDirectory().resolve("sandbox.snapshot");
@@ -554,10 +909,8 @@ class SandboxTest {
                 props.store(out, "test");
             }
 
-            // Same JVM version -> still valid.
             assertTrue(isSnapshotValid(sandbox, "jvm-ext", inputsHash, extDir));
 
-            // Different JVM version -> invalidated even though inputs and content are unchanged.
             Sandbox.setJvmVersionSupplier(() -> "22.0.1");
             assertFalse(isSnapshotValid(sandbox, "jvm-ext", inputsHash, extDir),
                     "a JVM version change must invalidate the snapshot");

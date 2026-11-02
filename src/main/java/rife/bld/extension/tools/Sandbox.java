@@ -20,14 +20,17 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import rife.bld.BaseProject;
+import rife.bld.BldVersion;
 import rife.bld.dependencies.*;
 import rife.tools.FileUtils;
+import rife.tools.Product;
 import rife.tools.exceptions.FileUtilsErrorException;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.security.DigestInputStream;
@@ -42,10 +45,12 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
  * Manages a per-extension sandbox at {@code lib/.sandbox/<extensionName>} for caching
- * resolved dependencies.
+ * resolved dependencies and downloaded ZIP archives.
  * <p>
  * A download is skipped when a recorded snapshot is still valid: the resolution inputs, the
  * extension name, the JVM version, and the on-disk content of the target directory must all
@@ -56,19 +61,26 @@ import java.util.regex.Pattern;
  * @since 1.4
  */
 @NullMarked
+@SuppressWarnings("PMD.ExcessiveImports")
 public final class Sandbox {
 
     private static final String DEPENDENCIES = "dependencies";
-
     /**
      * Extension names: alphanumeric at both ends, only {@code [A-Za-z0-9._-]} inside.
      */
     private static final Pattern EXTENSION_NAME_PATTERN =
             Pattern.compile("[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?");
-
     private static final String GITIGNORE = ".gitignore";
+    /**
+     * Upper bound on the total number of bytes extracted from a ZIP; guards against zip bombs.
+     */
+    private static final long MAX_EXTRACTED_BYTES = 2L * 1024 * 1024 * 1024;
     private static final String REPOSITORIES = "repositories";
     private static final String SANDBOX_DIRECTORY = ".sandbox";
+    private static final String SANDBOX_DIR_CREATE_ERROR = "Could not create sandbox directory: ";
+    private static final int ZIP_CONNECT_TIMEOUT_MILLIS = 30_000;
+    private static final int ZIP_READ_TIMEOUT_MILLIS = 60_000;
+
     private static final ArtifactRetriever artifactRetriever = ArtifactRetriever.cachingInstance();
     private static final ConcurrentMap<Path, ReentrantLock> directoryLocks = new ConcurrentHashMap<>();
     private static final AtomicReference<Supplier<String>> jvmVersionSupplier_ =
@@ -155,6 +167,56 @@ public final class Sandbox {
             if (logger.isLoggable(Level.WARNING)) {
                 logger.log(Level.WARNING,
                         "Could not create " + gitIgnore + "; sandbox contents may be tracked by git", e);
+            }
+        }
+    }
+
+    /**
+     * Streams a ZIP from {@code url} and extracts every entry into {@code targetDirectory}.
+     * Rejects entries that would escape the target directory (zip slip) and aborts if the
+     * cumulative uncompressed size exceeds {@link #MAX_EXTRACTED_BYTES}.
+     */
+    private static void extractZip(URL url, Path targetDirectory) throws IOException {
+        var connection = url.openConnection();
+        connection.setConnectTimeout(ZIP_CONNECT_TIMEOUT_MILLIS);
+        connection.setReadTimeout(ZIP_READ_TIMEOUT_MILLIS);
+        connection.setRequestProperty("User-Agent", Product.BLD.toUserAgent(BldVersion.getVersion()));
+
+        long totalExtracted = 0L;
+        try (var in = connection.getInputStream();
+             var zipIn = new ZipInputStream(in)) {
+            ZipEntry entry;
+            while ((entry = zipIn.getNextEntry()) != null) {
+                var name = entry.getName();
+                if (name.isEmpty()) {
+                    zipIn.closeEntry();
+                    continue;
+                }
+                var target = targetDirectory.resolve(name).normalize();
+                if (!target.startsWith(targetDirectory)) {
+                    throw new IOException("ZIP entry escapes target directory: " + name);
+                }
+                if (entry.isDirectory()) {
+                    Files.createDirectories(target);
+                } else {
+                    var parent = target.getParent();
+                    if (parent != null) {
+                        Files.createDirectories(parent);
+                    }
+                    long written;
+                    try (var out = Files.newOutputStream(target,
+                            StandardOpenOption.CREATE,
+                            StandardOpenOption.TRUNCATE_EXISTING,
+                            StandardOpenOption.WRITE)) {
+                        written = zipIn.transferTo(out);
+                    }
+                    totalExtracted += written;
+                    if (totalExtracted > MAX_EXTRACTED_BYTES) {
+                        throw new IOException("ZIP content exceeds maximum allowed extracted size ("
+                                + MAX_EXTRACTED_BYTES + " bytes)");
+                    }
+                }
+                zipIn.closeEntry();
             }
         }
     }
@@ -317,7 +379,7 @@ public final class Sandbox {
             try {
                 Files.createDirectories(sandboxDirectory_);
             } catch (IOException e) {
-                throw new UncheckedIOException("Could not create sandbox directory: " + sandboxDirectory_, e);
+                throw new UncheckedIOException(SANDBOX_DIR_CREATE_ERROR + sandboxDirectory_, e);
             }
             ensureGitIgnore(sandboxDirectory_);
 
@@ -333,7 +395,7 @@ public final class Sandbox {
             try {
                 Files.createDirectories(downloadDirectory);
             } catch (IOException e) {
-                throw new UncheckedIOException("Could not create sandbox directory: " + downloadDirectory, e);
+                throw new UncheckedIOException(SANDBOX_DIR_CREATE_ERROR + downloadDirectory, e);
             }
 
             var resolver = new ParallelDependencyResolver(resolution, artifactRetriever, repositories);
@@ -430,6 +492,118 @@ public final class Sandbox {
     }
 
     /**
+     * Downloads a ZIP file from the given URL and extracts it into the extension sandbox
+     * directory.
+     * <p>
+     * Any existing content in the target directory is deleted first. The snapshot is
+     * validated against the extension name, the URL, the provided {@code version}, the JVM
+     * version, and the on-disk content of the target directory. Callers must change
+     * {@code version} whenever the content served at {@code url} changes, so that the stale
+     * extraction is invalidated.
+     *
+     * @param url     the URL of the ZIP file to download
+     * @param version a version string for the ZIP content; changing it invalidates the snapshot
+     * @return the directory containing the extracted content
+     * @throws NullPointerException     if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code version} is blank or contains {@code ':'}
+     * @throws IllegalStateException    if the target directory cannot be deleted
+     * @throws UncheckedIOException     if the ZIP cannot be downloaded or extracted
+     */
+    public Path downloadZip(URL url, String version) {
+        return downloadZip(url, version, (Path) null);
+    }
+
+    /**
+     * Downloads a ZIP file from the given URL and extracts it into the extension sandbox,
+     * optionally under a {@link Path} subdirectory.
+     *
+     * @param url          the URL of the ZIP file to download
+     * @param version      a version string for the ZIP content; changing it invalidates the snapshot
+     * @param subDirectory optional subdirectory within the extension sandbox; {@code null}
+     *                     uses the extension root
+     * @return the directory containing the extracted content
+     * @throws NullPointerException     if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code version} is blank or contains {@code ':'}, or
+     *                                  if {@code subDirectory} resolves outside the extension sandbox
+     * @throws IllegalStateException    if the target directory cannot be deleted
+     * @throws UncheckedIOException     if the ZIP cannot be downloaded or extracted
+     */
+    @SuppressFBWarnings("EXS_EXCEPTION_SOFTENING_NO_CONSTRAINTS")
+    public Path downloadZip(URL url, String version, @Nullable Path subDirectory) {
+        ObjectTools.requireNonNull(url, "url");
+        var validatedVersion = TextTools.requireNotBlank(version, "version");
+        if (validatedVersion.indexOf(':') >= 0) {
+            throw new IllegalArgumentException("version must not contain ':': " + validatedVersion);
+        }
+
+        var relative = relativeSubDirectory(subDirectory);
+        var downloadDirectory = (relative != null)
+                ? sandboxExtensionDirectory_.resolve(relative)
+                : sandboxExtensionDirectory_;
+        var snapshotKey = (relative != null)
+                ? extensionName_ + '/' + toPortableString(relative)
+                : extensionName_;
+        var inputsHash = hashZipInputs(url, validatedVersion);
+
+        var lock = directoryLocks.computeIfAbsent(sandboxExtensionDirectory_, k -> new ReentrantLock());
+        lock.lock();
+        try {
+            try {
+                Files.createDirectories(sandboxDirectory_);
+            } catch (IOException e) {
+                throw new UncheckedIOException("Could not create sandbox directory: " + sandboxDirectory_, e);
+            }
+            ensureGitIgnore(sandboxDirectory_);
+
+            if (isSnapshotValid(snapshotKey, inputsHash, downloadDirectory)) {
+                if (logger.isLoggable(Level.INFO)) {
+                    logger.log(Level.INFO, "Reusing valid sandbox snapshot for ''{0}''", snapshotKey);
+                }
+                return downloadDirectory;
+            }
+
+            deleteDirectory(downloadDirectory);
+
+            try {
+                Files.createDirectories(downloadDirectory);
+            } catch (IOException e) {
+                throw new UncheckedIOException("Could not create sandbox directory: " + downloadDirectory, e);
+            }
+
+            try {
+                extractZip(url, downloadDirectory);
+            } catch (IOException e) {
+                throw new UncheckedIOException("Could not download or extract ZIP: " + url, e);
+            }
+
+            saveSnapshot(snapshotKey, inputsHash, downloadDirectory);
+        } finally {
+            lock.unlock();
+        }
+
+        return downloadDirectory;
+    }
+
+    /**
+     * Downloads a ZIP file from the given URL and extracts it into the extension sandbox,
+     * optionally under a {@link File} subdirectory.
+     *
+     * @param url          the URL of the ZIP file to download
+     * @param version      a version string for the ZIP content; changing it invalidates the snapshot
+     * @param subDirectory optional subdirectory within the extension sandbox; {@code null}
+     *                     uses the extension root
+     * @return the directory containing the extracted content
+     * @throws NullPointerException     if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code version} is blank or contains {@code ':'}, or
+     *                                  if {@code subDirectory} resolves outside the extension sandbox
+     * @throws IllegalStateException    if the target directory cannot be deleted
+     * @throws UncheckedIOException     if the ZIP cannot be downloaded or extracted
+     */
+    public Path downloadZip(URL url, String version, @Nullable File subDirectory) {
+        return downloadZip(url, version, subDirectory != null ? subDirectory.toPath() : null);
+    }
+
+    /**
      * Returns the root sandbox directory.
      *
      * @return the path to {@code lib/.sandbox}
@@ -489,6 +663,13 @@ public final class Sandbox {
         manifest.append("overrides|").append(new TreeMap<>(resolution.versionOverrides()))
                 .append("\nboms|").append(new TreeMap<>(resolution.bomVersions())).append('\n');
         return sha256(manifest.toString());
+    }
+
+    private String hashZipInputs(URL url, String version) {
+        var manifest = "extension|" + extensionName_ + '\n' +
+                "zip|" + url.toExternalForm() + '\n' +
+                "version|" + version + '\n';
+        return sha256(manifest);
     }
 
     /**

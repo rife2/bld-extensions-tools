@@ -174,12 +174,13 @@ The [Sandbox](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/to
 class manages an isolated download directory for a bld extension.
 
 Each extension gets its own subdirectory under `lib/.sandbox/<extensionName>`
-where its compile and runtime dependencies are downloaded. To avoid unnecessary
-re-downloads, the state is tracked with a hash-based snapshot in
-`lib/.sandbox/sandbox.snapshot`. The snapshot is invalidated when the JVM version
-changes, and snapshot handling is hardened for concurrent access. Sandbox
-activities are logged to aid diagnostics. If the snapshot is valid,
-`downloadDependencies` becomes a no-op.
+where its compile and runtime dependencies are downloaded, and where ZIP
+archives can be downloaded and extracted. To avoid unnecessary re-downloads, the
+state is tracked with a hash-based snapshot in `lib/.sandbox/sandbox.snapshot`.
+The snapshot is invalidated when the JVM version changes, and snapshot handling
+is hardened for concurrent access. Sandbox activities are logged to aid
+diagnostics. If the snapshot is valid, `downloadDependencies` and `downloadZip`
+become no-ops.
 
 Downloads are serialized per-extension within a single JVM; different
 extensions can download in parallel. Concurrent processes sharing the same
@@ -198,21 +199,53 @@ var dir = sandbox.downloadDependencies(
 // artifacts in lib/.sandbox/my-extension
 ```
 
+ZIP archives can be downloaded and extracted into the same sandbox:
+
+```java
+var sandbox = new Sandbox("my-extension", project);
+
+// Extract into lib/.sandbox/my-extension
+var toolsDir = sandbox.downloadZip(
+    new URL("https://example.com/tools-1.2.3.zip"),
+    "1.2.3"
+);
+
+// Or into lib/.sandbox/my-extension/tools
+var jbangDir = sandbox.downloadZip(
+    new URL("https://github.com/jbangdev/jbang/releases/download/v0.143.0/jbang.zip"),
+    "0.143.0",
+    Path.of("tools")
+);
+```
+
+The `version` argument is caller-supplied and is folded into the snapshot
+fingerprint. It must be changed whenever the content served at the URL changes;
+a version change invalidates the snapshot and forces a re-extract. The snapshot
+is validated against the extension name, the URL, the version, the JVM version,
+and the on-disk content of the target directory.
+
+ZIP extraction is streamed directly from the URL. Entries whose normalized path
+escapes the target directory are rejected (zip-slip protection), and extraction
+aborts if the cumulative uncompressed size exceeds 2 GiB (zip-bomb protection).
+
 The following methods are provided:
 
-| Method                                                                                                                                                                | Description                                                        |
-|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------------------------------------------|
-| [`Sandbox(String, BaseProject)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#%3Cinit%3E(java.lang.String,rife.bld.BaseProject)) | Creates a sandbox for the given extension name.                    |
-| [`downloadDependencies(List<Dependency>, List<Repository>)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadDependencies(java.util.List,java.util.List)) | Downloads dependencies with default resolution into the extension root. |
-| [`downloadDependencies(List<Dependency>, List<Repository>, VersionResolution)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadDependencies(java.util.List,java.util.List,rife.bld.dependencies.VersionResolution)) | Downloads dependencies with a resolution into the extension root, skips if snapshot is valid. |
-| [`downloadDependencies(List<Dependency>, List<Repository>, VersionResolution, Path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadDependencies(java.util.List,java.util.List,rife.bld.dependencies.VersionResolution,java.nio.file.Path)) | Downloads dependencies into the sandbox, optionally under a subdirectory. |
-| [`downloadDependencies(List<Dependency>, List<Repository>, VersionResolution, File)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadDependencies(java.util.List,java.util.List,rife.bld.dependencies.VersionResolution,java.io.File)) | Downloads dependencies into the sandbox, optionally under a `File` subdirectory. |
-| [`downloadDependencies(List<Dependency>, List<Repository>, Path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadDependencies(java.util.List,java.util.List,java.nio.file.Path)) | Downloads dependencies with default resolution, optionally under a subdirectory. |
-| [`downloadDependencies(List<Dependency>, List<Repository>, File)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadDependencies(java.util.List,java.util.List,java.io.File)) | File-based overload with default resolution, optionally under a subdirectory. |
-| [`getSandboxDirectory()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxDirectory()) | Returns `lib/.sandbox`.                                            |
-| [`getSandboxDirectoryAsFile()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxDirectoryAsFile()) | Returns `lib/.sandbox` as a `File`.                                |
-| [`getSandboxExtensionDirectory()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxExtensionDirectory()) | Returns `lib/.sandbox/<extensionName>`.                            |
-| [`getSandboxExtensionDirectoryAsFile()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxExtensionDirectoryAsFile()) | Returns `lib/.sandbox/<extensionName>` as a `File`.                |
+| Method                                                                                                                                                                                                                                                                                   | Description                                                                                   |
+|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------|
+| [`Sandbox(String, BaseProject)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#%3Cinit%3E(java.lang.String,rife.bld.BaseProject))                                                                                                                   | Creates a sandbox for the given extension name.                                               |
+| [`downloadDependencies(List<Dependency>, List<Repository>)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadDependencies(java.util.List,java.util.List))                                                                                     | Downloads dependencies with default resolution into the extension root.                       |
+| [`downloadDependencies(List<Dependency>, List<Repository>, VersionResolution)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadDependencies(java.util.List,java.util.List,rife.bld.dependencies.VersionResolution))                          | Downloads dependencies with a resolution into the extension root, skips if snapshot is valid. |
+| [`downloadDependencies(List<Dependency>, List<Repository>, VersionResolution, Path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadDependencies(java.util.List,java.util.List,rife.bld.dependencies.VersionResolution,java.nio.file.Path)) | Downloads dependencies into the sandbox, optionally under a subdirectory.                     |
+| [`downloadDependencies(List<Dependency>, List<Repository>, VersionResolution, File)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadDependencies(java.util.List,java.util.List,rife.bld.dependencies.VersionResolution,java.io.File))       | Downloads dependencies into the sandbox, optionally under a `File` subdirectory.              |
+| [`downloadDependencies(List<Dependency>, List<Repository>, Path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadDependencies(java.util.List,java.util.List,java.nio.file.Path))                                                            | Downloads dependencies with default resolution, optionally under a subdirectory.              |
+| [`downloadDependencies(List<Dependency>, List<Repository>, File)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadDependencies(java.util.List,java.util.List,java.io.File))                                                                  | File-based overload with default resolution, optionally under a subdirectory.                 |
+| [`downloadZip(URL, String)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadZip(java.net.URL,java.lang.String))                                                                                                                              | Downloads and extracts a ZIP into the extension root.                                         |
+| [`downloadZip(URL, String, Path)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadZip(java.net.URL,java.lang.String,java.nio.file.Path))                                                                                                     | Downloads and extracts a ZIP, optionally under a subdirectory.                                |
+| [`downloadZip(URL, String, File)`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#downloadZip(java.net.URL,java.lang.String,java.io.File))                                                                                                           | Downloads and extracts a ZIP, optionally under a `File` subdirectory.                         |
+| [`getSandboxDirectory()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxDirectory())                                                                                                                                                      | Returns `lib/.sandbox`.                                                                       |
+| [`getSandboxDirectoryAsFile()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxDirectoryAsFile())                                                                                                                                          | Returns `lib/.sandbox` as a `File`.                                                           |
+| [`getSandboxExtensionDirectory()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxExtensionDirectory())                                                                                                                                    | Returns `lib/.sandbox/<extensionName>`.                                                       |
+| [`getSandboxExtensionDirectoryAsFile()`](https://rife2.github.io/bld-extensions-tools/rife/bld/extension/tools/Sandbox.html#getSandboxExtensionDirectoryAsFile())                                                                                                                        | Returns `lib/.sandbox/<extensionName>` as a `File`.                                           |
 
 ## System Tools
 
