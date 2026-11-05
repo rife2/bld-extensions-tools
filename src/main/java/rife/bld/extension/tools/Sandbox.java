@@ -91,6 +91,7 @@ public final class Sandbox {
     private final Path sandboxDirectory_;
     private final Path sandboxExtensionDirectory_;
     private final Path sandboxSnapshotFile_;
+    private final boolean silent_;
 
     /**
      * Creates a sandbox for the given extension.
@@ -100,9 +101,25 @@ public final class Sandbox {
      * @param project       the project used to resolve {@code lib/bld}
      * @throws NullPointerException     if any argument is {@code null}
      * @throws IllegalArgumentException if {@code extensionName} is blank or invalid
+     * @see #Sandbox(String, BaseProject, Boolean)
      */
     public Sandbox(String extensionName, BaseProject project) {
+        this(extensionName, project, Boolean.FALSE);
+    }
+
+    /**
+     * Creates a sandbox for the given extension.
+     *
+     * @param extensionName the extension name; must start and end with an ASCII alphanumeric
+     *                      character and contain only {@code [A-Za-z0-9._-]}
+     * @param project       the project used to resolve {@code lib/bld}
+     * @param silent        Indicates whether the operations should be silent or not.
+     * @throws NullPointerException     if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code extensionName} is blank or invalid
+     */
+    public Sandbox(String extensionName, BaseProject project, Boolean silent) {
         ObjectTools.requireNonNull(project, "project");
+        silent_ = silent;
         extensionName_ = TextTools.requireNotBlank(extensionName, "extensionName");
         requireValidExtensionName(extensionName_);
         // Sibling of lib/bld, not a child: keeps the sandbox off the wrapper's classpath.
@@ -134,37 +151,70 @@ public final class Sandbox {
      * containing {@code .sandbox/}, so that git ignores the sandbox directory. The file is
      * only created if one does not already exist; an existing file is left untouched.
      *
+     * <p>Before creating the file, the sandbox's grandparent directory (the parent of the
+     * sandbox's parent) is checked for an existing {@code .gitignore}. If that file already
+     * contains an entry ignoring this sandbox (e.g. {@code lib/.sandbox/} when the sandbox's
+     * parent is {@code lib}), no {@code .gitignore} is created in the parent directory, as it
+     * would be redundant.
+     *
      * @param sandboxDirectory the sandbox root directory
+     * @param silent           Indicates whether the operations should be silent or not.
      */
-    private static void ensureGitIgnore(Path sandboxDirectory) {
+    private static void ensureGitIgnore(Path sandboxDirectory, boolean silent) {
         var parent = sandboxDirectory.getParent();
         if (parent == null) {
-            if (logger.isLoggable(Level.FINE)) {
+            if (!silent && logger.isLoggable(Level.FINE)) {
                 logger.log(Level.FINE,
                         "Skipping git ignore setup: no parent for {0}", sandboxDirectory);
             }
             return;
         }
+
+        // If the grandparent's .gitignore already ignores this sandbox (e.g. "lib/.sandbox/"),
+        // don't create a redundant .gitignore in the parent directory.
+        var grandParent = parent.getParent();
+        if (grandParent != null) {
+            var grandParentGitIgnore = grandParent.resolve(GITIGNORE);
+            if (Files.exists(grandParentGitIgnore)) {
+                var entry = grandParent.relativize(sandboxDirectory).toString().replace('\\', '/') + "/";
+                try {
+                    if (Files.readString(grandParentGitIgnore, StandardCharsets.UTF_8).contains(entry)) {
+                        if (!silent && logger.isLoggable(Level.FINE)) {
+                            logger.log(Level.FINE,
+                                    "Sandbox already ignored by {0} ({1}); skipping",
+                                    new Object[]{grandParentGitIgnore, entry});
+                        }
+                        return;
+                    }
+                } catch (IOException e) {
+                    if (!silent && logger.isLoggable(Level.WARNING)) {
+                        logger.log(Level.WARNING,
+                                "Could not read " + grandParentGitIgnore + "; creating local .gitignore", e);
+                    }
+                }
+            }
+        }
+
         var gitIgnore = parent.resolve(GITIGNORE);
         if (Files.exists(gitIgnore)) {
-            if (logger.isLoggable(Level.FINE)) {
+            if (!silent && logger.isLoggable(Level.FINE)) {
                 logger.log(Level.FINE, "Git ignore file already exists: {0}", gitIgnore);
             }
             return;
         }
         try {
-            Files.writeString(gitIgnore, SANDBOX_DIRECTORY + "/\n", StandardCharsets.UTF_8,
+            Files.writeString(gitIgnore, SANDBOX_DIRECTORY + '/' + System.lineSeparator(), StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
-            if (logger.isLoggable(Level.INFO)) {
+            if (!silent && logger.isLoggable(Level.INFO)) {
                 logger.log(Level.INFO, "Created git ignore file: {0} (ignoring {1}/)",
                         new Object[]{gitIgnore, SANDBOX_DIRECTORY});
             }
         } catch (FileAlreadyExistsException e) {
-            if (logger.isLoggable(Level.FINE)) {
+            if (!silent && logger.isLoggable(Level.FINE)) {
                 logger.log(Level.FINE, "Git ignore file already exists: {0}", gitIgnore);
             }
         } catch (IOException e) {
-            if (logger.isLoggable(Level.WARNING)) {
+            if (!silent && logger.isLoggable(Level.WARNING)) {
                 logger.log(Level.WARNING,
                         "Could not create " + gitIgnore + "; sandbox contents may be tracked by git", e);
             }
@@ -381,10 +431,10 @@ public final class Sandbox {
             } catch (IOException e) {
                 throw new UncheckedIOException(SANDBOX_DIR_CREATE_ERROR + sandboxDirectory_, e);
             }
-            ensureGitIgnore(sandboxDirectory_);
+            ensureGitIgnore(sandboxDirectory_, silent_);
 
             if (isSnapshotValid(snapshotKey, inputsHash, downloadDirectory)) {
-                if (logger.isLoggable(Level.INFO)) {
+                if (!silent_ && logger.isLoggable(Level.INFO)) {
                     logger.log(Level.INFO, "Reusing valid sandbox snapshot for ''{0}''", snapshotKey);
                 }
                 return downloadDirectory;
@@ -553,10 +603,10 @@ public final class Sandbox {
             } catch (IOException e) {
                 throw new UncheckedIOException("Could not create sandbox directory: " + sandboxDirectory_, e);
             }
-            ensureGitIgnore(sandboxDirectory_);
+            ensureGitIgnore(sandboxDirectory_, silent_);
 
             if (isSnapshotValid(snapshotKey, inputsHash, downloadDirectory)) {
-                if (logger.isLoggable(Level.INFO)) {
+                if (!silent_ && logger.isLoggable(Level.INFO)) {
                     logger.log(Level.INFO, "Reusing valid sandbox snapshot for ''{0}''", snapshotKey);
                 }
                 return downloadDirectory;
@@ -570,6 +620,9 @@ public final class Sandbox {
                 throw new UncheckedIOException("Could not create sandbox directory: " + downloadDirectory, e);
             }
 
+            if (!silent_ && logger.isLoggable(Level.INFO)) {
+                logger.info("Downloading: " + url);
+            }
             try {
                 extractZip(url, downloadDirectory);
             } catch (IOException e) {
@@ -677,14 +730,14 @@ public final class Sandbox {
      */
     private boolean isSnapshotValid(String snapshotKey, String inputsHash, Path directory) {
         if (!Files.exists(sandboxSnapshotFile_)) {
-            if (logger.isLoggable(Level.INFO)) {
+            if (!silent_ && logger.isLoggable(Level.INFO)) {
                 logger.log(Level.INFO,
                         "Invalidating sandbox snapshot for ''{0}'': no snapshot file", snapshotKey);
             }
             return false;
         }
         if (!Files.exists(directory)) {
-            if (logger.isLoggable(Level.INFO)) {
+            if (!silent_ && logger.isLoggable(Level.INFO)) {
                 logger.log(Level.INFO,
                         "Invalidating sandbox snapshot for ''{0}'': no sandbox directory", snapshotKey);
             }
@@ -694,7 +747,7 @@ public final class Sandbox {
         try (var in = Files.newInputStream(sandboxSnapshotFile_)) {
             snapshot.load(in);
         } catch (IOException e) {
-            if (logger.isLoggable(Level.INFO)) {
+            if (!silent_ && logger.isLoggable(Level.INFO)) {
                 logger.log(Level.INFO,
                         "Invalidating sandbox snapshot for ''{0}'': snapshot file unreadable: {1}",
                         new Object[]{snapshotKey, e.getMessage()});
@@ -703,7 +756,7 @@ public final class Sandbox {
         }
         var expected = snapshot.getProperty(snapshotKey);
         if (expected == null) {
-            if (logger.isLoggable(Level.INFO)) {
+            if (!silent_ && logger.isLoggable(Level.INFO)) {
                 logger.log(Level.INFO,
                         "Invalidating sandbox snapshot for ''{0}'': no recorded entry", snapshotKey);
             }
@@ -714,13 +767,13 @@ public final class Sandbox {
         if (!expected.startsWith(prefix)) {
             var recordedJvm = recordedJvmVersion(expected);
             if (recordedJvm != null && !recordedJvm.equals(currentJvm)) {
-                if (logger.isLoggable(Level.INFO)) {
+                if (!silent_ && logger.isLoggable(Level.INFO)) {
                     logger.log(Level.INFO,
                             "Invalidating sandbox snapshot for ''{0}'': JVM version changed from {1} to {2}",
                             new Object[]{snapshotKey, recordedJvm, currentJvm});
                 }
             } else {
-                if (logger.isLoggable(Level.INFO)) {
+                if (!silent_ && logger.isLoggable(Level.INFO)) {
                     logger.log(Level.INFO,
                             "Invalidating sandbox snapshot for ''{0}'': resolution inputs changed",
                             snapshotKey);
@@ -730,7 +783,7 @@ public final class Sandbox {
         }
         try {
             if (!expected.equals(prefix + getDirectoryHash(directory))) {
-                if (logger.isLoggable(Level.INFO)) {
+                if (!silent_ && logger.isLoggable(Level.INFO)) {
                     logger.log(Level.INFO,
                             "Invalidating sandbox snapshot for ''{0}'': sandbox content changed",
                             snapshotKey);
@@ -738,7 +791,7 @@ public final class Sandbox {
                 return false;
             }
         } catch (IOException e) {
-            if (logger.isLoggable(Level.INFO)) {
+            if (!silent_ && logger.isLoggable(Level.INFO)) {
                 logger.log(Level.INFO,
                         "Invalidating sandbox snapshot for ''{0}'': sandbox content unhashable: {1}",
                         new Object[]{snapshotKey, e.getMessage()});
@@ -794,11 +847,11 @@ public final class Sandbox {
             } finally {
                 snapshotLock.unlock();
             }
-            if (logger.isLoggable(Level.INFO)) {
+            if (!silent_ && logger.isLoggable(Level.INFO)) {
                 logger.log(Level.INFO, "Sandbox snapshot saved for ''{0}''", snapshotKey);
             }
         } catch (IOException e) {
-            if (logger.isLoggable(Level.WARNING)) {
+            if (!silent_ && logger.isLoggable(Level.WARNING)) {
                 logger.log(Level.WARNING,
                         "Could not save sandbox snapshot; next run will re-download", e);
             }

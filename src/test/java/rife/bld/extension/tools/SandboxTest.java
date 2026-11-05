@@ -17,6 +17,7 @@
 package rife.bld.extension.tools;
 
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -28,6 +29,8 @@ import rife.bld.dependencies.Dependency;
 import rife.bld.dependencies.Repository;
 import rife.bld.dependencies.VersionNumber;
 import rife.bld.dependencies.VersionResolution;
+import rife.bld.testing.LoggingExtension;
+import rife.bld.testing.TestLogHandler;
 
 import java.io.File;
 import java.io.UncheckedIOException;
@@ -42,6 +45,7 @@ import java.nio.file.attribute.FileTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
+import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -51,6 +55,15 @@ import static rife.bld.dependencies.Repository.MAVEN_CENTRAL;
 
 @DisplayName("Sandbox")
 class SandboxTest {
+
+    private static final TestLogHandler testLogHandler = new TestLogHandler();
+
+    @RegisterExtension
+    @SuppressWarnings({"LoggerInitializedWithForeignClass", "unused"})
+    private static final LoggingExtension loggingExtension = new LoggingExtension(
+            Logger.getLogger(Sandbox.class.getName()),
+            testLogHandler
+    );
 
     @TempDir
     Path tmp;
@@ -153,13 +166,13 @@ class SandboxTest {
         @ValueSource(strings = {"my-ext", "rife.docs", "kotlin_tools", "ext123", "A-B_c.1", "ext-2.0", "foo.bar.baz", "a", "x1"})
         void acceptsValidName(String name) throws Exception {
             var proj = project();
-            assertDoesNotThrow(() -> new Sandbox(name, proj));
+            assertDoesNotThrow(() -> new Sandbox(name, proj, false));
         }
 
         @Test
         void initializesDirectories() throws Exception {
             var proj = project();
-            var sandbox = new Sandbox("my-ext", proj);
+            var sandbox = new Sandbox("my-ext", proj, false);
             assertEquals(tmp.resolve("lib/.sandbox"), sandbox.getSandboxDirectory());
             assertEquals(tmp.resolve("lib/.sandbox/my-ext"), sandbox.getSandboxExtensionDirectory());
         }
@@ -177,13 +190,13 @@ class SandboxTest {
         })
         void rejectsInvalidName(String name) throws Exception {
             var proj = project();
-            assertThrows(Exception.class, () -> new Sandbox(name, proj));
+            assertThrows(Exception.class, () -> new Sandbox(name, proj, false));
         }
 
         @Test
         @SuppressWarnings("DataFlowIssue")
         void rejectsNullProject() {
-            assertThrows(NullPointerException.class, () -> new Sandbox("my-ext", null));
+            assertThrows(NullPointerException.class, () -> new Sandbox("my-ext", null, false));
         }
     }
 
@@ -222,7 +235,7 @@ class SandboxTest {
         @Test
         void fileOverloadWithoutResolutionReturnsTargetDirOnCacheHit() throws Exception {
             var proj = project();
-            var sandbox = new Sandbox("ext-file-cache", proj);
+            var sandbox = new Sandbox("ext-file-cache", proj, false);
             var extDir = sandbox.getSandboxExtensionDirectory();
             var subDir = extDir.resolve("mytools");
             Files.createDirectories(subDir);
@@ -246,6 +259,7 @@ class SandboxTest {
             var result = sandbox.downloadDependencies(deps, repos, new File("mytools"));
             assertEquals(subDir, result);
         }
+
 
         @Test
         void pathOverloadWithoutResolutionRejectsEscapingSubDirectory() throws Exception {
@@ -284,7 +298,7 @@ class SandboxTest {
         @Test
         void pathOverloadWithoutResolutionReturnsRootOnCacheHit() throws Exception {
             var proj = project();
-            var sandbox = new Sandbox("ext-path-root", proj);
+            var sandbox = new Sandbox("ext-path-root", proj, false);
             var extDir = sandbox.getSandboxExtensionDirectory();
             Files.createDirectories(extDir);
             Files.writeString(extDir.resolve("dummy.jar"), "content");
@@ -311,7 +325,7 @@ class SandboxTest {
         @Test
         void pathOverloadWithoutResolutionReturnsTargetDirOnCacheHit() throws Exception {
             var proj = project();
-            var sandbox = new Sandbox("ext-path-cache", proj);
+            var sandbox = new Sandbox("ext-path-cache", proj, false);
             var extDir = sandbox.getSandboxExtensionDirectory();
             var subDir = extDir.resolve("tools");
             Files.createDirectories(subDir);
@@ -372,7 +386,7 @@ class SandboxTest {
         @Test
         void returnsTargetDirOnCacheHit() throws Exception {
             var proj = project();
-            var sandbox = new Sandbox("ext-a", proj);
+            var sandbox = new Sandbox("ext-a", proj, false);
             var extDir = sandbox.getSandboxExtensionDirectory();
             var subDir = extDir.resolve("sub");
             Files.createDirectories(subDir);
@@ -410,7 +424,7 @@ class SandboxTest {
         @Test
         void threeArgOverloadReturnsTargetDirOnCacheHit() throws Exception {
             var proj = project();
-            var sandbox = new Sandbox("ext-c", proj);
+            var sandbox = new Sandbox("ext-c", proj, false);
             var extDir = sandbox.getSandboxExtensionDirectory();
             Files.createDirectories(extDir);
             Files.writeString(extDir.resolve("dummy.jar"), "content");
@@ -450,7 +464,7 @@ class SandboxTest {
                 zos.closeEntry();
             }
             var proj = project();
-            var sandbox = new Sandbox("zip-gitignore", proj);
+            var sandbox = new Sandbox("zip-gitignore", proj, false);
             sandbox.downloadZip(zip.toUri().toURL(), "v1");
 
             var gitignore = tmp.resolve("lib/.gitignore");
@@ -471,7 +485,7 @@ class SandboxTest {
         @Test
         void fileOverloadReturnsTargetDirOnCacheHit() throws Exception {
             var proj = project();
-            var sandbox = new Sandbox("zip-file-cache", proj);
+            var sandbox = new Sandbox("zip-file-cache", proj, false);
             var subDir = sandbox.getSandboxExtensionDirectory().resolve("jbang");
             Files.createDirectories(subDir);
             Files.writeString(subDir.resolve("x.txt"), "content");
@@ -496,7 +510,7 @@ class SandboxTest {
         @Test
         void returnsSubDirectoryOnCacheHit() throws Exception {
             var proj = project();
-            var sandbox = new Sandbox("zip-sub-cache", proj);
+            var sandbox = new Sandbox("zip-sub-cache", proj, false);
             var subDir = sandbox.getSandboxExtensionDirectory().resolve("tools");
             Files.createDirectories(subDir);
             Files.writeString(subDir.resolve("a.txt"), "content");
@@ -521,7 +535,7 @@ class SandboxTest {
         @Test
         void returnsTargetDirOnCacheHit() throws Exception {
             var proj = project();
-            var sandbox = new Sandbox("zip-cache", proj);
+            var sandbox = new Sandbox("zip-cache", proj, false);
             var extDir = sandbox.getSandboxExtensionDirectory();
             Files.createDirectories(extDir);
             Files.writeString(extDir.resolve("extracted.txt"), "content");
@@ -589,6 +603,15 @@ class SandboxTest {
             assertEquals(dir1, dir2);
             assertEquals(oldTime, Files.getLastModifiedTime(file),
                     "cache hit must not re-extract files");
+        }
+
+        @Test
+        void downloadBldSilent() throws Exception {
+            var sandbox = new Sandbox("zip-live-email-silent", project(), true);
+            sandbox.downloadZip(toUrl("https://github.com/apache/commons-email/archive/refs/tags/EMAIL_1_0.zip"),
+                    "1.0");
+            testLogHandler.printLogMessages();
+            assertTrue(testLogHandler.isEmpty());
         }
 
         @Test
@@ -1008,6 +1031,19 @@ class SandboxTest {
             try (var walk = Files.walk(dir2)) {
                 assertTrue(walk.anyMatch(p -> p.toString().contains("jackson-databind")));
             }
+        }
+
+        @Test
+        void downloadJunitSilent() throws Exception {
+            var sandbox = new Sandbox("live-junit-silent", project(), true);
+            sandbox.downloadDependencies(
+                    List.of(new Dependency("junit", "junit",
+                            new VersionNumber(4, 13, 2))),
+                    List.of(MAVEN_CENTRAL),
+                    new VersionResolution(null),
+                    new File("junit")
+            );
+            assertTrue(testLogHandler.isEmpty());
         }
 
         @Test
