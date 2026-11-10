@@ -45,6 +45,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -56,6 +57,12 @@ import java.util.zip.ZipInputStream;
  * extension name, the JVM version, and the on-disk content of the target directory must all
  * match. Downloads for the same extension are serialized; different extensions may proceed
  * in parallel.
+ * <p>
+ * <strong>Note:</strong> root-level and subdirectory downloads for the same extension share a
+ * single directory tree. The root snapshot's content hash covers its subdirectories and a root
+ * download deletes them, so mixing {@code downloadX(...)} with and without a {@code subDirectory}
+ * argument causes the two snapshots to invalidate each other and forces re-downloads. Use one
+ * mode (root <em>or</em> subdirectory) per extension.
  *
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.4
@@ -83,7 +90,7 @@ public final class Sandbox {
 
     private static final ArtifactRetriever artifactRetriever = ArtifactRetriever.cachingInstance();
     private static final ConcurrentMap<Path, ReentrantLock> directoryLocks = new ConcurrentHashMap<>();
-    private static final AtomicReference<Supplier<String>> jvmVersionSupplier_ =
+    private static final AtomicReference<Supplier<String>> jvmVersionSupplier =
             new AtomicReference<>(() -> Runtime.version().toString());
     private static final Logger logger = Logger.getLogger(Sandbox.class.getName());
     private static final ReentrantLock snapshotLock = new ReentrantLock();
@@ -119,6 +126,7 @@ public final class Sandbox {
      */
     public Sandbox(String extensionName, BaseProject project, Boolean silent) {
         ObjectTools.requireNonNull(project, "project");
+        Objects.requireNonNull(silent, "silent");
         silent_ = silent;
         extensionName_ = TextTools.requireNotBlank(extensionName, "extensionName");
         requireValidExtensionName(extensionName_);
@@ -147,14 +155,34 @@ public final class Sandbox {
     }
 
     /**
+     * Returns the directory itself and each of its ancestor directories, without trailing
+     * slashes, e.g. {@code "lib/.sandbox/"} → {@code ["lib/.sandbox", "lib"]}. A pattern that
+     * matches any of these (such as {@code lib/}) ignores the entry.
+     */
+    private static List<String> directoryCandidates(String entry) {
+        var trimmed = entry;
+        while (trimmed.endsWith("/")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        var candidates = new ArrayList<String>();
+        var current = trimmed;
+        while (!current.isEmpty()) {
+            candidates.add(current);
+            var slash = current.lastIndexOf('/');
+            current = (slash < 0) ? "" : current.substring(0, slash);
+        }
+        return candidates;
+    }
+
+    /**
      * Creates a {@code .gitignore} file in the sandbox's parent directory (e.g. {@code lib})
      * containing {@code .sandbox/}, so that git ignores the sandbox directory. The file is
      * only created if one does not already exist; an existing file is left untouched.
      *
      * <p>Before creating the file, the sandbox's grandparent directory (the parent of the
      * sandbox's parent) is checked for an existing {@code .gitignore}. If that file already
-     * contains an entry ignoring this sandbox (e.g. {@code lib/.sandbox/} when the sandbox's
-     * parent is {@code lib}), no {@code .gitignore} is created in the parent directory, as it
+     * ignores this sandbox—directly, through an ancestor directory, or through a glob such as
+     * {@code lib/.sandbox/**}—no {@code .gitignore} is created in the parent directory, as it
      * would be redundant.
      *
      * @param sandboxDirectory the sandbox root directory
@@ -178,7 +206,8 @@ public final class Sandbox {
             if (Files.exists(grandParentGitIgnore)) {
                 var entry = grandParent.relativize(sandboxDirectory).toString().replace('\\', '/') + "/";
                 try {
-                    if (Files.readString(grandParentGitIgnore, StandardCharsets.UTF_8).contains(entry)) {
+                    if (isIgnoredByGitIgnore(
+                            Files.readString(grandParentGitIgnore, StandardCharsets.UTF_8), entry)) {
                         if (!silent && logger.isLoggable(Level.FINE)) {
                             logger.log(Level.FINE,
                                     "Sandbox already ignored by {0} ({1}); skipping",
@@ -224,7 +253,9 @@ public final class Sandbox {
     /**
      * Streams a ZIP from {@code url} and extracts every entry into {@code targetDirectory}.
      * Rejects entries that would escape the target directory (zip slip) and aborts if the
-     * cumulative uncompressed size exceeds {@link #MAX_EXTRACTED_BYTES}.
+     * cumulative uncompressed size exceeds {@link #MAX_EXTRACTED_BYTES}. The running total is
+     * checked per buffer, so a single oversized entry cannot exhaust the disk before the limit
+     * trips.
      */
     private static void extractZip(URL url, Path targetDirectory) throws IOException {
         var connection = url.openConnection();
@@ -233,6 +264,9 @@ public final class Sandbox {
         connection.setRequestProperty("User-Agent", Product.BLD.toUserAgent(BldVersion.getVersion()));
 
         long totalExtracted = 0L;
+        // Allocated once and reused for every entry; read() overwrites the buffer per call and
+        // each entry is fully written before the next one begins.
+        var buffer = new byte[8192];
         try (var in = connection.getInputStream();
              var zipIn = new ZipInputStream(in)) {
             ZipEntry entry;
@@ -253,17 +287,19 @@ public final class Sandbox {
                     if (parent != null) {
                         Files.createDirectories(parent);
                     }
-                    long written;
                     try (var out = Files.newOutputStream(target,
                             StandardOpenOption.CREATE,
                             StandardOpenOption.TRUNCATE_EXISTING,
                             StandardOpenOption.WRITE)) {
-                        written = zipIn.transferTo(out);
-                    }
-                    totalExtracted += written;
-                    if (totalExtracted > MAX_EXTRACTED_BYTES) {
-                        throw new IOException("ZIP content exceeds maximum allowed extracted size ("
-                                + MAX_EXTRACTED_BYTES + " bytes)");
+                        int read;
+                        while ((read = zipIn.read(buffer)) != -1) {
+                            totalExtracted += read;
+                            if (totalExtracted > MAX_EXTRACTED_BYTES) {
+                                throw new IOException("ZIP content exceeds maximum allowed extracted size ("
+                                        + MAX_EXTRACTED_BYTES + " bytes)");
+                            }
+                            out.write(buffer, 0, read);
+                        }
                     }
                 }
                 zipIn.closeEntry();
@@ -281,7 +317,11 @@ public final class Sandbox {
             var sortedPaths = stream.sorted().toList();
             for (Path path : sortedPaths) {
                 manifest.append(toPortableString(directory.relativize(path))).append('|');
-                if (Files.isRegularFile(path)) {
+                if (Files.isSymbolicLink(path)) {
+                    manifest.append("LINK:")
+                            .append(toPortableString(Files.readSymbolicLink(path)))
+                            .append('\n');
+                } else if (Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) {
                     manifest.append(sha256(path)).append('\n');
                 } else {
                     manifest.append("DIR\n");
@@ -289,6 +329,136 @@ public final class Sandbox {
             }
         }
         return sha256(manifest.toString());
+    }
+
+    /**
+     * Compiles a single {@code .gitignore} line into an equivalent regex matched against a
+     * whole relative path. Returns {@code null} if the line is empty or cannot be parsed.
+     */
+    private static @Nullable Pattern gitIgnorePatternToRegex(String line) {
+        var pattern = line;
+        // A trailing '/' restricts the pattern to directories; every candidate is a directory,
+        // so the marker can simply be dropped.
+        while (pattern.endsWith("/")) {
+            pattern = pattern.substring(0, pattern.length() - 1);
+        }
+        if (pattern.isEmpty()) {
+            return null;
+        }
+        var anchored = pattern.startsWith("/");
+        if (anchored) {
+            pattern = pattern.substring(1);
+        }
+        var anyDepth = pattern.startsWith("**/");
+        if (anyDepth) {
+            pattern = pattern.substring(3);
+        }
+        // Slash presence must be evaluated before stripping "/**", because the suffix's slash
+        // anchors the pattern even after the suffix is gone (e.g. ".sandbox/**" is anchored).
+        var containsSlash = pattern.indexOf('/') >= 0;
+        // "dir/**" ignores everything below dir; also treat dir itself as ignored, since callers
+        // only care whether the directory's contents would be tracked.
+        if (pattern.endsWith("/**")) {
+            pattern = pattern.substring(0, pattern.length() - 3);
+        }
+        if (pattern.isEmpty()) {
+            return null;
+        }
+
+        var regex = new StringBuilder(20);
+        regex.append('^');
+        // A leading "**/" always means "any depth"; otherwise an unanchored pattern without a
+        // slash matches at any depth too.
+        if (anyDepth || (!anchored && !containsSlash)) {
+            regex.append("(?:.*/)?");
+        }
+        var i = 0;
+        while (i < pattern.length()) {
+            var c = pattern.charAt(i);
+            if (c == '*') {
+                if (i + 1 < pattern.length() && pattern.charAt(i + 1) == '*') {
+                    var prevIsSlash = i > 0 && pattern.charAt(i - 1) == '/';
+                    var nextIsSlash = i + 2 < pattern.length() && pattern.charAt(i + 2) == '/';
+                    if (prevIsSlash && nextIsSlash) {
+                        // "a/**/b" - zero or more directories between a and b. The preceding '/'
+                        // is already in the regex, so append "(?:.*/)?" with no leading slash.
+                        regex.append("(?:.*/)?");
+                        i += 3; // skip "**/"
+                        continue;
+                    }
+                    regex.append(".*");
+                    i += 2;
+                    continue;
+                }
+                regex.append("[^/]*");
+                i++;
+            } else if (c == '?') {
+                regex.append("[^/]");
+                i++;
+            } else if (c == '[') {
+                var end = pattern.indexOf(']', i + 1);
+                if (end > i) {
+                    // Git negates a class with "[!...]"; Java uses "[^...]".
+                    var cls = pattern.substring(i, end + 1);
+                    regex.append(cls.startsWith("[!") ? "[^" + cls.substring(2) : cls);
+                    i = end + 1;
+                } else {
+                    regex.append("\\[");
+                    i++;
+                }
+            } else if (c == '\\' && i + 1 < pattern.length()) {
+                regex.append(Pattern.quote(String.valueOf(pattern.charAt(i + 1))));
+                i += 2;
+            } else {
+                if (".^$|+(){}".indexOf(c) >= 0) {
+                    regex.append('\\');
+                }
+                regex.append(c);
+                i++;
+            }
+        }
+        regex.append('$');
+        try {
+            return Pattern.compile(regex.toString());
+        } catch (PatternSyntaxException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Returns whether a {@code .gitignore} content already ignores {@code entry}. Matching is
+     * performed per trimmed line against the entry directory and each of its ancestor
+     * directories, honoring gitignore glob semantics: leading {@code /} anchoring, {@code **}
+     * segments, trailing {@code /**}, {@code *} (which does not cross {@code /}), {@code ?},
+     * character classes (including {@code [!...]} negation), and backslash escapes. A pattern
+     * without a {@code /} matches at any depth. Comment lines ({@code #...}) and negations
+     * ({@code !...}) are ignored rather than applied with last-match-wins semantics.
+     *
+     * @param content the {@code .gitignore} content
+     * @param entry   the entry to look for, e.g. {@code lib/.sandbox/}
+     * @return {@code true} if a line in {@code content} ignores {@code entry}
+     */
+    private static boolean isIgnoredByGitIgnore(String content, String entry) {
+        var candidates = directoryCandidates(entry);
+        if (candidates.isEmpty()) {
+            return false;
+        }
+        for (var raw : content.split("\\R")) {
+            var line = raw.trim();
+            if (line.isEmpty() || line.startsWith("#") || line.startsWith("!")) {
+                continue;
+            }
+            var pattern = gitIgnorePatternToRegex(line);
+            if (pattern == null) {
+                continue;
+            }
+            for (var candidate : candidates) {
+                if (pattern.matcher(candidate).matches()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @SuppressFBWarnings("EXS_EXCEPTION_SOFTENING_NO_CONSTRAINTS")
@@ -331,7 +501,7 @@ public final class Sandbox {
      * @param supplier the replacement supplier, or {@code null} to reset
      */
     static void setJvmVersionSupplier(@Nullable Supplier<String> supplier) {
-        jvmVersionSupplier_.set((supplier != null) ? supplier : () -> Runtime.version().toString());
+        jvmVersionSupplier.set((supplier != null) ? supplier : () -> Runtime.version().toString());
     }
 
     private static String sha256(Path file) throws IOException {
@@ -601,7 +771,7 @@ public final class Sandbox {
             try {
                 Files.createDirectories(sandboxDirectory_);
             } catch (IOException e) {
-                throw new UncheckedIOException("Could not create sandbox directory: " + sandboxDirectory_, e);
+                throw new UncheckedIOException(SANDBOX_DIR_CREATE_ERROR + sandboxDirectory_, e);
             }
             ensureGitIgnore(sandboxDirectory_, silent_);
 
@@ -617,7 +787,7 @@ public final class Sandbox {
             try {
                 Files.createDirectories(downloadDirectory);
             } catch (IOException e) {
-                throw new UncheckedIOException("Could not create sandbox directory: " + downloadDirectory, e);
+                throw new UncheckedIOException(SANDBOX_DIR_CREATE_ERROR + downloadDirectory, e);
             }
 
             if (!silent_ && logger.isLoggable(Level.INFO)) {
@@ -808,7 +978,7 @@ public final class Sandbox {
      * @throws NullPointerException if the configured supplier returns {@code null}
      */
     String jvmVersion() {
-        return Objects.requireNonNull(jvmVersionSupplier_.get().get(), "jvmVersion supplier returned null");
+        return Objects.requireNonNull(jvmVersionSupplier.get().get(), "jvmVersion supplier returned null");
     }
 
     private @Nullable Path relativeSubDirectory(@Nullable Path subDirectory) {
