@@ -235,4 +235,21 @@ public final class PathTools {
     private static String normalizePath(final Path path) {
         return Objects.requireNonNull(path).toAbsolutePath().normalize().toString();
     }
+
+    /**
+     * Quotes an argument for inclusion in an {@code @argfile} when it is empty,
+     * contains any whitespace (spaces, tabs, or any other Unicode whitespace), or
+     * contains a double quote.
+     *
+     * @param arg the argument to quote if necessary
+     * @return the quoted argument, or the original argument if quoting is not needed
+     */
+     public static String quoteArgForArgFile(String arg) {
+        if (arg.isEmpty()
+                || arg.chars().anyMatch(Character::isWhitespace)
+                || arg.indexOf('"') >= 0) {
+            return "\"" + arg.replace("\"", "\\\"") + "\"";
+        }
+        return arg;
+    }
 }

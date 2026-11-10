@@ -477,4 +477,82 @@ class PathToolsTest {
             }
         }
     }
+
+
+    @Nested
+    @DisplayName("quoteArgForArgFile")
+    class QuoteArgForArgFile {
+
+        static Stream<Arguments> embeddedQuoteCases() {
+            return Stream.of(
+                    // input ""  -> "\""        (quote, backslash, quote, quote)
+                    Arguments.of("\"", "\"\\\"\""),
+                    // input a"b -> "a\"b"
+                    Arguments.of("a\"b", "\"a\\\"b\""),
+                    // input "a" -> "\"a\""
+                    Arguments.of("\"a\"", "\"\\\"a\\\"\""),
+                    // input a""b -> "a\"\"b"
+                    Arguments.of("a\"\"b", "\"a\\\"\\\"b\"")
+            );
+        }
+
+        static Stream<Arguments> whitespaceAndQuoteCases() {
+            return Stream.of(
+                    Arguments.of("a \"b\" c", "\"a \\\"b\\\" c\""),
+                    Arguments.of(" \"", "\" \\\"\""),
+                    Arguments.of("\t\"", "\"\t\\\"\"")
+            );
+        }
+
+        static Stream<Arguments> whitespaceCases() {
+            return Stream.of(
+                    Arguments.of("a b", "\"a b\""),
+                    Arguments.of(" a", "\" a\""),
+                    Arguments.of("a ", "\"a \""),
+                    Arguments.of("  ", "\"  \""),
+                    Arguments.of("a\tb", "\"a\tb\""),
+                    Arguments.of("\t", "\"\t\""),
+                    Arguments.of("a\nb", "\"a\nb\""),
+                    Arguments.of("\n", "\"\n\""),
+                    Arguments.of("a\rb", "\"a\rb\"")
+            );
+        }
+
+        @ParameterizedTest(name = "[{index}] \"{0}\" -> {1}")
+        @MethodSource("embeddedQuoteCases")
+        @DisplayName("quotes and escapes embedded quotes")
+        void embeddedQuotes(String input, String expected) {
+            assertEquals(expected, PathTools.quoteArgForArgFile(input));
+        }
+
+        @Test
+        @DisplayName("quotes empty string")
+        void empty() {
+            assertEquals("\"\"", PathTools.quoteArgForArgFile(""));
+        }
+
+        @ParameterizedTest(name = "[{index}] \"{0}\" -> unchanged")
+        @ValueSource(strings = {
+                "abc", "file.jar", "-cp", "a=b", "a/b", "a-b", "a_b", "a.b",
+                "C:\\path\\to\\file.jar", "arg@value", "a,b", "a:b", "a=b/c"
+        })
+        @DisplayName("returns arg unchanged when it has no whitespace or quote")
+        void unchanged(String arg) {
+            assertEquals(arg, PathTools.quoteArgForArgFile(arg));
+        }
+
+        @ParameterizedTest(name = "[{index}] \"{0}\" -> \"{1}\"")
+        @MethodSource("whitespaceCases")
+        @DisplayName("quotes args containing whitespace")
+        void whitespace(String input, String expected) {
+            assertEquals(expected, PathTools.quoteArgForArgFile(input));
+        }
+
+        @ParameterizedTest(name = "[{index}] \"{0}\" -> {1}")
+        @MethodSource("whitespaceAndQuoteCases")
+        @DisplayName("quotes and escapes when both whitespace and quotes are present")
+        void whitespaceAndQuotes(String input, String expected) {
+            assertEquals(expected, PathTools.quoteArgForArgFile(input));
+        }
+    }
 }
