@@ -37,9 +37,9 @@ public class ToolsBuild extends Project {
 
     public ToolsBuild() {
         pkg = "rife.bld.extension.tools";
-        name = "Extensions Tolls";
+        name = "Extensions Tools";
         archiveBaseName = "bld-extensions-tools";
-        version = version(1, 6, 0, "SNAPSHOT");
+        version = version(1, 6, 0);
 
         javaRelease = 17;
 
