@@ -853,7 +853,7 @@ class TextToolsTest {
             var list = Arrays.asList(null, " ", "world");
             var ex = assertThrows(NullPointerException.class,
                     () -> TextTools.requireNotBlank(list, "values"));
-            assertEquals("values must not be null", ex.getMessage());
+            assertEquals("values must not contain null elements", ex.getMessage());
         }
 
         @Test
@@ -915,7 +915,7 @@ class TextToolsTest {
             var list = Arrays.asList("hello", null, "world");
             var ex = assertThrows(NullPointerException.class,
                     () -> TextTools.requireNotBlank(list, "values"));
-            assertEquals("values must not be null", ex.getMessage());
+            assertEquals("values must not contain null elements", ex.getMessage());
         }
 
         @Test
@@ -1101,7 +1101,7 @@ class TextToolsTest {
         void shouldFailFastOnFirstNull() {
             var ex = assertThrows(NullPointerException.class,
                     () -> TextTools.requireNotBlank("values", null, " ", "world"));
-            assertEquals("values must not be null", ex.getMessage());
+            assertEquals("values must not contain null elements", ex.getMessage());
         }
 
         @Test
@@ -1158,7 +1158,7 @@ class TextToolsTest {
         void shouldThrowNullPointerExceptionForNullElement() {
             var ex = assertThrows(NullPointerException.class,
                     () -> TextTools.requireNotBlank("values", "hello", null));
-            assertEquals("values must not be null", ex.getMessage());
+            assertEquals("values must not contain null elements", ex.getMessage());
         }
 
         @Test
@@ -1265,7 +1265,7 @@ class TextToolsTest {
             var list = Arrays.asList(null, "", "world");
             var ex = assertThrows(NullPointerException.class,
                     () -> TextTools.requireNotEmpty(list, "values"));
-            assertEquals("values must not be null", ex.getMessage());
+            assertEquals("values must not contain null elements", ex.getMessage());
         }
 
         @Test
@@ -1326,7 +1326,7 @@ class TextToolsTest {
             var list = Arrays.asList("hello", null, "world");
             var ex = assertThrows(NullPointerException.class,
                     () -> TextTools.requireNotEmpty(list, "values"));
-            assertEquals("values must not be null", ex.getMessage());
+            assertEquals("values must not contain null elements", ex.getMessage());
         }
 
         @Test
@@ -1524,7 +1524,7 @@ class TextToolsTest {
         void shouldFailFastOnFirstNull() {
             var ex = assertThrows(NullPointerException.class,
                     () -> TextTools.requireNotEmpty("values", null, "", "world"));
-            assertEquals("values must not be null", ex.getMessage());
+            assertEquals("values must not contain null elements", ex.getMessage());
         }
 
         @Test
@@ -1581,7 +1581,7 @@ class TextToolsTest {
         void shouldThrowNullPointerExceptionForNullElement() {
             var ex = assertThrows(NullPointerException.class,
                     () -> TextTools.requireNotEmpty("values", "hello", null));
-            assertEquals("values must not be null", ex.getMessage());
+            assertEquals("values must not contain null elements", ex.getMessage());
         }
 
         @Test

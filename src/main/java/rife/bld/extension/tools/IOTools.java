@@ -21,22 +21,25 @@ import org.jspecify.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * I/O Tools.
  *
  * <p>Utility methods for common file system operations including existence checks,
- * executability checks, directory creation, and path resolution. All methods
+ * executability checks, directory creation, and path resolution. Most methods
  * accept {@code null} inputs and return {@code false} (or an appropriate default)
- * rather than throwing {@link NullPointerException}.</p>
+ * rather than throwing {@link NullPointerException}. The collection-style
+ * {@link #findFilesByExtensions(Path, String...)} method is a deliberate exception:
+ * it throws {@link NullPointerException} for {@code null} arguments because it has
+ * no sensible null default.</p>
  *
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
@@ -124,6 +127,7 @@ public final class IOTools {
      * @param file the directory to create, may be {@code null}
      * @return {@code true} if the directory was created or already exists after the call;
      * {@code false} if {@code file} is {@code null}
+     * @throws InvalidPathException                     if {@code file} cannot be converted to a {@code Path}
      * @throws java.nio.file.FileAlreadyExistsException if {@code file} exists and is not a directory
      * @throws java.nio.file.AccessDeniedException      if the process does not have permission to create the directory
      * @throws IOException                              if an I/O error occurs while creating the directory
@@ -143,7 +147,7 @@ public final class IOTools {
      * @param path the path string of the directory to create, may be {@code null} or blank
      * @return {@code true} if the directory was created or already exists after the call;
      * {@code false} if {@code path} is {@code null} or blank
-     * @throws java.nio.file.InvalidPathException       if {@code path} cannot be converted to a {@code Path}
+     * @throws InvalidPathException                     if {@code path} cannot be converted to a {@code Path}
      * @throws java.nio.file.FileAlreadyExistsException if {@code path} exists and is not a directory
      * @throws java.nio.file.AccessDeniedException      if the process does not have permission to create the directory
      * @throws IOException                              if an I/O error occurs while creating the directory
@@ -204,16 +208,22 @@ public final class IOTools {
      * This is non-recursive - it does not search subdirectories. If the directory
      * cannot be read, an empty list is returned.
      *
+     * <p>The order of the returned list is unspecified and depends on the underlying
+     * file system.</p>
+     *
      * <p><b>Note:</b> Unlike most methods in this class, this method does
      * <em>not</em> tolerate {@code null} arguments: it throws
-     * {@link NullPointerException} if {@code directory} or {@code extensions}
-     * is {@code null}. This asymmetry is intentional, since collection-style
-     * operations have no sensible null default.</p>
+     * {@link NullPointerException} if {@code directory}, {@code extensions},
+     * or any element of {@code extensions} is {@code null}. This asymmetry is
+     * intentional, since collection-style operations have no sensible null
+     * default.</p>
      *
      * @param directory  the directory to list, must not be null
-     * @param extensions one or more extensions to match, e.g. ".java" or "java"
+     * @param extensions one or more extensions to match, e.g. ".java" or "java";
+     *                   elements must not be null
      * @return an unmodifiable list of matching files; never null, may be empty
-     * @throws NullPointerException if directory or extensions is null
+     * @throws NullPointerException if {@code directory}, {@code extensions}, or any
+     *                              element of {@code extensions} is null
      * @since 1.4
      */
     public static List<Path> findFilesByExtensions(Path directory, String... extensions) {
@@ -225,7 +235,7 @@ public final class IOTools {
         }
 
         // Normalize: ".JAVA" -> ".java", "java" -> ".java"
-        final Set<String> normalizedExtensions = Arrays.stream(extensions)
+        var normalizedExtensions = Arrays.stream(extensions)
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .map(s -> s.startsWith(".") ? s : "." + s)
@@ -248,8 +258,9 @@ public final class IOTools {
                         return normalizedExtensions.stream().anyMatch(lowerName::endsWith);
                     })
                     .toList();
-        } catch (IOException e) {
-            // Directory does not exist, not a directory, or not readable
+        } catch (IOException | UncheckedIOException e) {
+            // Directory does not exist, not a directory, not readable, or an
+            // I/O error occurred while iterating the stream.
             return List.of();
         }
     }
@@ -314,7 +325,7 @@ public final class IOTools {
         try {
             Files.createDirectories(file.toPath());
             return true;
-        } catch (IOException | SecurityException e) {
+        } catch (IOException | InvalidPathException | SecurityException e) {
             return false;
         }
     }
@@ -424,13 +435,20 @@ public final class IOTools {
      *
      * <p>This method constructs a file path by appending one or more path segments
      * to a base file. {@code null} or empty segments are silently skipped. To keep
-     * resolution relative to {@code base}, segments starting with {@code "/"} have
-     * the leading slash stripped before resolving. This is a deliberate design choice
-     * that prevents absolute segments from resetting the path to the filesystem root,
-     * which would violate the expectation that resolution is relative to the base.
+     * resolution relative to {@code base}, <em>all</em> leading {@code "/"} characters
+     * are stripped from each segment before resolving (so {@code "//etc"} becomes
+     * {@code "etc"}). This is a deliberate design choice that prevents absolute
+     * segments from resetting the path to the filesystem root, which would violate
+     * the expectation that resolution is relative to the base.
      * <strong>This means absolute Unix paths passed as segments are silently
      * reinterpreted as relative.</strong> Callers that need root-relative semantics
      * must not use this method, or must handle the absolute path outside of it.</p>
+     *
+     * <p>On Windows, a segment rooted with a drive letter (e.g. {@code C:\foo}) or
+     * a UNC path is still absolute from {@link Path#resolve(String)}'s point of view
+     * and will reset the path. This method does not attempt to rewrite such segments;
+     * callers that may supply them must strip the root themselves.</p>
+     *
      * <p>If {@code base} is {@code null}, this behaves like {@code new File("")}:
      * segments are resolved against the current directory.</p>
      *
@@ -440,17 +458,18 @@ public final class IOTools {
      * @return a {@link File} representing the resolved path
      * @since 1.0
      */
-    // Note: the first @Nullable applies to the varargs array itself (may be null);
-    // the second @Nullable applies to each element (null elements are skipped).
     public static File resolveFile(@Nullable File base, @Nullable String @Nullable ... segments) {
         var path = (base == null ? Path.of("") : base.toPath());
 
         if (segments != null) {
             for (var segment : segments) {
                 if (segment != null && !segment.isEmpty()) {
-                    // Strip leading "/" to ensure segments are always resolved relatively
-                    // and don't reset to filesystem root
-                    var normalized = segment.startsWith("/") ? segment.substring(1) : segment;
+                    // Strip every leading "/" so segments are always resolved relatively
+                    // and cannot reset to filesystem root (e.g. "//etc" -> "etc").
+                    var normalized = segment;
+                    while (normalized.startsWith("/")) {
+                        normalized = normalized.substring(1);
+                    }
                     if (!normalized.isEmpty()) {
                         path = path.resolve(normalized);
                     }

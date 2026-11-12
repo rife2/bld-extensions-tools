@@ -243,8 +243,9 @@ public final class PathTools {
      *
      * @param arg the argument to quote if necessary
      * @return the quoted argument, or the original argument if quoting is not needed
+     * @since 1.6
      */
-     public static String quoteArgForArgFile(String arg) {
+    public static String quoteArgForArgFile(String arg) {
         if (arg.isEmpty()
                 || arg.chars().anyMatch(Character::isWhitespace)
                 || arg.indexOf('"') >= 0) {

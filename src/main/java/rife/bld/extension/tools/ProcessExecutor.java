@@ -89,6 +89,7 @@ public class ProcessExecutor {
      * @param charset the charset, must not be null
      * @return this instance
      * @throws NullPointerException if charset is null
+     * @since 1.6
      */
     public ProcessExecutor charset(Charset charset) {
         charset_ = Objects.requireNonNull(charset, "charset must not be null");
@@ -107,11 +108,11 @@ public class ProcessExecutor {
     /**
      * Sets the command and arguments to be executed, replacing any previously configured command.
      *
-     * @param args one or more arguments, must not be null or contain null/empty elements.
-     *             The first element must be a non-blank program name.
+     * @param args one or more arguments, must not be null or contain empty elements.
+     *             The first element must be a non-empty program name.
      * @return this instance
-     * @throws NullPointerException     if args is null
-     * @throws IllegalArgumentException if args contains null/empty elements.
+     * @throws NullPointerException     if args is null or contains a null element
+     * @throws IllegalArgumentException if args is empty or contains an empty element
      */
     public ProcessExecutor command(String... args) {
         ObjectTools.requireNotEmpty(args, "command");
@@ -132,16 +133,17 @@ public class ProcessExecutor {
     /**
      * Sets the command and arguments to be executed, replacing any previously configured command.
      *
-     * @param args the list of arguments, must not be null or contain null/empty elements.
-     *             The first element must be a non-blank program name.
+     * @param args the list of arguments, must not be null or contain empty elements.
+     *             The first element must be a non-empty program name.
      * @return this instance
-     * @throws NullPointerException     if args is null
-     * @throws IllegalArgumentException if args contains null/empty elements
+     * @throws NullPointerException     if args is null or contains a null element
+     * @throws IllegalArgumentException if args is empty or contains an empty element
      */
     public ProcessExecutor command(Collection<String> args) {
         ObjectTools.requireNotEmpty(args, "command");
+        var copy = new ArrayList<>(args);
         command_.clear();
-        command_.addAll(args);
+        command_.addAll(copy);
         return this;
     }
 
@@ -170,10 +172,6 @@ public class ProcessExecutor {
      */
     public ProcessExecutor env(Map<String, String> vars) {
         ObjectTools.requireNonNull(vars, "environment variables");
-        vars.forEach((k, v) -> {
-            Objects.requireNonNull(k, "environment variable name must not be null");
-            Objects.requireNonNull(v, "environment variable value must not be null");
-        });
         env_.putAll(vars);
         return this;
     }
@@ -196,7 +194,6 @@ public class ProcessExecutor {
      * @throws IllegalStateException if no command is set, the working directory is invalid,
      *                               or both {@link #inheritIO()} and {@link #outputConsumer(Consumer)} are configured
      */
-    // Streams are closed in the finally block; PMD's static analysis cannot see through the helper.
     @SuppressWarnings("PMD.CloseResource")
     public ProcessResult execute() throws IOException, InterruptedException {
         validatePreconditions();
@@ -227,13 +224,12 @@ public class ProcessExecutor {
                 try {
                     // Give the OS a chance to reap the process tree
                     if (!proc.waitFor(1, TimeUnit.SECONDS)) {
-                        // Forceful fallback if graceful tree kill didn't work
+                        // Forceful fallback if tree destruction did not terminate it.
                         proc.destroyForcibly();
                         proc.waitFor(1, TimeUnit.SECONDS);
                     }
                 } catch (InterruptedException e) {
-                    // Preserve interrupt status, finish cleanup, and propagate
-                    Thread.currentThread().interrupt();
+                    // Finish cleanup and propagate; finally handles the rest.
                     proc.destroyForcibly();
                     throw e;
                 }
@@ -304,7 +300,7 @@ public class ProcessExecutor {
      * @param consumer the output consumer, or null to disable
      * @return this instance
      */
-    public ProcessExecutor outputConsumer(Consumer<String> consumer) {
+    public ProcessExecutor outputConsumer(@Nullable Consumer<String> consumer) {
         outputConsumer_ = consumer;
         return this;
     }
@@ -367,12 +363,13 @@ public class ProcessExecutor {
     /**
      * Configures the working directory.
      *
-     * @param dir the directory path, must not be null or empty
+     * @param dir the directory path, must not be null or blank
      * @return this instance
-     * @throws IllegalArgumentException if dir is null or empty
+     * @throws NullPointerException     if dir is null
+     * @throws IllegalArgumentException if dir is blank
      */
     public ProcessExecutor workDir(String dir) {
-        ObjectTools.requireNotEmpty(dir, "directory must not be null or empty");
+        TextTools.requireNotBlank(dir, "directory");
         return workDir(new File(dir));
     }
 
@@ -385,8 +382,6 @@ public class ProcessExecutor {
     public File workDir() {
         return workDir_;
     }
-
-    // Internal helpers. Package-private to allow unit testing and keep execute() readable.
 
     /**
      * Cleans up the process and its descendants.
@@ -554,7 +549,9 @@ public class ProcessExecutor {
                     outputLines.add(line);
                     notifyOutputConsumer(line);
                 });
-            } catch (IOException ignored) {
+            } catch (IOException | UncheckedIOException ignored) {
+                // UncheckedIOException is what BufferedReader.lines() wraps read failures in
+                // (e.g. when cleanupProcess closes the stream under us); swallow both.
             }
         }, "process-executor-output");
         thread.setDaemon(true);
@@ -597,6 +594,9 @@ public class ProcessExecutor {
 
         /**
          * Returns true if an exit code is available (i.e. the process terminated).
+         *
+         * @return {@code true} if an exit code is available
+         * @since 1.6
          */
         public boolean hasExitCode() {
             return exitCode != NO_EXIT_CODE;
@@ -604,6 +604,8 @@ public class ProcessExecutor {
 
         /**
          * Returns true if the process exited with code 0 and did not time out.
+         *
+         * @return {@code true} if the process exited successfully
          */
         public boolean isSuccess() {
             return exitCode == 0 && !timedOut;

@@ -25,6 +25,8 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import rife.bld.testing.BlankSource;
 import rife.bld.testing.LoggingExtension;
 import rife.bld.testing.TestLogHandler;
 
@@ -1097,11 +1099,11 @@ class ProcessExecutorTest {
             assertEquals(tmp.toFile(), exec.workDir());
         }
 
-        @Test
-        void workDirEmptyStringThrows() {
-            var ex = assertThrows(IllegalArgumentException.class,
-                    () -> new ProcessExecutor().workDir(""));
-            assertTrue(ex.getMessage().contains("directory must not be null or empty"));
+        @ParameterizedTest
+        @BlankSource
+        void workDirBlankStringThrows(String blank) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> new ProcessExecutor().workDir(blank));
         }
 
         @Test

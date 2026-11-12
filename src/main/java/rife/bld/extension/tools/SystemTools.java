@@ -35,8 +35,9 @@ import java.util.function.Supplier;
  * identifying Cygwin, MinGW/MSYS2, and WSL environments. Also provides architecture
  * detection for x86 and ARM families.
  * <p>
- * Designed for null-safety, testability, and minimal overhead. All system properties
- * are cached at class load time.
+ * Designed for null-safety, testability, and minimal overhead. The {@code os.name},
+ * {@code os.arch}, WSL detection, and other-OS classification are cached at class load
+ * time; the {@code java.home} property and environment variables are read on demand.
  *
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
@@ -179,11 +180,13 @@ public final class SystemTools {
      * Determines if the environment is running in a Cygwin environment based on
      * the provided OS name and environment variables.
      *
-     * <p>Only explicit Cygwin markers are matched. Generic Unix shell paths
-     * (such as {@code /usr/bin/bash}) and terminal types (such as {@code xterm})
-     * are intentionally excluded because they are also common in MSYS2, Git Bash,
-     * and other Unix-like Windows environments, and would otherwise cause false
-     * positives that could misclassify those environments as Cygwin.
+     * <p>The {@code OSTYPE} and {@code CYGWIN} environment variables are treated as
+     * the most reliable markers when exported. Explicit Cygwin paths in {@code SHELL},
+     * {@code PATH}, and {@code TERM} are also checked as weaker signals, but generic
+     * Unix shell paths (such as {@code /usr/bin/bash}) and terminal types (such as
+     * {@code xterm}) are intentionally excluded because they are also common in MSYS2,
+     * Git Bash, and other Unix-like Windows environments, and would otherwise cause
+     * false positives that could misclassify those environments as Cygwin.
      *
      * @param osName      the name of the operating system
      * @param envProvider a function to retrieve environment variables
@@ -193,6 +196,16 @@ public final class SystemTools {
     static boolean isCygwin(@Nullable String osName, Function<String, @Nullable String> envProvider) {
         if (!isWindows(osName)) {
             return false;
+        }
+
+        var ostype = envProvider.apply("OSTYPE");
+        if (ostype != null && ostype.toLowerCase(Locale.ROOT).contains("cygwin")) {
+            return true;
+        }
+
+        var cygwin = envProvider.apply("CYGWIN");
+        if (cygwin != null) {
+            return true;
         }
 
         var shell = envProvider.apply("SHELL");
@@ -297,6 +310,12 @@ public final class SystemTools {
      * full MSYS2 MINGW family ({@code MINGW*}, {@code MSYS*}, {@code UCRT*},
      * {@code CLANG*}); presence of {@code MINGW_PREFIX} or {@code MINGW_CHOST}
      * is also treated as a positive signal.
+     * <p>As a fallback, when neither {@code MSYSTEM} nor the {@code MINGW_*} variables
+     * are set, the method also returns {@code true} if {@code PATH} contains a
+     * {@code /mingw}, {@code \mingw}, {@code /msys}, or {@code \msys} entry and
+     * {@code SHELL} points at {@code /bin/bash} or {@code /bin/sh}. This heuristic
+     * may produce a false positive in a Cygwin environment that has a standalone
+     * MinGW/MSYS installation on the {@code PATH}.
      *
      * @param osName      the name of the operating system
      * @param envProvider a function to retrieve environment variables
@@ -311,7 +330,7 @@ public final class SystemTools {
         var msystem = envProvider.apply("MSYSTEM");
         if (msystem != null) {
             var ms = msystem.toUpperCase(Locale.ROOT);
-            if (ms.contains("MINGW") || ms.contains("MSYS")
+            if (ms.startsWith("MINGW") || ms.startsWith("MSYS")
                     || ms.startsWith("UCRT") || ms.startsWith("CLANG")) {
                 return true;
             }
@@ -459,7 +478,7 @@ public final class SystemTools {
      * @since 1.3
      */
     static boolean isWsl(@Nullable String osName, Supplier<@Nullable String> procVersionSupplier) {
-        if (osName == null || !isLinux(osName)) {
+        if (!isLinux(osName)) {
             return false;
         }
         var version = procVersionSupplier.get();
@@ -544,11 +563,11 @@ public final class SystemTools {
      * via {@code PATH} at process launch) when that binary is not executable.
      *
      * @return the resolved java executable, or the bare name when not resolvable
-     * @since 1.5.1
+     * @since 1.6
      */
     public static String javaExecutable() {
         var javaHome = System.getProperty("java.home");
-        if (javaHome != null && !javaHome.isBlank()) {
+        if (!TextTools.isBlank(javaHome)) {
             var exe = Path.of(javaHome, "bin",
                     isWindows() ? "java.exe" : "java").toFile();
             if (IOTools.canExecute(exe)) {

@@ -45,7 +45,7 @@ import java.util.logging.Logger;
  * @since 1.0
  */
 @NullMarked
-@SuppressWarnings("PMD.CouplingBetweenObjects") // Multiple conversions between File/Path/String are intentional
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class CollectionTools {
 
     private static final Logger logger = Logger.getLogger(CollectionTools.class.getName());
@@ -65,7 +65,7 @@ public final class CollectionTools {
      * @return an unmodifiable list containing all non-null elements
      * @since 1.0
      */
-    @SafeVarargs // Safe because we don't store the array or expose it to untrusted code
+    @SafeVarargs
     public static <T> List<T> combine(@Nullable Collection<T> @Nullable ... collections) {
         return combineAndMap(collections, t -> t);
     }
@@ -80,7 +80,7 @@ public final class CollectionTools {
      * @return an unmodifiable list containing all non-null elements
      * @since 1.0
      */
-    @SafeVarargs // Safe because we don't store the array or expose it to untrusted code
+    @SafeVarargs
     public static <T> List<T> combine(@Nullable T @Nullable ... elements) {
         return combineAndMapVarargs(elements, t -> t);
     }
@@ -106,8 +106,8 @@ public final class CollectionTools {
             return List.of();
         }
 
-        List<R> result = new ArrayList<>();
-        Set<DropReason> dropped = EnumSet.noneOf(DropReason.class);
+        var result = new ArrayList<R>();
+        var dropped = EnumSet.noneOf(DropReason.class);
 
         for (@Nullable Collection<@Nullable T> c : collections) {
             if (c == null) {
@@ -159,8 +159,8 @@ public final class CollectionTools {
             return List.of();
         }
 
-        List<R> result = new ArrayList<>();
-        Set<DropReason> dropped = EnumSet.noneOf(DropReason.class);
+        var result = new ArrayList<R>();
+        var dropped = EnumSet.noneOf(DropReason.class);
 
         for (@Nullable T e : elements) {
             if (e == null) {
@@ -189,7 +189,7 @@ public final class CollectionTools {
      * @return an unmodifiable list of paths
      * @since 1.0
      */
-    @SafeVarargs // Safe because we don't store the array or expose it to untrusted code
+    @SafeVarargs
     public static List<Path> combineFilesToPaths(@Nullable Collection<File> @Nullable ... collections) {
         return combineAndMap(collections, CollectionTools::toPath);
     }
@@ -211,7 +211,7 @@ public final class CollectionTools {
      * Returns an empty unmodifiable list, disambiguating the no-argument call.
      *
      * @return an empty unmodifiable list
-     * @since 1.0
+     * @since 1.6
      */
     public static List<Path> combineFilesToPaths() {
         return List.of();
@@ -227,7 +227,7 @@ public final class CollectionTools {
      * @return an unmodifiable list of normalized path strings
      * @since 1.0
      */
-    @SafeVarargs // Safe because we don't store the array or expose it to untrusted code
+    @SafeVarargs
     public static List<String> combineFilesToStrings(@Nullable Collection<File> @Nullable ... collections) {
         return combineAndMap(collections, CollectionTools::toNormalizedString);
     }
@@ -250,7 +250,7 @@ public final class CollectionTools {
      * Returns an empty unmodifiable list, disambiguating the no-argument call.
      *
      * @return an empty unmodifiable list
-     * @since 1.0
+     * @since 1.6
      */
     public static List<String> combineFilesToStrings() {
         return List.of();
@@ -266,7 +266,7 @@ public final class CollectionTools {
      * @return an unmodifiable list of files
      * @since 1.0
      */
-    @SafeVarargs // Safe because we don't store the array or expose it to untrusted code
+    @SafeVarargs
     public static List<File> combinePathsToFiles(@Nullable Collection<Path> @Nullable ... collections) {
         return combineAndMap(collections, CollectionTools::toFile);
     }
@@ -288,7 +288,7 @@ public final class CollectionTools {
      * Returns an empty unmodifiable list, disambiguating the no-argument call.
      *
      * @return an empty unmodifiable list
-     * @since 1.0
+     * @since 1.6
      */
     public static List<File> combinePathsToFiles() {
         return List.of();
@@ -304,7 +304,7 @@ public final class CollectionTools {
      * @return an unmodifiable list of normalized path strings
      * @since 1.0
      */
-    @SafeVarargs // Safe because we don't store the array or expose it to untrusted code
+    @SafeVarargs
     public static List<String> combinePathsToStrings(@Nullable Collection<Path> @Nullable ... collections) {
         return combineAndMap(collections, CollectionTools::toNormalizedString);
     }
@@ -327,7 +327,7 @@ public final class CollectionTools {
      * Returns an empty unmodifiable list, disambiguating the no-argument call.
      *
      * @return an empty unmodifiable list
-     * @since 1.0
+     * @since 1.6
      */
     public static List<String> combinePathsToStrings() {
         return List.of();
@@ -343,7 +343,7 @@ public final class CollectionTools {
      * @return an unmodifiable list of files
      * @since 1.0
      */
-    @SafeVarargs // Safe because we don't store the array or expose it to untrusted code
+    @SafeVarargs
     public static List<File> combineStringsToFiles(@Nullable Collection<String> @Nullable ... collections) {
         return combineAndMap(collections, CollectionTools::toFile);
     }
@@ -365,14 +365,13 @@ public final class CollectionTools {
      * Returns an empty unmodifiable list, disambiguating the no-argument call.
      *
      * @return an empty unmodifiable list
-     * @since 1.0
+     * @since 1.6
      */
     public static List<File> combineStringsToFiles() {
         return List.of();
     }
 
     /**
-     *
      * Combines multiple string collections into a list of {@link Path} objects.
      * <p>
      * Null collections, empty collections, and null elements are ignored.
@@ -382,7 +381,7 @@ public final class CollectionTools {
      * @return an unmodifiable list of paths
      * @since 1.0
      */
-    @SafeVarargs // Safe because we don't store the array or expose it to untrusted code
+    @SafeVarargs
     public static List<Path> combineStringsToPaths(@Nullable Collection<String> @Nullable ... collections) {
         return combineAndMap(collections, CollectionTools::toPath);
     }
@@ -404,7 +403,7 @@ public final class CollectionTools {
      * Returns an empty unmodifiable list, disambiguating the no-argument call.
      *
      * @return an empty unmodifiable list
-     * @since 1.0
+     * @since 1.6
      */
     public static List<Path> combineStringsToPaths() {
         return List.of();
@@ -424,7 +423,7 @@ public final class CollectionTools {
             return;
         }
         var messages = new ArrayList<String>(reasons.size());
-        for (DropReason reason : reasons) {
+        for (var reason : reasons) {
             messages.add(reason.message());
         }
         logger.fine("Dropped " + String.join(", ", messages));

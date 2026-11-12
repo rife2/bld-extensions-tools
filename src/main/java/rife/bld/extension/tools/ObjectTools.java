@@ -454,6 +454,7 @@ public final class ObjectTools {
      *
      * @param value the value to inspect; may be {@code null}
      * @return {@code true} if the {@code value} is {@code null} or empty
+     * @since 1.0
      */
     public static boolean isEmpty(@Nullable Object value) {
         if (value == null) {
@@ -492,6 +493,7 @@ public final class ObjectTools {
      *
      * @param value the value to inspect; may be {@code null}
      * @return {@code true} if the {@code value} is not {@code null} and not empty
+     * @since 1.0
      */
     public static boolean isNotEmpty(@Nullable Object value) {
         return !isEmpty(value);
@@ -616,7 +618,7 @@ public final class ObjectTools {
     public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNegative(@Nullable T value,
                                                                                           @NonNull String context) {
         ToolsSupport.requireContext(context);
-        Objects.requireNonNull(value, context + MUST_NOT_BE_NULL);
+        Objects.requireNonNull(value, () -> context + MUST_NOT_BE_NULL);
         return requireNegative(value, () -> context + " must be negative, got: " + value);
     }
 
@@ -664,7 +666,7 @@ public final class ObjectTools {
     public static <T extends @Nullable Object & Comparable<T>> @NonNull T requireNonNegative(@Nullable T value,
                                                                                              @NonNull String context) {
         ToolsSupport.requireContext(context);
-        Objects.requireNonNull(value, context + MUST_NOT_BE_NULL);
+        Objects.requireNonNull(value, () -> context + MUST_NOT_BE_NULL);
         return requireNonNegative(value, () -> context + " must be non-negative, got: " + value);
     }
 
@@ -713,8 +715,8 @@ public final class ObjectTools {
     @NullUnmarked
     public static <T extends @Nullable Object> @NonNull T requireNonNull(@Nullable T value, @NonNull String context) {
         ToolsSupport.requireContext(context);
-        Objects.requireNonNull(value, context + MUST_NOT_BE_NULL);
-        checkForNulls(value, context + " must not contain null elements");
+        Objects.requireNonNull(value, () -> context + MUST_NOT_BE_NULL);
+        checkForNulls(value, () -> context + " must not contain null elements");
         return value;
     }
 
@@ -766,8 +768,8 @@ public final class ObjectTools {
     @NullUnmarked
     public static <T extends @Nullable Object> @NonNull T requireNotEmpty(@Nullable T value, @NonNull String context) {
         ToolsSupport.requireContext(context);
-        Objects.requireNonNull(value, context + MUST_NOT_BE_NULL);
-        checkForNulls(value, context + " must not contain null elements");
+        Objects.requireNonNull(value, () -> context + MUST_NOT_BE_NULL);
+        checkForNulls(value, () -> context + " must not contain null elements");
         if (isEmpty(value)) {
             throw new IllegalArgumentException(context + " must not be empty");
         }
@@ -826,7 +828,7 @@ public final class ObjectTools {
     public static <T extends @Nullable Object & Comparable<T>> @NonNull T requirePositive(@Nullable T value,
                                                                                           @NonNull String context) {
         ToolsSupport.requireContext(context);
-        Objects.requireNonNull(value, context + MUST_NOT_BE_NULL);
+        Objects.requireNonNull(value, () -> context + MUST_NOT_BE_NULL);
         return requirePositive(value, () -> context + " must be positive, got: " + value);
     }
 
@@ -858,6 +860,10 @@ public final class ObjectTools {
     /**
      * Returns the zero value for the given type.
      *
+     * <p>Walks the runtime class's superclass chain so that subclasses of non-final
+     * supported types (notably {@link BigInteger} and {@link BigDecimal}) are resolved to
+     * their mapped ancestor rather than being rejected as unsupported.</p>
+     *
      * @param <T>   the type of the value
      * @param value instance used to determine the type
      * @return the zero value corresponding to {@code value}'s type
@@ -865,11 +871,13 @@ public final class ObjectTools {
      */
     @SuppressWarnings("unchecked")
     private static <T> T zeroOf(T value) {
-        var zero = ZERO_BY_TYPE.get(value.getClass());
-        if (zero == null) {
-            throw new IllegalArgumentException("Unsupported type: " + value.getClass().getName());
+        for (Class<?> cls = value.getClass(); cls != null; cls = cls.getSuperclass()) {
+            var zero = ZERO_BY_TYPE.get(cls);
+            if (zero != null) {
+                return (T) zero;
+            }
         }
-        return (T) zero;
+        throw new IllegalArgumentException("Unsupported type: " + value.getClass().getName());
     }
 
     /**

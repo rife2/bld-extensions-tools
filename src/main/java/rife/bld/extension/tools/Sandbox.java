@@ -728,6 +728,7 @@ public final class Sandbox {
      * @throws IllegalArgumentException if {@code version} is blank or contains {@code ':'}
      * @throws IllegalStateException    if the target directory cannot be deleted
      * @throws UncheckedIOException     if the ZIP cannot be downloaded or extracted
+     * @since 1.6
      */
     public Path downloadZip(URL url, String version) {
         return downloadZip(url, version, (Path) null);
@@ -747,6 +748,7 @@ public final class Sandbox {
      *                                  if {@code subDirectory} resolves outside the extension sandbox
      * @throws IllegalStateException    if the target directory cannot be deleted
      * @throws UncheckedIOException     if the ZIP cannot be downloaded or extracted
+     * @since 1.6
      */
     @SuppressFBWarnings("EXS_EXCEPTION_SOFTENING_NO_CONSTRAINTS")
     public Path downloadZip(URL url, String version, @Nullable Path subDirectory) {
@@ -821,6 +823,7 @@ public final class Sandbox {
      *                                  if {@code subDirectory} resolves outside the extension sandbox
      * @throws IllegalStateException    if the target directory cannot be deleted
      * @throws UncheckedIOException     if the ZIP cannot be downloaded or extracted
+     * @since 1.6
      */
     public Path downloadZip(URL url, String version, @Nullable File subDirectory) {
         return downloadZip(url, version, subDirectory != null ? subDirectory.toPath() : null);

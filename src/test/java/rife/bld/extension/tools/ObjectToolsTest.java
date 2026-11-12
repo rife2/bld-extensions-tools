@@ -757,7 +757,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNull() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireEmpty(null, "ctx"));
@@ -904,7 +903,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNullValue() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNegative(null, "value"));
@@ -1029,7 +1027,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNullValue() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNonNegative(null, "value"));
@@ -1088,7 +1085,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        @SuppressWarnings("ConstantValue")
         void passesForEmptyCollection() {
             assertTrue(ObjectTools.requireNonNull(List.of(), "list").isEmpty());
         }
@@ -1188,7 +1184,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNullValue() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNonNull(null, "userList"));
@@ -1196,7 +1191,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        @SuppressWarnings("DataFlowIssue")
         void throwsNpeWithFormattedMessage() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNonNull(null, () -> String.format("user %s must not be null", "admin")));
@@ -1298,7 +1292,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        @SuppressWarnings("DataFlowIssue")
         void throwsNpeUsingNullMessageForNullValue() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNotEmpty(null, "value must not be null", "value must not be empty"));
@@ -1436,7 +1429,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNull() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requireNotEmpty(null, "ctx"));
@@ -1566,7 +1558,6 @@ class ObjectToolsTest {
         }
 
         @Test
-        @SuppressWarnings("DataFlowIssue")
         void throwsNpeForNullValue() {
             var ex = assertThrows(NullPointerException.class,
                     () -> ObjectTools.requirePositive(null, "value"));

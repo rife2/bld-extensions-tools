@@ -1136,7 +1136,7 @@ class IsDirectoryTest {
         @Test
         @DisplayName("should return false for path with leading spaces")
         void testPathWithLeadingSpaces() {
-            // The method should NOT trim, so paths with leading spaces should fail
+            // Should NOT trim, so paths with leading spaces should fail
             var pathWithLeadingSpaces = " " + tempDir.toString();
             assertFalse(IOTools.isDirectory(pathWithLeadingSpaces));
         }
