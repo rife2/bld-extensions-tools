@@ -785,6 +785,9 @@ public final class Sandbox {
                     logger.log(Level.INFO, "Reusing valid sandbox snapshot for ''{0}''", snapshotKey);
                 }
                 return downloadDirectory;
+            } else if (project_.offline()) {
+                throw new IllegalStateException(
+                        "Project is offline; cannot download snapshot ZIP archives for '" + snapshotKey + "'");
             }
 
             deleteDirectory(downloadDirectory);

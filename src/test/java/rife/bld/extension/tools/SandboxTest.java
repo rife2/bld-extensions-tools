@@ -56,8 +56,11 @@ import static rife.bld.dependencies.Repository.MAVEN_CENTRAL;
 @DisplayName("Sandbox")
 class SandboxTest {
 
+    private static final String BLD_ZIP =
+            "https://github.com/rife2/bld/releases/download/3.0.1/bld-3.0.1.zip";
+    private static final String JBANG_ZIP =
+            "https://github.com/jbangdev/jbang/releases/download/v0.143.0/jbang.zip";
     private static final TestLogHandler testLogHandler = new TestLogHandler();
-
     @RegisterExtension
     @SuppressWarnings({"LoggerInitializedWithForeignClass", "unused"})
     private static final LoggingExtension loggingExtension = new LoggingExtension(
@@ -597,11 +600,6 @@ class SandboxTest {
     @Tag("live")
     class DownloadZipLiveTests {
 
-        static final String BLD_ZIP =
-                "https://github.com/rife2/bld/releases/download/3.0.1/bld-3.0.1.zip";
-        static final String JBANG_ZIP =
-                "https://github.com/jbangdev/jbang/releases/download/v0.143.0/jbang.zip";
-
         @Test
         void cacheHitDoesNotTouchFiles() throws Exception {
             var sandbox = new Sandbox("zip-live-cache", project());
@@ -755,6 +753,18 @@ class SandboxTest {
     @Nested
     @DisplayName("downloadZip - validation")
     class DownloadZipValidationTests {
+
+        @Test
+        void offlineZipProject() throws Exception {
+            var p = project();
+            p.offline(true);
+            var sandbox = new Sandbox("zip-offline", p);
+            var url = toUrl(BLD_ZIP);
+            var ex = assertThrows(IllegalStateException.class,
+                    () -> sandbox.downloadZip(url, "v1"));
+            assertTrue(ex.getMessage() != null && ex.getMessage().toLowerCase().contains("offline"),
+                    () -> "Expected exception message to contain 'offline' but was: " + ex.getMessage());
+        }
 
         @Test
         void rejectsEscapingFileSubDirectory() throws Exception {
