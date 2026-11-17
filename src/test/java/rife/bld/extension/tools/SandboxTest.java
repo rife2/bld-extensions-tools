@@ -260,6 +260,21 @@ class SandboxTest {
             assertEquals(subDir, result);
         }
 
+        @Test
+        void offlineProject() throws Exception {
+            var p = project();
+            var sandbox = new Sandbox("ext-o", p);
+            p.offline(true);
+            var deps = List.of(new Dependency("commons-codec", "commons-codec",
+                    new VersionNumber(1, 23, 0)));
+
+            var ex = assertThrows(IllegalStateException.class, () ->
+                    sandbox.downloadDependencies(deps, List.of(MAVEN_CENTRAL))
+            );
+
+            assertTrue(ex.getMessage() != null && ex.getMessage().toLowerCase().contains("offline"),
+                    () -> "Expected exception message to contain 'offline' but was: " + ex.getMessage());
+        }
 
         @Test
         void pathOverloadWithoutResolutionRejectsEscapingSubDirectory() throws Exception {

@@ -95,6 +95,7 @@ public final class Sandbox {
     private static final Logger logger = Logger.getLogger(Sandbox.class.getName());
     private static final ReentrantLock snapshotLock = new ReentrantLock();
     private final String extensionName_;
+    private final BaseProject project_;
     private final Path sandboxDirectory_;
     private final Path sandboxExtensionDirectory_;
     private final Path sandboxSnapshotFile_;
@@ -125,13 +126,13 @@ public final class Sandbox {
      * @throws IllegalArgumentException if {@code extensionName} is blank or invalid
      */
     public Sandbox(String extensionName, BaseProject project, Boolean silent) {
-        ObjectTools.requireNonNull(project, "project");
         Objects.requireNonNull(silent, "silent");
+        project_ = ObjectTools.requireNonNull(project, "project");
         silent_ = silent;
         extensionName_ = TextTools.requireNotBlank(extensionName, "extensionName");
         requireValidExtensionName(extensionName_);
         // Sibling of lib/bld, not a child: keeps the sandbox off the wrapper's classpath.
-        sandboxDirectory_ = project.libBldDirectory().toPath()
+        sandboxDirectory_ = project_.libBldDirectory().toPath()
                 .resolveSibling(SANDBOX_DIRECTORY)
                 .toAbsolutePath()
                 .normalize();
@@ -608,8 +609,10 @@ public final class Sandbox {
                     logger.log(Level.INFO, "Reusing valid sandbox snapshot for ''{0}''", snapshotKey);
                 }
                 return downloadDirectory;
+            } else if (project_.offline()) {
+                throw new IllegalStateException(
+                        "Project is offline; cannot download snapshot dependencies for '" + snapshotKey + "'");
             }
-
             deleteDirectory(downloadDirectory);
 
             try {
